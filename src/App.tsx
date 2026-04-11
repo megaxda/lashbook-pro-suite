@@ -3,14 +3,23 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import HomeProfissional from "@/pages/HomeProfissional";
 import AccountPage from "@/pages/AccountPage";
 import AdminPage from "@/pages/AdminPage";
 import LinkBioPage from "@/pages/LinkBioPage";
 import NotFound from "@/pages/NotFound";
+import Auth from "@/pages/Auth";
 
 const queryClient = new QueryClient();
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="text-pink-400">Carregando...</div></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -18,16 +27,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/home_profissional" replace />} />
-          <Route element={<MainLayout />}>
-            <Route path="/home_profissional" element={<HomeProfissional />} />
-            <Route path="/account" element={<AccountPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Route>
-          <Route path="/u/:slug" element={<LinkBioPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<Navigate to="/home_profissional" replace />} />
+            <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+              <Route path="/home_profissional" element={<HomeProfissional />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Route>
+            <Route path="/u/:slug" element={<LinkBioPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
