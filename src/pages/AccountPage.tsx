@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Building, CreditCard, Link2, Globe, Instagram, MessageCircle, GripVertical, Plus, Trash2 } from "lucide-react";
+import { User, Building, CreditCard, Link2, Globe, Instagram, MessageCircle, GripVertical, Plus, Trash2, Calendar, DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,5 +169,3 @@ export default function AccountPage() {
   );
 }
 
-// Need these imports for the integrations section icons
-import { Calendar, DollarSign } from "lucide-react";
