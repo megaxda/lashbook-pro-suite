@@ -27,4 +27,4 @@ export function useAdminUsers() {
   });
 
   return { users, isLoading, updateUser };
-}">
+}
