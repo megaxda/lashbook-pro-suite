@@ -15,7 +15,7 @@
     --popover: 0 0% 10%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 330 85% 52%;
+    --primary: 197 68% 44%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 14%;
@@ -24,7 +24,7 @@
     --muted: 0 0% 14%;
     --muted-foreground: 0 0% 55%;
 
-    --accent: 330 60% 45%;
+    --accent: 197 50% 38%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
@@ -32,22 +32,72 @@
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 330 85% 52%;
+    --ring: 197 68% 44%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 75%;
-    --sidebar-primary: 330 85% 52%;
+    --sidebar-primary: 197 68% 44%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 14%;
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 330 85% 52%;
+    --sidebar-ring: 197 68% 44%;
 
-    --pink-glow: 330 85% 52%;
-    --pink-soft: 340 60% 65%;
-    --pink-muted: 330 30% 25%;
+    --brand-glow: 197 68% 44%;
+    --brand-soft: 197 50% 55%;
+    --brand-muted: 197 30% 25%;
+
+    --success: 145 63% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 10%;
+    --info: 210 80% 55%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 197 68% 44%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 20%;
+
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 197 50% 38%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 197 68% 44%;
+
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 0 0% 35%;
+    --sidebar-primary: 197 68% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 197 68% 44%;
+
+    --brand-glow: 197 68% 44%;
+    --brand-soft: 197 50% 55%;
+    --brand-muted: 197 30% 85%;
 
     --success: 145 63% 42%;
     --success-foreground: 0 0% 100%;
@@ -69,25 +119,25 @@
 }
 
 @layer utilities {
-  .gradient-pink {
-    background: linear-gradient(135deg, hsl(330, 85%, 52%), hsl(340, 80%, 60%));
+  .gradient-brand {
+    background: linear-gradient(135deg, hsl(197, 68%, 44%), hsl(197, 50%, 55%));
   }
   .gradient-card {
-    background: linear-gradient(145deg, hsl(0, 0%, 11%), hsl(0, 0%, 9%));
+    background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--background)));
   }
   .glass-card {
-    background: hsl(0 0% 10% / 0.8);
+    background: hsl(var(--card) / 0.8);
     backdrop-filter: blur(12px);
-    border: 1px solid hsl(0 0% 18%);
+    border: 1px solid hsl(var(--border));
   }
-  .text-gradient-pink {
-    background: linear-gradient(135deg, hsl(330, 85%, 52%), hsl(340, 60%, 70%));
+  .text-gradient-brand {
+    background: linear-gradient(135deg, hsl(197, 68%, 44%), hsl(197, 50%, 65%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .glow-pink {
-    box-shadow: 0 0 20px hsl(330, 85%, 52%, 0.15), 0 0 40px hsl(330, 85%, 52%, 0.05);
+  .glow-brand {
+    box-shadow: 0 0 20px hsl(197, 68%, 44%, 0.15), 0 0 40px hsl(197, 68%, 44%, 0.05);
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;

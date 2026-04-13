@@ -1,4 +1,4 @@
-// Mock data for LASH BOOK
+// Mock data for FinBeauty
 
 export interface Client {
   id: string;
@@ -25,13 +25,13 @@ export interface Appointment {
   price: number;
   status: "Confirmado" | "Pendente" | "Em atendimento" | "Concluído" | "Cancelado" | "No-show" | "Bloqueio";
   paymentStatus: "Pago" | "Pendente" | "Parcial";
+  paymentMethod?: string;
   notes: string;
 }
 
 export interface Product {
   id: string;
   name: string;
-  sku: string;
   category: string;
   unit: string;
   currentQuantity: number;
@@ -76,25 +76,27 @@ export const mockClients: Client[] = [
 ];
 
 export const mockAppointments: Appointment[] = [
-  { id: "1", clientName: "Maria Silva", clientId: "1", date: "2026-04-11", time: "09:00", duration: 120, service: "Volume Russo", price: 350, status: "Confirmado", paymentStatus: "Pendente", notes: "" },
-  { id: "2", clientName: "Camila Pereira", clientId: "5", date: "2026-04-11", time: "11:30", duration: 90, service: "Manutenção Volume", price: 200, status: "Pendente", paymentStatus: "Pendente", notes: "Chegará 10min atrasada" },
-  { id: "3", clientName: "Beatriz Lima", clientId: "6", date: "2026-04-11", time: "14:00", duration: 150, service: "Mega Volume", price: 450, status: "Confirmado", paymentStatus: "Pendente", notes: "" },
-  { id: "4", clientName: "Patricia Alves", clientId: "8", date: "2026-04-11", time: "17:00", duration: 60, service: "Remoção", price: 80, status: "Pendente", paymentStatus: "Pendente", notes: "" },
-  { id: "5", clientName: "Ana Oliveira", clientId: "2", date: "2026-04-12", time: "10:00", duration: 120, service: "Fio a Fio Clássico", price: 280, status: "Confirmado", paymentStatus: "Pago", notes: "" },
-  { id: "6", clientName: "Juliana Santos", clientId: "3", date: "2026-04-12", time: "14:00", duration: 120, service: "Volume Brasileiro", price: 380, status: "Confirmado", paymentStatus: "Pendente", notes: "" },
-  { id: "7", clientName: "Maria Silva", clientId: "1", date: "2026-04-10", time: "09:00", duration: 90, service: "Manutenção Clássico", price: 180, status: "Concluído", paymentStatus: "Pago", notes: "" },
-  { id: "8", clientName: "Camila Pereira", clientId: "5", date: "2026-04-09", time: "15:00", duration: 120, service: "Volume Russo", price: 350, status: "Concluído", paymentStatus: "Pago", notes: "" },
+  { id: "1", clientName: "Maria Silva", clientId: "1", date: "2026-04-11", time: "09:00", duration: 120, service: "Volume Russo", price: 350, status: "Confirmado", paymentStatus: "Pendente", paymentMethod: "", notes: "" },
+  { id: "2", clientName: "Camila Pereira", clientId: "5", date: "2026-04-11", time: "11:30", duration: 90, service: "Manutenção Volume", price: 200, status: "Pendente", paymentStatus: "Pendente", paymentMethod: "", notes: "Chegará 10min atrasada" },
+  { id: "3", clientName: "Beatriz Lima", clientId: "6", date: "2026-04-11", time: "14:00", duration: 150, service: "Mega Volume", price: 450, status: "Confirmado", paymentStatus: "Pendente", paymentMethod: "", notes: "" },
+  { id: "4", clientName: "Patricia Alves", clientId: "8", date: "2026-04-11", time: "17:00", duration: 60, service: "Remoção", price: 80, status: "Pendente", paymentStatus: "Pendente", paymentMethod: "", notes: "" },
+  { id: "5", clientName: "Ana Oliveira", clientId: "2", date: "2026-04-12", time: "10:00", duration: 120, service: "Fio a Fio Clássico", price: 280, status: "Confirmado", paymentStatus: "Pago", paymentMethod: "PIX", notes: "" },
+  { id: "6", clientName: "Juliana Santos", clientId: "3", date: "2026-04-12", time: "14:00", duration: 120, service: "Volume Brasileiro", price: 380, status: "Confirmado", paymentStatus: "Pendente", paymentMethod: "", notes: "" },
+  { id: "7", clientName: "Maria Silva", clientId: "1", date: "2026-04-10", time: "09:00", duration: 90, service: "Manutenção Clássico", price: 180, status: "Concluído", paymentStatus: "Pago", paymentMethod: "PIX", notes: "" },
+  { id: "8", clientName: "Camila Pereira", clientId: "5", date: "2026-04-09", time: "15:00", duration: 120, service: "Volume Russo", price: 350, status: "Concluído", paymentStatus: "Pago", paymentMethod: "Cartão Crédito", notes: "" },
+  { id: "9", clientName: "Fernanda Costa", clientId: "4", date: "2026-04-13", time: "10:00", duration: 120, service: "Volume Russo", price: 350, status: "Confirmado", paymentStatus: "Pendente", paymentMethod: "", notes: "" },
+  { id: "10", clientName: "Larissa Mendes", clientId: "7", date: "2026-04-14", time: "14:00", duration: 90, service: "Lash Lifting", price: 250, status: "Pendente", paymentStatus: "Pendente", paymentMethod: "", notes: "" },
 ];
 
 export const mockProducts: Product[] = [
-  { id: "1", name: "Fio Mink 0.07 C 10mm", sku: "FIO-007C10", category: "Fios", unit: "caixa", currentQuantity: 8, minIdealQuantity: 5, costPrice: 35, brand: "LashPro", supplier: "Dist. Beauty", expirationDate: "2027-06-15" },
-  { id: "2", name: "Fio Mink 0.07 D 12mm", sku: "FIO-007D12", category: "Fios", unit: "caixa", currentQuantity: 3, minIdealQuantity: 5, costPrice: 35, brand: "LashPro", supplier: "Dist. Beauty", expirationDate: "2027-06-15" },
-  { id: "3", name: "Cola Premium Black", sku: "COL-PB01", category: "Colas", unit: "frasco", currentQuantity: 2, minIdealQuantity: 3, costPrice: 89, brand: "Sky Glue", supplier: "Dist. Beauty", expirationDate: "2026-08-20" },
-  { id: "4", name: "Primer Lash", sku: "PRI-01", category: "Preparação", unit: "frasco", currentQuantity: 4, minIdealQuantity: 2, costPrice: 42, brand: "LashClean", supplier: "BeautyPro", expirationDate: "2027-01-10" },
-  { id: "5", name: "Micropore 2,5cm", sku: "MIC-25", category: "Consumíveis", unit: "rolo", currentQuantity: 12, minIdealQuantity: 6, costPrice: 8, brand: "3M", supplier: "Farmácia", expirationDate: "2028-12-31" },
-  { id: "6", name: "Eye Pad Gel", sku: "EPG-01", category: "Consumíveis", unit: "par", currentQuantity: 45, minIdealQuantity: 20, costPrice: 2.5, brand: "LashPad", supplier: "Dist. Beauty", expirationDate: "2027-09-01" },
-  { id: "7", name: "Removedor Gel", sku: "REM-GEL", category: "Remoção", unit: "frasco", currentQuantity: 1, minIdealQuantity: 2, costPrice: 55, brand: "Sky Glue", supplier: "Dist. Beauty", expirationDate: "2026-12-15" },
-  { id: "8", name: "Escovinha Descartável", sku: "ESC-DESC", category: "Consumíveis", unit: "pacote", currentQuantity: 3, minIdealQuantity: 5, costPrice: 15, brand: "Generic", supplier: "BeautyPro", expirationDate: "2029-01-01" },
+  { id: "1", name: "Fio Mink 0.07 C 10mm", category: "Fios", unit: "caixa", currentQuantity: 8, minIdealQuantity: 5, costPrice: 35, brand: "LashPro", supplier: "Dist. Beauty", expirationDate: "2027-06-15" },
+  { id: "2", name: "Fio Mink 0.07 D 12mm", category: "Fios", unit: "caixa", currentQuantity: 3, minIdealQuantity: 5, costPrice: 35, brand: "LashPro", supplier: "Dist. Beauty", expirationDate: "2027-06-15" },
+  { id: "3", name: "Cola Premium Black", category: "Colas", unit: "frasco", currentQuantity: 2, minIdealQuantity: 3, costPrice: 89, brand: "Sky Glue", supplier: "Dist. Beauty", expirationDate: "2026-08-20" },
+  { id: "4", name: "Primer Lash", category: "Preparação", unit: "frasco", currentQuantity: 4, minIdealQuantity: 2, costPrice: 42, brand: "LashClean", supplier: "BeautyPro", expirationDate: "2027-01-10" },
+  { id: "5", name: "Micropore 2,5cm", category: "Consumíveis", unit: "rolo", currentQuantity: 12, minIdealQuantity: 6, costPrice: 8, brand: "3M", supplier: "Farmácia", expirationDate: "2028-12-31" },
+  { id: "6", name: "Eye Pad Gel", category: "Consumíveis", unit: "par", currentQuantity: 45, minIdealQuantity: 20, costPrice: 2.5, brand: "LashPad", supplier: "Dist. Beauty", expirationDate: "2027-09-01" },
+  { id: "7", name: "Removedor Gel", category: "Remoção", unit: "frasco", currentQuantity: 1, minIdealQuantity: 2, costPrice: 55, brand: "Sky Glue", supplier: "Dist. Beauty", expirationDate: "2026-12-15" },
+  { id: "8", name: "Escovinha Descartável", category: "Consumíveis", unit: "pacote", currentQuantity: 3, minIdealQuantity: 5, costPrice: 15, brand: "Generic", supplier: "BeautyPro", expirationDate: "2029-01-01" },
 ];
 
 export const mockServices: Service[] = [
