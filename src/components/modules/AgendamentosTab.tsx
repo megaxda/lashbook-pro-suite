@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAgendamentos, useServicos, useClientes } from "@/hooks/useSupabaseData";
-import type { Appointment } from "@/data/mockData";import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { mockAppointments, mockServices, mockClients } from "@/data/mockData";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -31,8 +31,8 @@ const allStatuses = ["Confirmado", "Pendente", "Em atendimento", "Concluído", "
 
 export default function AgendamentosTab() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 11));
-  const { agendamentos, isLoading: isLoadingAgendamentos } = useAgendamentos();
-  const [appointments, setAppointments] = useState(agendamentos);  const [editAppt, setEditAppt] = useState<Appointment | null>(null);
+  const [appointments, setAppointments] = useState(mockAppointments);
+  const [editAppt, setEditAppt] = useState<Appointment | null>(null);
 
   const goDay = (dir: number) => {
     setCurrentDate(prev => {

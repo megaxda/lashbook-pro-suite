@@ -34,7 +34,8 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">        <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">
+        <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {mainItems.map(item => (
             <NavLink
               key={item.label}
