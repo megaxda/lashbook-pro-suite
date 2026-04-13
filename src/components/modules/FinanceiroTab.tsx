@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { mockTransactions } from "@/data/mockData";
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus } from "lucide-react";
+import { useFinanceiro } from "@/hooks/useSupabaseData";
+import type { Transaction } from "@/data/mockData";import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Transaction } from "@/data/mockData";
 
 export default function FinanceiroTab() {
-  const [transactions, setTransactions] = useState(mockTransactions);
-  const [newDespesa, setNewDespesa] = useState({ description: "", amount: "", date: "", category: "Material" });
+  const { transacoes, isLoading: isLoadingTransacoes } = useFinanceiro();
+  const [transactions, setTransactions] = useState(transacoes);  const [newDespesa, setNewDespesa] = useState({ description: "", amount: "", date: "", category: "Material" });
   const [newReceita, setNewReceita] = useState({ description: "", amount: "", date: "", paymentMethod: "PIX" });
   const [despesaOpen, setDespesaOpen] = useState(false);
   const [receitaOpen, setReceitaOpen] = useState(false);
