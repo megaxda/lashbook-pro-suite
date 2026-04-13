@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { mockProducts } from "@/data/mockData";
-import { Package, Plus, AlertTriangle, TrendingDown } from "lucide-react";
+import { useEstoque } from "@/hooks/useSupabaseData";
+import type { Product } from "@/data/mockData";import { Package, Plus, AlertTriangle, TrendingDown } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,11 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 export default function EstoqueTab() {
-  const totalValue = mockProducts.reduce((s, p) => s + p.costPrice * p.currentQuantity, 0);
-  const belowMin = mockProducts.filter(p => p.currentQuantity < p.minIdealQuantity);
-  const nearExpiry = mockProducts.filter(p => {
+  const { estoque, isLoading: isLoadingEstoque } = useEstoque();
+  const belowMin = estoque.filter(p => p.currentQuantity < p.minIdealQuantity);
+  const nearExpiry = estoque.filter(p => {
     const d = new Date(p.expirationDate);
-    const now = new Date(2026, 3, 13);
-    return (d.getTime() - now.getTime()) / 86400000 < 120;
-  });
+    const now = new Date(2026, 3, 13);  });
 
   return (
     <div className="space-y-6 animate-fade-in">
