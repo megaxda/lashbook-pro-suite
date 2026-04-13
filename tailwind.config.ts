@@ -58,10 +58,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        pink: {
-          glow: "hsl(var(--pink-glow))",
-          soft: "hsl(var(--pink-soft))",
-          muted: "hsl(var(--pink-muted))",
+        brand: {
+          glow: "hsl(var(--brand-glow))",
+          soft: "hsl(var(--brand-soft))",
+          muted: "hsl(var(--brand-muted))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",
@@ -98,9 +98,9 @@ export default {
           from: { opacity: "0", transform: "translateX(-12px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
-        "pulse-pink": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsl(330, 85%, 52%, 0.4)" },
-          "50%": { boxShadow: "0 0 0 8px hsl(330, 85%, 52%, 0)" },
+        "pulse-brand": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(197, 68%, 44%, 0.4)" },
+          "50%": { boxShadow: "0 0 0 8px hsl(197, 68%, 44%, 0)" },
         },
       },
       animation: {
@@ -108,7 +108,7 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.4s ease-out",
         "slide-in": "slide-in 0.3s ease-out",
-        "pulse-pink": "pulse-pink 2s infinite",
+        "pulse-brand": "pulse-brand 2s infinite",
       },
     },
   },

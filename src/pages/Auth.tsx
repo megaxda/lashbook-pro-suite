@@ -15,7 +15,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (loading) return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="text-pink-400 text-lg">Carregando...</div></div>;
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-primary text-lg">Carregando...</div></div>;
   if (user) return <Navigate to="/home_profissional" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,39 +38,39 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent">LASH BOOK</h1>
-          <p className="text-gray-400 mt-2">Sistema de gestão para lashistas</p>
+          <h1 className="text-4xl font-bold text-gradient-brand">FinBeauty</h1>
+          <p className="text-muted-foreground mt-2">Sistema de gestão para profissionais de estética</p>
         </div>
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-white">{isLogin ? 'Entrar' : 'Criar conta'}</CardTitle>
-            <CardDescription className="text-gray-400">{isLogin ? 'Acesse sua conta LASH BOOK' : 'Crie sua conta gratuitamente'}</CardDescription>
+            <CardTitle className="text-foreground">{isLogin ? 'Entrar' : 'Criar conta'}</CardTitle>
+            <CardDescription className="text-muted-foreground">{isLogin ? 'Acesse sua conta FinBeauty' : 'Crie sua conta gratuitamente'}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label className="text-gray-300">Nome completo</Label>
-                  <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome" className="bg-gray-800 border-gray-700 text-white" required />
+                  <Label className="text-muted-foreground">Nome completo</Label>
+                  <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome" className="bg-secondary border-border" required />
                 </div>
               )}
               <div className="space-y-2">
-                <Label className="text-gray-300">Email</Label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" className="bg-gray-800 border-gray-700 text-white" required />
+                <Label className="text-muted-foreground">Email</Label>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" className="bg-secondary border-border" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-gray-300">Senha</Label>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="bg-gray-800 border-gray-700 text-white" required minLength={6} />
+                <Label className="text-muted-foreground">Senha</Label>
+                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="bg-secondary border-border" required minLength={6} />
               </div>
-              <Button type="submit" disabled={isSubmitting} className="w-full bg-pink-600 hover:bg-pink-700 text-white">
+              <Button type="submit" disabled={isSubmitting} className="w-full gradient-brand text-primary-foreground">
                 {isSubmitting ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar conta'}
               </Button>
             </form>
             <div className="mt-4 text-center">
-              <button onClick={() => setIsLogin(!isLogin)} className="text-pink-400 hover:text-pink-300 text-sm">
+              <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:text-primary/80 text-sm">
                 {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
               </button>
             </div>

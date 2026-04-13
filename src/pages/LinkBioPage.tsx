@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Sparkles, Calendar, Instagram, MessageCircle, Globe, ExternalLink } from "lucide-react";
+import { DollarSign, Calendar, Instagram, MessageCircle, Globe, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,7 +65,7 @@ export default function LinkBioPage() {
             <div><Label className="text-muted-foreground text-xs">Telefone / WhatsApp</Label><Input placeholder="(00) 00000-0000" className="bg-secondary border-border mt-1" /></div>
             <div><Label className="text-muted-foreground text-xs">Email</Label><Input placeholder="email@email.com" className="bg-secondary border-border mt-1" /></div>
             <div><Label className="text-muted-foreground text-xs">Observações</Label><Input placeholder="Alguma informação importante?" className="bg-secondary border-border mt-1" /></div>
-            <Button onClick={() => setStep("confirm")} className="w-full gradient-pink text-primary-foreground">Confirmar Agendamento</Button>
+            <Button onClick={() => setStep("confirm")} className="w-full gradient-brand text-primary-foreground">Confirmar Agendamento</Button>
           </div>
         </div>
       </div>
@@ -76,8 +76,8 @@ export default function LinkBioPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 animate-fade-in">
-          <div className="w-16 h-16 rounded-full gradient-pink flex items-center justify-center mx-auto">
-            <Sparkles className="w-8 h-8 text-primary-foreground" />
+          <div className="w-16 h-16 rounded-full gradient-brand flex items-center justify-center mx-auto">
+            <DollarSign className="w-8 h-8 text-primary-foreground" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">Agendamento Enviado! 🎉</h2>
           <p className="text-muted-foreground">Você receberá a confirmação em breve.</p>
@@ -90,7 +90,7 @@ export default function LinkBioPage() {
   return (
     <div className="min-h-screen bg-background flex items-start justify-center p-4 pt-12">
       <div className="w-full max-w-md text-center space-y-6 animate-fade-in">
-        <div className="w-20 h-20 rounded-full gradient-pink flex items-center justify-center mx-auto text-2xl font-bold text-primary-foreground">
+        <div className="w-20 h-20 rounded-full gradient-brand flex items-center justify-center mx-auto text-2xl font-bold text-primary-foreground">
           JS
         </div>
         <div>
@@ -98,7 +98,7 @@ export default function LinkBioPage() {
           <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{studioData.description}</p>
         </div>
 
-        <Button onClick={() => setStep("services")} className="w-full gradient-pink text-primary-foreground py-6 text-base glow-pink animate-pulse-pink">
+        <Button onClick={() => setStep("services")} className="w-full gradient-brand text-primary-foreground py-6 text-base glow-brand animate-pulse-brand">
           <Calendar className="w-5 h-5 mr-2" /> Agendar Atendimento
         </Button>
 
@@ -112,7 +112,7 @@ export default function LinkBioPage() {
           ))}
         </div>
 
-        <p className="text-xs text-muted-foreground/50 pt-4">Feito com LASH BOOK ✨</p>
+        <p className="text-xs text-muted-foreground/50 pt-4">Feito com FinBeauty ✨</p>
       </div>
     </div>
   );

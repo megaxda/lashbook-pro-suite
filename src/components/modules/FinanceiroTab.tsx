@@ -1,35 +1,93 @@
 import { useState } from "react";
-import { mockTransactions } from "@/data/mockData";
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
+import { mockTransactions, Transaction } from "@/data/mockData";
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from "recharts";
-
-const receitas = mockTransactions.filter(t => t.type === "receita");
-const despesas = mockTransactions.filter(t => t.type === "despesa");
-const totalReceita = receitas.reduce((s, t) => s + t.amount, 0);
-const totalDespesa = despesas.reduce((s, t) => s + t.amount, 0);
-const lucro = totalReceita - totalDespesa;
-const ticketMedio = receitas.length ? totalReceita / receitas.length : 0;
-
-const pieData = [
-  { name: "Serviços", value: totalReceita, color: "hsl(330,85%,52%)" },
-  { name: "Material", value: 598, color: "hsl(340,60%,65%)" },
-  { name: "Fixas", value: 2020, color: "hsl(0,0%,35%)" },
-];
-
-const barData = [
-  { name: "Sem 1", receita: 630, despesa: 1800 },
-  { name: "Sem 2", receita: 1080, despesa: 618 },
-  { name: "Sem 3", receita: 350, despesa: 0 },
-];
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function FinanceiroTab() {
+  const [transactions, setTransactions] = useState<Transaction[]>([...mockTransactions]);
+  const [newType, setNewType] = useState<"receita" | "despesa">("despesa");
+  const [newDesc, setNewDesc] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [newPayment, setNewPayment] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const receitas = transactions.filter(t => t.type === "receita");
+  const despesas = transactions.filter(t => t.type === "despesa");
+  const totalReceita = receitas.reduce((s, t) => s + t.amount, 0);
+  const totalDespesa = despesas.reduce((s, t) => s + t.amount, 0);
+  const lucro = totalReceita - totalDespesa;
+  const ticketMedio = receitas.length ? totalReceita / receitas.length : 0;
+
+  const pieData = [
+    { name: "Serviços", value: totalReceita, color: "hsl(197,68%,44%)" },
+    { name: "Material", value: despesas.filter(d => d.category === "Material").reduce((s, t) => s + t.amount, 0), color: "hsl(197,50%,55%)" },
+    { name: "Fixas", value: despesas.filter(d => d.category === "Fixas").reduce((s, t) => s + t.amount, 0), color: "hsl(0,0%,35%)" },
+  ];
+
+  const barData = [
+    { name: "Sem 1", receita: 630, despesa: 1800 },
+    { name: "Sem 2", receita: 1080, despesa: 618 },
+    { name: "Sem 3", receita: 350, despesa: 0 },
+  ];
+
+  const addTransaction = () => {
+    if (!newDesc || !newAmount || !newDate) return;
+    const t: Transaction = {
+      id: String(Date.now()),
+      type: newType,
+      description: newDesc,
+      amount: parseFloat(newAmount),
+      date: newDate,
+      category: newCategory || (newType === "receita" ? "Serviços" : "Outros"),
+      paymentMethod: newPayment || "PIX",
+    };
+    setTransactions(prev => [t, ...prev]);
+    setNewDesc(""); setNewAmount(""); setNewDate(""); setNewCategory(""); setNewPayment("");
+    setDialogOpen(false);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-2xl font-bold text-foreground">Financeiro</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Financeiro</h2>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gradient-brand text-primary-foreground"><Plus className="w-4 h-4 mr-1" /> Nova Entrada</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md bg-card border-border">
+            <DialogHeader><DialogTitle className="text-foreground">Nova Transação</DialogTitle></DialogHeader>
+            <div className="space-y-3 mt-2">
+              <div>
+                <Label className="text-muted-foreground text-xs">Tipo</Label>
+                <Select value={newType} onValueChange={v => setNewType(v as any)}>
+                  <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="receita">Receita</SelectItem>
+                    <SelectItem value="despesa">Despesa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={newDesc} onChange={e => setNewDesc(e.target.value)} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label><Input type="number" value={newAmount} onChange={e => setNewAmount(e.target.value)} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Categoria</Label><Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Ex: Material, Fixas, Serviços" className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Forma de Pagamento</Label><Input value={newPayment} onChange={e => setNewPayment(e.target.value)} placeholder="PIX, Dinheiro, Cartão..." className="bg-secondary border-border mt-1" /></div>
+              <Button onClick={addTransaction} className="w-full gradient-brand text-primary-foreground">Salvar</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={TrendingUp} title="Receita Total" value={`R$ ${totalReceita.toLocaleString("pt-BR")}`} trend={{ value: "+15%", positive: true }} />
@@ -47,7 +105,7 @@ export default function FinanceiroTab() {
               <XAxis dataKey="name" stroke="hsl(0,0%,45%)" fontSize={12} />
               <YAxis stroke="hsl(0,0%,45%)" fontSize={12} />
               <Tooltip contentStyle={{ background: "hsl(0,0%,12%)", border: "1px solid hsl(0,0%,20%)", borderRadius: 8, color: "#fff" }} />
-              <Bar dataKey="receita" fill="hsl(330,85%,52%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="receita" fill="hsl(197,68%,44%)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="despesa" fill="hsl(0,0%,35%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -84,7 +142,7 @@ export default function FinanceiroTab() {
                 <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Pagamento</th>
                 <th className="text-right p-3 text-muted-foreground font-medium">Valor</th>
               </tr></thead>
-              <tbody>{receitas.map(t => (
+              <tbody>{transactions.filter(t => t.type === "receita").map(t => (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
                   <td className="p-3 text-foreground">{t.description}</td>
                   <td className="p-3 text-muted-foreground hidden sm:table-cell">{new Date(t.date).toLocaleDateString("pt-BR")}</td>
@@ -104,7 +162,7 @@ export default function FinanceiroTab() {
                 <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Categoria</th>
                 <th className="text-right p-3 text-muted-foreground font-medium">Valor</th>
               </tr></thead>
-              <tbody>{despesas.map(t => (
+              <tbody>{transactions.filter(t => t.type === "despesa").map(t => (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
                   <td className="p-3 text-foreground">{t.description}</td>
                   <td className="p-3 text-muted-foreground hidden sm:table-cell">{new Date(t.date).toLocaleDateString("pt-BR")}</td>
