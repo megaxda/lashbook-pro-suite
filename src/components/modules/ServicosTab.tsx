@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { mockServices } from "@/data/mockData";
-import { Plus, Scissors, Pencil, Trash2 } from "lucide-react";
+import { useServicos } from "@/hooks/useSupabaseData";
+import type { Service } from "@/data/mockData";import { Plus, Scissors, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -13,8 +13,8 @@ import type { Service } from "@/data/mockData";
 const emptyService: Service = { id: "", name: "", category: "", duration: 60, price: 0, description: "", active: true, onlineBooking: true };
 
 export default function ServicosTab() {
-  const [services, setServices] = useState(mockServices);
-  const [editing, setEditing] = useState<Service | null>(null);
+  const { servicos, isLoading: isLoadingServicos } = useServicos();
+  const [services, setServices] = useState(servicos);  const [editing, setEditing] = useState<Service | null>(null);
   const [isNew, setIsNew] = useState(false);
 
   const openNew = () => { setEditing({ ...emptyService, id: String(Date.now()) }); setIsNew(true); };
