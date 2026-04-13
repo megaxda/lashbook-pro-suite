@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { mockClients, mockAppointments } from "@/data/mockData";
-import { Search, Plus, Phone, Mail, Eye, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { useClientes } from "@/hooks/useSupabaseData";
+import type { Client } from "@/data/mockData";import { Search, Plus, Phone, Mail, Eye, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Client } from "@/data/mockData";
 
 export default function ClientesTab() {
-  const [clients, setClients] = useState(mockClients);
-  const [search, setSearch] = useState("");
+  const { clientes, isLoading: isLoadingClientes } = useClientes();  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todas");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [editClient, setEditClient] = useState<Client | null>(null);
