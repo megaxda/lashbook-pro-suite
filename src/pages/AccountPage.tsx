@@ -36,7 +36,7 @@ export default function AccountPage() {
 
   const removeLink = (id: string) => setBioLinks(prev => prev.filter(l => l.id !== id));
 
-  const initials = profile?.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "FB";
+  const initials = profile?.nome?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "FB";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl animate-fade-in pb-20 lg:pb-8">
@@ -64,14 +64,14 @@ export default function AccountPage() {
                 </button>
               </div>
               <div>
-                <p className="font-semibold text-foreground">{profile?.full_name || "Profissional"}</p>
+                <p className="font-semibold text-foreground">{profile?.nome || "Profissional"}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><Label className="text-muted-foreground text-xs">Nome</Label><Input defaultValue={profile?.full_name || ""} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Nome</Label><Input defaultValue={profile?.nome || ""} className="bg-secondary border-border mt-1" /></div>
               <div><Label className="text-muted-foreground text-xs">Email</Label><Input defaultValue={profile?.email || ""} className="bg-secondary border-border mt-1" /></div>
-              <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input defaultValue={profile?.phone || "(11) 99999-0000"} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input defaultValue={profile?.telefone || ""} className="bg-secondary border-border mt-1" /></div>
               <div><Label className="text-muted-foreground text-xs">Instagram</Label><Input defaultValue="@julialashes" className="bg-secondary border-border mt-1" /></div>
               <div><Label className="text-muted-foreground text-xs">Cidade</Label><Input defaultValue="São Paulo" className="bg-secondary border-border mt-1" /></div>
               <div><Label className="text-muted-foreground text-xs">Estado</Label><Input defaultValue="SP" className="bg-secondary border-border mt-1" /></div>
