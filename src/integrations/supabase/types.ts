@@ -14,13 +14,417 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          cliente_id: string | null
+          comprovante_url: string | null
+          created_at: string
+          data: string
+          forma_pagamento: string | null
+          horario: string
+          id: string
+          notas: string | null
+          origem: string | null
+          servico_id: string | null
+          sinal_pago: boolean | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          data: string
+          forma_pagamento?: string | null
+          horario: string
+          id?: string
+          notas?: string | null
+          origem?: string | null
+          servico_id?: string | null
+          sinal_pago?: boolean | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          data?: string
+          forma_pagamento?: string | null
+          horario?: string
+          id?: string
+          notas?: string | null
+          origem?: string | null
+          servico_id?: string | null
+          sinal_pago?: boolean | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          created_at: string
+          email: string | null
+          foto_url: string | null
+          id: string
+          nome: string
+          notas: string | null
+          status: string | null
+          telefone: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          status?: string | null
+          telefone?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          status?: string | null
+          telefone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      estoque: {
+        Row: {
+          created_at: string
+          fornecedor: string | null
+          id: string
+          marca: string | null
+          nome: string
+          preco_custo: number | null
+          quantidade: number | null
+          quantidade_minima: number | null
+          unidade: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fornecedor?: string | null
+          id?: string
+          marca?: string | null
+          nome: string
+          preco_custo?: number | null
+          quantidade?: number | null
+          quantidade_minima?: number | null
+          unidade?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fornecedor?: string | null
+          id?: string
+          marca?: string | null
+          nome?: string
+          preco_custo?: number | null
+          quantidade?: number | null
+          quantidade_minima?: number | null
+          unidade?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fichas: {
+        Row: {
+          anexos_urls: Json | null
+          cliente_id: string | null
+          consentimentos: Json | null
+          created_at: string
+          dados_cliente: Json | null
+          fotos_urls: Json | null
+          historico: string | null
+          id: string
+          observacoes: string | null
+          procedimentos: Json | null
+          restricoes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anexos_urls?: Json | null
+          cliente_id?: string | null
+          consentimentos?: Json | null
+          created_at?: string
+          dados_cliente?: Json | null
+          fotos_urls?: Json | null
+          historico?: string | null
+          id?: string
+          observacoes?: string | null
+          procedimentos?: Json | null
+          restricoes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anexos_urls?: Json | null
+          cliente_id?: string | null
+          consentimentos?: Json | null
+          created_at?: string
+          dados_cliente?: Json | null
+          fotos_urls?: Json | null
+          historico?: string | null
+          id?: string
+          observacoes?: string | null
+          procedimentos?: Json | null
+          restricoes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financeiro: {
+        Row: {
+          agendamento_id: string | null
+          categoria: string | null
+          created_at: string
+          data: string
+          descricao: string | null
+          id: string
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          agendamento_id?: string | null
+          categoria?: string | null
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          id?: string
+          tipo: string
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          agendamento_id?: string | null
+          categoria?: string | null
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          id?: string
+          tipo?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "agendamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_ups: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          dias_sem_retorno: number | null
+          id: string
+          status: string | null
+          ultimo_agendamento: string | null
+          user_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          dias_sem_retorno?: number | null
+          id?: string
+          status?: string | null
+          ultimo_agendamento?: string | null
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          dias_sem_retorno?: number | null
+          id?: string
+          status?: string | null
+          ultimo_agendamento?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_ups_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          bio: string | null
+          cobrar_sinal: boolean | null
+          created_at: string
+          email: string | null
+          follow_up_days: number | null
+          foto_url: string | null
+          id: string
+          instagram: string | null
+          nome: string | null
+          outros_links: Json | null
+          pix_key: string | null
+          pix_key_type: string | null
+          role: string
+          site: string | null
+          slug: string | null
+          studio_hours: Json | null
+          studio_name: string | null
+          telefone: string | null
+          valor_sinal: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          bio?: string | null
+          cobrar_sinal?: boolean | null
+          created_at?: string
+          email?: string | null
+          follow_up_days?: number | null
+          foto_url?: string | null
+          id: string
+          instagram?: string | null
+          nome?: string | null
+          outros_links?: Json | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          role?: string
+          site?: string | null
+          slug?: string | null
+          studio_hours?: Json | null
+          studio_name?: string | null
+          telefone?: string | null
+          valor_sinal?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          bio?: string | null
+          cobrar_sinal?: boolean | null
+          created_at?: string
+          email?: string | null
+          follow_up_days?: number | null
+          foto_url?: string | null
+          id?: string
+          instagram?: string | null
+          nome?: string | null
+          outros_links?: Json | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          role?: string
+          site?: string | null
+          slug?: string | null
+          studio_hours?: Json | null
+          studio_name?: string | null
+          telefone?: string | null
+          valor_sinal?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      servicos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          duracao: number | null
+          id: string
+          nome: string
+          preco: number | null
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          duracao?: number | null
+          id?: string
+          nome: string
+          preco?: number | null
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          duracao?: number | null
+          id?: string
+          nome?: string
+          preco?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
