@@ -1,16 +1,27 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
   id: string;
-  full_name: string | null;
+  nome: string | null;
   email: string | null;
-  phone: string | null;
-  avatar_url: string | null;
+  telefone: string | null;
+  foto_url: string | null;
   slug: string | null;
-  role: 'admin' | 'professional';
+  role: string;
   bio: string | null;
+  studio_name: string | null;
+  studio_hours: any;
+  follow_up_days: number | null;
+  pix_key: string | null;
+  pix_key_type: string | null;
+  cobrar_sinal: boolean | null;
+  valor_sinal: number | null;
+  instagram: string | null;
+  whatsapp: string | null;
+  site: string | null;
+  outros_links: any;
 }
 
 interface AuthContextType {
@@ -42,18 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       else setProfile(null);
+      setLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
       setLoading(false);
     });
 
