@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home, Users, Calendar, DollarSign, Package, Scissors,
-  FileText, HelpCircle, User, Shield, LogOut, ChevronLeft, ChevronRight, Menu, X, Sun, Moon
+  FileText, HelpCircle, User, Shield, LogOut, ChevronLeft, ChevronRight, Menu, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,16 +33,10 @@ export default function AppSidebar() {
   const searchParams = new URLSearchParams(location.search);
   const currentTab = searchParams.get("tab");
   const { signOut, profile } = useAuth();
-  const [isDark, setIsDark] = useState(!document.documentElement.classList.contains("light"));
 
   const isAdmin = profile?.role === "admin";
 
   const allNavItems = isAdmin ? [...navItems, { label: "Admin", icon: Shield, path: "/admin", tab: undefined }] : navItems;
-
-  const toggleTheme = () => {
-    document.documentElement.classList.toggle("light");
-    setIsDark(!isDark);
-  };
 
   const isActive = (item: typeof navItems[0]) => {
     if (item.path === "/home_profissional" && location.pathname === "/home_profissional") {
@@ -56,7 +50,7 @@ export default function AppSidebar() {
   const getLink = (item: typeof navItems[0]) =>
     item.tab ? `${item.path}?tab=${item.tab}` : item.path;
 
-  const initials = profile?.full_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "FB";
+  const initials = profile?.nome?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "FB";
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -79,7 +73,7 @@ export default function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{profile?.full_name || "Profissional"}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{profile?.nome || "Profissional"}</p>
               <p className="text-[10px] text-muted-foreground truncate">Profissional</p>
             </div>
           )}
@@ -107,13 +101,6 @@ export default function AppSidebar() {
       </nav>
 
       <div className="p-2 space-y-0.5">
-        <button onClick={toggleTheme} className={cn(
-          "flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors",
-          collapsed && "justify-center px-2"
-        )}>
-          {isDark ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
-          {!collapsed && <span>{isDark ? "Tema Claro" : "Tema Escuro"}</span>}
-        </button>
         <button onClick={() => signOut()} className={cn(
           "flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors",
           collapsed && "justify-center px-2"

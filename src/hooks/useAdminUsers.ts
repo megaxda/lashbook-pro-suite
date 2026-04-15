@@ -8,7 +8,7 @@ export function useAdminUsers() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('admin_users_view').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     }
