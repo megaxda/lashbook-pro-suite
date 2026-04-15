@@ -99,8 +99,8 @@ export default {
           to: { opacity: "1", transform: "translateX(0)" },
         },
         "pulse-brand": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsl(197, 68%, 44%, 0.4)" },
-          "50%": { boxShadow: "0 0 0 8px hsl(197, 68%, 44%, 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(0, 76%, 42%, 0.4)" },
+          "50%": { boxShadow: "0 0 0 8px hsl(0, 76%, 42%, 0)" },
         },
       },
       animation: {
