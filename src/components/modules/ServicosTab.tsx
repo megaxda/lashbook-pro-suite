@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { mockServices, Service } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Scissors, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,23 +9,66 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+interface Servico {
+  id: string;
+  nome: string;
+  duracao: number | null;
+  preco: number | null;
+  descricao: string | null;
+  ativo: boolean | null;
+  user_id: string;
+}
 
 export default function ServicosTab() {
-  const [services, setServices] = useState<Service[]>([...mockServices]);
-  const [editing, setEditing] = useState<Service | null>(null);
+  const { user } = useAuth();
+  const [services, setServices] = useState<Servico[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Servico | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [form, setForm] = useState<Partial<Service>>({});
+  const [form, setForm] = useState<Partial<Servico>>({});
+  const [saving, setSaving] = useState(false);
 
-  const openNew = () => { setIsNew(true); setForm({ name: "", category: "", duration: 60, price: 0, description: "", active: true, onlineBooking: true }); };
-  const openEdit = (s: Service) => { setEditing(s); setForm({ ...s }); };
-
-  const save = () => {
-    if (editing) setServices(prev => prev.map(s => s.id === editing.id ? { ...editing, ...form } as Service : s));
-    else if (isNew) setServices(prev => [...prev, { id: String(Date.now()), ...form } as Service]);
-    setEditing(null); setIsNew(false); setForm({});
+  const fetchServices = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data, error } = await supabase.from("servicos").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+    if (error) toast.error("Erro ao carregar serviços");
+    else setServices(data || []);
+    setLoading(false);
   };
 
-  const remove = (id: string) => setServices(prev => prev.filter(s => s.id !== id));
+  useEffect(() => { fetchServices(); }, [user]);
+
+  const openNew = () => { setIsNew(true); setForm({ nome: "", duracao: 60, preco: 0, descricao: "", ativo: true }); };
+  const openEdit = (s: Servico) => { setEditing(s); setForm({ ...s }); };
+
+  const save = async () => {
+    if (!user || !form.nome?.trim()) { toast.error("Nome é obrigatório"); return; }
+    setSaving(true);
+    if (editing) {
+      const { error } = await supabase.from("servicos").update({ nome: form.nome, duracao: form.duracao, preco: form.preco, descricao: form.descricao, ativo: form.ativo }).eq("id", editing.id);
+      if (error) { toast.error("Erro ao atualizar"); setSaving(false); return; }
+      toast.success("Serviço atualizado!");
+    } else {
+      const { error } = await supabase.from("servicos").insert({ nome: form.nome!, duracao: form.duracao, preco: form.preco, descricao: form.descricao, ativo: form.ativo, user_id: user.id });
+      if (error) { toast.error("Erro ao criar"); setSaving(false); return; }
+      toast.success("Serviço criado!");
+    }
+    setSaving(false);
+    setEditing(null); setIsNew(false); setForm({});
+    fetchServices();
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("servicos").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Serviço excluído!");
+    fetchServices();
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando serviços...</p></div>;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
@@ -42,54 +86,38 @@ export default function ServicosTab() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-md bg-primary/10 text-primary"><Scissors className="w-3.5 h-3.5" /></div>
-                <h3 className="font-semibold text-foreground text-sm">{s.name}</h3>
+                <h3 className="font-semibold text-foreground text-sm">{s.nome}</h3>
               </div>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={e => { e.stopPropagation(); remove(s.id); }}>
                 <Trash2 className="w-3 h-3" />
               </Button>
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {s.discountPrice ? (
-                  <>
-                    <span className="text-base font-bold text-primary">R$ {s.discountPrice}</span>
-                    <span className="text-xs text-muted-foreground line-through">R$ {s.price}</span>
-                  </>
-                ) : (
-                  <span className="text-base font-bold text-foreground">R$ {s.price}</span>
-                )}
-              </div>
-              <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{s.duration}min</span>
+              <span className="text-base font-bold text-foreground">R$ {(s.preco || 0).toFixed(0)}</span>
+              <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{s.duracao || 60}min</span>
             </div>
             <div className="flex items-center gap-1.5 mt-2">
-              <Badge variant="outline" className="text-[10px] border-border text-muted-foreground px-1.5 py-0">{s.category}</Badge>
-              {s.onlineBooking && <Badge variant="outline" className="text-[10px] border-primary/30 text-primary px-1.5 py-0">Online</Badge>}
-              <Badge className={cn("text-[10px] border-0 px-1.5 py-0", s.active ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{s.active ? "Ativo" : "Inativo"}</Badge>
+              <Badge className={cn("text-[10px] border-0 px-1.5 py-0", s.ativo ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{s.ativo ? "Ativo" : "Inativo"}</Badge>
             </div>
           </div>
         ))}
+        {services.length === 0 && <p className="text-muted-foreground text-sm col-span-full text-center py-6">Nenhum serviço cadastrado.</p>}
       </div>
 
       <Dialog open={!!editing || isNew} onOpenChange={() => { setEditing(null); setIsNew(false); }}>
         <DialogContent className="max-w-md bg-card border-border">
           <DialogHeader><DialogTitle className="text-foreground">{editing ? "Editar Serviço" : "Novo Serviço"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Nome</Label><Input value={form.name || ""} onChange={e => setForm({ ...form, name: e.target.value })} className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Categoria</Label><Input value={form.category || ""} onChange={e => setForm({ ...form, category: e.target.value })} className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Duração (min)</Label><Input type="number" value={form.duration ?? ""} onChange={e => setForm({ ...form, duration: Number(e.target.value) })} className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Preço (R$)</Label><Input type="number" value={form.price ?? ""} onChange={e => setForm({ ...form, price: Number(e.target.value) })} className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Preço c/ desconto</Label><Input type="number" value={form.discountPrice ?? ""} onChange={e => setForm({ ...form, discountPrice: Number(e.target.value) || undefined })} className="bg-secondary border-border mt-1" /></div>
-            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={form.description || ""} onChange={e => setForm({ ...form, description: e.target.value })} className="bg-secondary border-border mt-1" /></div>
-            <div className="col-span-2 flex items-center justify-between p-2.5 rounded-lg bg-secondary/50">
-              <Label className="text-sm text-foreground">Agendamento online</Label>
-              <Switch checked={form.onlineBooking ?? true} onCheckedChange={v => setForm({ ...form, onlineBooking: v })} />
-            </div>
+            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Nome</Label><Input value={form.nome || ""} onChange={e => setForm({ ...form, nome: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Duração (min)</Label><Input type="number" value={form.duracao ?? ""} onChange={e => setForm({ ...form, duracao: Number(e.target.value) })} className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Preço (R$)</Label><Input type="number" value={form.preco ?? ""} onChange={e => setForm({ ...form, preco: Number(e.target.value) })} className="bg-secondary border-border mt-1" /></div>
+            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={form.descricao || ""} onChange={e => setForm({ ...form, descricao: e.target.value })} className="bg-secondary border-border mt-1" /></div>
             <div className="col-span-2 flex items-center justify-between p-2.5 rounded-lg bg-secondary/50">
               <Label className="text-sm text-foreground">Ativo</Label>
-              <Switch checked={form.active ?? true} onCheckedChange={v => setForm({ ...form, active: v })} />
+              <Switch checked={form.ativo ?? true} onCheckedChange={v => setForm({ ...form, ativo: v })} />
             </div>
           </div>
-          <Button onClick={save} className="w-full mt-3 gradient-brand text-primary-foreground">Salvar Serviço</Button>
+          <Button onClick={save} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar Serviço"}</Button>
         </DialogContent>
       </Dialog>
     </div>
