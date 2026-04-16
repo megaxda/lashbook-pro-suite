@@ -79,6 +79,7 @@ export type Database = {
       }
       clientes: {
         Row: {
+          birthday: string | null
           created_at: string
           email: string | null
           foto_url: string | null
@@ -90,6 +91,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          birthday?: string | null
           created_at?: string
           email?: string | null
           foto_url?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          birthday?: string | null
           created_at?: string
           email?: string | null
           foto_url?: string | null
@@ -156,6 +159,7 @@ export type Database = {
         Row: {
           anexos_urls: Json | null
           cliente_id: string | null
+          consent_signed_at: string | null
           consentimentos: Json | null
           created_at: string
           dados_cliente: Json | null
@@ -171,6 +175,7 @@ export type Database = {
         Insert: {
           anexos_urls?: Json | null
           cliente_id?: string | null
+          consent_signed_at?: string | null
           consentimentos?: Json | null
           created_at?: string
           dados_cliente?: Json | null
@@ -186,6 +191,7 @@ export type Database = {
         Update: {
           anexos_urls?: Json | null
           cliente_id?: string | null
+          consent_signed_at?: string | null
           consentimentos?: Json | null
           created_at?: string
           dados_cliente?: Json | null
