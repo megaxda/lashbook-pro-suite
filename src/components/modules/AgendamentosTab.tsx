@@ -11,31 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Agendamento {
-  id: string;
-  data: string;
-  horario: string;
-  status: string | null;
-  notas: string | null;
-  origem: string | null;
-  forma_pagamento: string | null;
-  sinal_pago: boolean | null;
-  cliente_id: string | null;
-  servico_id: string | null;
-  user_id: string;
-  clientes?: { nome: string } | null;
-  servicos?: { nome: string; preco: number | null } | null;
+  id: string; data: string; horario: string; status: string | null; notas: string | null;
+  origem: string | null; forma_pagamento: string | null; sinal_pago: boolean | null;
+  cliente_id: string | null; servico_id: string | null; user_id: string;
+  clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
 
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
 
 const statusColorMap: Record<string, string> = {
-  confirmado: "bg-success/15 text-success",
-  pendente: "bg-warning/15 text-warning",
-  concluido: "bg-muted text-muted-foreground",
-  cancelado: "bg-destructive/15 text-destructive",
+  confirmado: "bg-success/15 text-success", pendente: "bg-warning/15 text-warning",
+  concluido: "bg-muted text-muted-foreground", cancelado: "bg-destructive/15 text-destructive",
 };
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
@@ -47,8 +37,7 @@ function formatDateStr(d: Date) { return d.toISOString().slice(0, 10); }
 function getWeekDates(date: Date) {
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(date);
-  monday.setDate(diff);
+  const monday = new Date(date); monday.setDate(diff);
   return Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
 }
 
@@ -65,6 +54,7 @@ function getDaysInMonth(date: Date) {
 
 export default function AgendamentosTab() {
   const { user } = useAuth();
+  const nav = useNavigate();
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
@@ -80,6 +70,11 @@ export default function AgendamentosTab() {
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
   const [saving, setSaving] = useState(false);
+
+  // Quick client creation
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
 
   const fetchAll = async () => {
     if (!user) return;
@@ -137,6 +132,25 @@ export default function AgendamentosTab() {
     fetchAll();
   };
 
+  const createQuickClient = async () => {
+    if (!user || !newClientName.trim()) { toast.error("Nome é obrigatório"); return; }
+    const { data, error } = await supabase.from("clientes").insert({ nome: newClientName, telefone: newClientPhone || null, user_id: user.id }).select("id, nome").single();
+    if (error) { toast.error("Erro ao criar cliente"); return; }
+    toast.success("Cliente criado!");
+    setClients(prev => [...prev, data]);
+    setNewForm(f => ({ ...f, cliente_id: data.id }));
+    setNewClientOpen(false);
+    setNewClientName(""); setNewClientPhone("");
+  };
+
+  const handleServiceClick = () => {
+    if (servicos.length === 0) {
+      toast.info("Nenhum serviço cadastrado. Cadastre um serviço primeiro.");
+      nav("/home_profissional?tab=Servicos");
+      setNewOpen(false);
+    }
+  };
+
   const openDayModal = (date: Date) => {
     const ds = formatDateStr(date);
     setDayModalDate(ds);
@@ -147,9 +161,7 @@ export default function AgendamentosTab() {
     <div key={a.id} onClick={() => openAppt(a)} className="bg-card rounded-xl p-3 sm:p-4 border border-border hover:border-primary/20 transition-colors cursor-pointer">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="text-center min-w-[40px]">
-            <p className="text-base font-bold text-foreground">{a.horario?.slice(0, 5)}</p>
-          </div>
+          <div className="text-center min-w-[40px]"><p className="text-base font-bold text-foreground">{a.horario?.slice(0, 5)}</p></div>
           <div className="w-px h-8 bg-border" />
           <div className="min-w-0">
             <div className="flex items-center gap-1">
@@ -243,10 +255,16 @@ export default function AgendamentosTab() {
 
       {/* New appointment */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
-        <DialogContent className="max-w-md bg-card border-border">
+        <DialogContent className="max-w-md bg-card border-border max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-foreground">Novo Agendamento</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Cliente</Label>
+            <div className="col-span-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-muted-foreground text-xs">Cliente</Label>
+                <Button size="sm" variant="ghost" className="text-primary text-xs h-6 px-1" onClick={() => setNewClientOpen(true)}>
+                  <Plus className="w-3 h-3 mr-0.5" /> Novo Cliente
+                </Button>
+              </div>
               <Select value={newForm.cliente_id} onValueChange={v => setNewForm({ ...newForm, cliente_id: v })}>
                 <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
@@ -254,8 +272,9 @@ export default function AgendamentosTab() {
             </div>
             <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1" /></div>
             <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1" /></div>
-            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Serviço</Label>
-              <Select value={newForm.servico_id} onValueChange={v => setNewForm({ ...newForm, servico_id: v })}>
+            <div className="col-span-2">
+              <Label className="text-muted-foreground text-xs">Serviço</Label>
+              <Select value={newForm.servico_id} onValueChange={v => setNewForm({ ...newForm, servico_id: v })} onOpenChange={open => { if (open) handleServiceClick(); }}>
                 <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} - R$ {s.preco || 0}</SelectItem>)}</SelectContent>
               </Select>
@@ -269,6 +288,18 @@ export default function AgendamentosTab() {
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1" /></div>
           </div>
           <Button onClick={createAppt} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar"}</Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick new client (nested) */}
+      <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader><DialogTitle className="text-foreground">Novo Cliente Rápido</DialogTitle></DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div><Label className="text-muted-foreground text-xs">Nome</Label><Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Nome da cliente" className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="(00) 00000-0000" className="bg-secondary border-border mt-1" /></div>
+          </div>
+          <Button onClick={createQuickClient} className="w-full mt-3 gradient-brand text-primary-foreground">Salvar Cliente</Button>
         </DialogContent>
       </Dialog>
 

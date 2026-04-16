@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const statusColorMap: Record<string, string> = {
   confirmado: "bg-success/15 text-success",
@@ -31,6 +34,10 @@ function getDaysInMonth(date: Date) {
 
 interface Appt { id: string; data: string; horario: string; status: string | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null; }
 interface LowStock { id: string; nome: string; quantidade: number | null; quantidade_minima: number | null; }
+interface ClienteOption { id: string; nome: string; }
+interface ServicoOption { id: string; nome: string; preco: number | null; }
+
+const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
 export default function DashboardTab() {
   const { user, profile } = useAuth();
@@ -42,30 +49,44 @@ export default function DashboardTab() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayAppts, setSelectedDayAppts] = useState<Appt[] | null>(null);
   const [selectedDayStr, setSelectedDayStr] = useState("");
-  const [agendaTab, setAgendaTab] = useState<"hoje" | "semana" | "mes">("hoje");
+
+  // New appointment inline
+  const [newOpen, setNewOpen] = useState(false);
+  const [clients, setClients] = useState<ClienteOption[]>([]);
+  const [servicos, setServicos] = useState<ServicoOption[]>([]);
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
+  const [saving, setSaving] = useState(false);
+
+  // Inline new client
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
 
   const todayStr = formatDateStr(new Date());
 
-  useEffect(() => {
+  const fetchDashboard = async () => {
     if (!user) return;
-    const fetchDashboard = async () => {
-      setLoading(true);
-      const now = new Date();
-      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
+    setLoading(true);
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
 
-      const [aRes, fRes, sRes] = await Promise.all([
-        supabase.from("agendamentos").select("id, data, horario, status, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).gte("data", monthStart).lte("data", monthEnd).order("data").order("horario"),
-        supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", monthStart).lte("data", monthEnd),
-        supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
-      ]);
-      setAppointments((aRes.data as Appt[]) || []);
-      setMonthRevenue((fRes.data || []).reduce((s: number, t: any) => s + (t.valor || 0), 0));
-      setLowStock((sRes.data || []).filter((p: any) => (p.quantidade || 0) < (p.quantidade_minima || 0)));
-      setLoading(false);
-    };
-    fetchDashboard();
-  }, [user]);
+    const [aRes, fRes, sRes, cRes, svRes] = await Promise.all([
+      supabase.from("agendamentos").select("id, data, horario, status, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).gte("data", monthStart).lte("data", monthEnd).order("data").order("horario"),
+      supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", monthStart).lte("data", monthEnd),
+      supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
+      supabase.from("clientes").select("id, nome").eq("user_id", user.id),
+      supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
+    ]);
+    setAppointments((aRes.data as Appt[]) || []);
+    setMonthRevenue((fRes.data || []).reduce((s: number, t: any) => s + (t.valor || 0), 0));
+    setLowStock((sRes.data || []).filter((p: any) => (p.quantidade || 0) < (p.quantidade_minima || 0)));
+    setClients(cRes.data || []);
+    setServicos(svRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchDashboard(); }, [user]);
 
   const todayAppts = appointments.filter(a => a.data === todayStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
 
@@ -73,6 +94,41 @@ export default function DashboardTab() {
     const ds = formatDateStr(date);
     setSelectedDayStr(ds);
     setSelectedDayAppts(appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || "")));
+  };
+
+  const createAppt = async () => {
+    if (!user || !newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("agendamentos").insert({
+      user_id: user.id, data: newForm.data, horario: newForm.horario,
+      cliente_id: newForm.cliente_id || null, servico_id: newForm.servico_id || null,
+      notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
+    });
+    setSaving(false);
+    if (error) { toast.error("Erro ao criar agendamento"); return; }
+    toast.success("Agendamento criado!");
+    setNewOpen(false);
+    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
+    fetchDashboard();
+  };
+
+  const createQuickClient = async () => {
+    if (!user || !newClientName.trim()) { toast.error("Nome é obrigatório"); return; }
+    const { data, error } = await supabase.from("clientes").insert({ nome: newClientName, telefone: newClientPhone || null, user_id: user.id }).select("id, nome").single();
+    if (error) { toast.error("Erro ao criar cliente"); return; }
+    toast.success("Cliente criado!");
+    setClients(prev => [...prev, data]);
+    setNewForm(f => ({ ...f, cliente_id: data.id }));
+    setNewClientOpen(false);
+    setNewClientName(""); setNewClientPhone("");
+  };
+
+  const handleServiceClick = () => {
+    if (servicos.length === 0) {
+      toast.info("Nenhum serviço cadastrado. Cadastre um serviço primeiro.");
+      navigate("/home_profissional?tab=Servicos");
+      setNewOpen(false);
+    }
   };
 
   const days = getDaysInMonth(calendarDate);
@@ -126,7 +182,14 @@ export default function DashboardTab() {
           <h3 className="text-sm font-semibold text-foreground">Agendamentos de Hoje</h3>
         </div>
         <div className="space-y-1.5">
-          {todayAppts.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento hoje.</p>}
+          {todayAppts.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento hoje.</p>
+              <Button size="sm" className="gradient-brand text-primary-foreground text-xs" onClick={() => { setNewForm(f => ({ ...f, data: todayStr })); setNewOpen(true); }}>
+                <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
+              </Button>
+            </div>
+          )}
           {todayAppts.map(renderApptRow)}
         </div>
       </div>
@@ -187,9 +250,59 @@ export default function DashboardTab() {
               </div>
             ))}
           </div>
-          <Button onClick={() => { setSelectedDayAppts(null); navigate(`/home_profissional?tab=Agendamentos`); }} className="w-full gradient-brand text-primary-foreground mt-2">
+          <Button onClick={() => { setSelectedDayAppts(null); setNewForm(f => ({ ...f, data: selectedDayStr })); setNewOpen(true); }} className="w-full gradient-brand text-primary-foreground mt-2">
             <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Appointment popup (inline on Dashboard) */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-md bg-card border-border max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-foreground">Novo Agendamento</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="col-span-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-muted-foreground text-xs">Cliente</Label>
+                <Button size="sm" variant="ghost" className="text-primary text-xs h-6 px-1" onClick={() => setNewClientOpen(true)}>
+                  <Plus className="w-3 h-3 mr-0.5" /> Novo Cliente
+                </Button>
+              </div>
+              <Select value={newForm.cliente_id} onValueChange={v => setNewForm({ ...newForm, cliente_id: v })}>
+                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+            <div className="col-span-2">
+              <Label className="text-muted-foreground text-xs">Serviço</Label>
+              <Select value={newForm.servico_id} onValueChange={v => setNewForm({ ...newForm, servico_id: v })} onOpenChange={open => { if (open) handleServiceClick(); }}>
+                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} - R$ {s.preco || 0}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Pagamento</Label>
+              <Select value={newForm.forma_pagamento} onValueChange={v => setNewForm({ ...newForm, forma_pagamento: v })}>
+                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1" /></div>
+          </div>
+          <Button onClick={createAppt} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar"}</Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick new client (nested) */}
+      <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader><DialogTitle className="text-foreground">Novo Cliente Rápido</DialogTitle></DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div><Label className="text-muted-foreground text-xs">Nome</Label><Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Nome da cliente" className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="(00) 00000-0000" className="bg-secondary border-border mt-1" /></div>
+          </div>
+          <Button onClick={createQuickClient} className="w-full mt-3 gradient-brand text-primary-foreground">Salvar Cliente</Button>
         </DialogContent>
       </Dialog>
     </div>

@@ -8,11 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 
 export default function Auth() {
-  const { user, signIn, signUp, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const { user, signIn, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-primary text-lg">Carregando...</div></div>;
@@ -22,16 +20,19 @@ export default function Auth() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) toast.error(error.message);
-        else toast.success('Bem-vinda de volta!');
-      } else {
-        if (!fullName.trim()) { toast.error('Digite seu nome completo'); return; }
-        const { error } = await signUp(email, password, fullName);
-        if (error) toast.error(error.message);
-        else toast.success('Conta criada! Verifique seu email para confirmar.');
-      }
+      const { error } = await signIn(email, password);
+      if (error) toast.error(error.message);
+      else toast.success('Bem-vinda de volta!');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDemo = async () => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await signIn('demo@finbeauty.com.br', 'demo123');
+      if (error) toast.error('Conta demo indisponível: ' + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -46,17 +47,11 @@ export default function Auth() {
         </div>
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-foreground">{isLogin ? 'Entrar' : 'Criar conta'}</CardTitle>
-            <CardDescription className="text-muted-foreground">{isLogin ? 'Acesse sua conta FinBeauty' : 'Crie sua conta gratuitamente'}</CardDescription>
+            <CardTitle className="text-foreground">Entrar</CardTitle>
+            <CardDescription className="text-muted-foreground">Acesse sua conta FinBeauty</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Nome completo</Label>
-                  <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome" className="bg-secondary border-border" required />
-                </div>
-              )}
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Email</Label>
                 <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" className="bg-secondary border-border" required />
@@ -66,13 +61,13 @@ export default function Auth() {
                 <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="bg-secondary border-border" required minLength={6} />
               </div>
               <Button type="submit" disabled={isSubmitting} className="w-full gradient-brand text-primary-foreground">
-                {isSubmitting ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar conta'}
+                {isSubmitting ? 'Aguarde...' : 'Entrar'}
               </Button>
             </form>
-            <div className="mt-4 text-center">
-              <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:text-primary/80 text-sm">
-                {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
-              </button>
+            <div className="mt-4">
+              <Button variant="outline" disabled={isSubmitting} onClick={handleDemo} className="w-full border-border text-muted-foreground hover:text-foreground">
+                Acessar Demonstração
+              </Button>
             </div>
           </CardContent>
         </Card>
