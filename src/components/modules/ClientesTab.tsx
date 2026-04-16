@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Plus, Phone, Mail, Eye, Pencil, Trash2, MessageCircle, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Eye, Pencil, Trash2, MessageCircle, MoreHorizontal, Cake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 interface Cliente {
-  id: string;
-  nome: string;
-  telefone: string | null;
-  email: string | null;
-  notas: string | null;
-  status: string | null;
-  foto_url: string | null;
-  created_at: string;
-  user_id: string;
+  id: string; nome: string; telefone: string | null; email: string | null;
+  notas: string | null; status: string | null; foto_url: string | null;
+  birthday: string | null; created_at: string; user_id: string;
 }
 
 const whatsappMessages = [
@@ -43,7 +37,7 @@ export default function ClientesTab() {
   const [whatsappClient, setWhatsappClient] = useState<Cliente | null>(null);
   const [customMsg, setCustomMsg] = useState("");
   const [newDialogOpen, setNewDialogOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ nome: "", telefone: "", email: "", notas: "" });
+  const [newForm, setNewForm] = useState({ nome: "", telefone: "", email: "", notas: "", birthday: "" });
   const [saving, setSaving] = useState(false);
 
   const fetchClients = async () => {
@@ -63,22 +57,38 @@ export default function ClientesTab() {
     return matchSearch && matchStatus;
   });
 
+  // Birthday check
+  const today = new Date();
+  const todayDay = today.getDate();
+  const todayMonth = today.getMonth() + 1;
+  const birthdayClients = clients.filter(c => {
+    if (!c.birthday) return false;
+    const d = new Date(c.birthday + "T12:00");
+    return d.getDate() === todayDay && (d.getMonth() + 1) === todayMonth;
+  });
+
   const createClient = async () => {
     if (!user || !newForm.nome.trim()) { toast.error("Nome é obrigatório"); return; }
     setSaving(true);
-    const { error } = await supabase.from("clientes").insert({ nome: newForm.nome, telefone: newForm.telefone || null, email: newForm.email || null, notas: newForm.notas || null, user_id: user.id });
+    const { error } = await supabase.from("clientes").insert({
+      nome: newForm.nome, telefone: newForm.telefone || null, email: newForm.email || null,
+      notas: newForm.notas || null, birthday: newForm.birthday || null, user_id: user.id
+    });
     setSaving(false);
     if (error) { toast.error("Erro ao criar cliente"); return; }
     toast.success("Cliente criado!");
     setNewDialogOpen(false);
-    setNewForm({ nome: "", telefone: "", email: "", notas: "" });
+    setNewForm({ nome: "", telefone: "", email: "", notas: "", birthday: "" });
     fetchClients();
   };
 
   const updateClient = async () => {
     if (!editingClient) return;
     setSaving(true);
-    const { error } = await supabase.from("clientes").update({ nome: editingClient.nome, telefone: editingClient.telefone, email: editingClient.email, notas: editingClient.notas, status: editingClient.status }).eq("id", editingClient.id);
+    const { error } = await supabase.from("clientes").update({
+      nome: editingClient.nome, telefone: editingClient.telefone, email: editingClient.email,
+      notas: editingClient.notas, status: editingClient.status, birthday: editingClient.birthday
+    }).eq("id", editingClient.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
     toast.success("Cliente atualizado!");
@@ -187,7 +197,30 @@ export default function ClientesTab() {
         </TabsContent>
 
         <TabsContent value="followup">
-          <p className="text-muted-foreground text-sm text-center py-6">Follow-ups serão calculados com base nos agendamentos reais.</p>
+          <div className="space-y-4">
+            {/* Birthday section */}
+            {birthdayClients.length > 0 && (
+              <div className="bg-card rounded-xl p-4 border border-primary/20">
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><Cake className="w-4 h-4 text-primary" /> Aniversariantes de Hoje 🎂</h3>
+                <div className="space-y-2">
+                  {birthdayClients.map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+                          {c.nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-medium text-foreground">{c.nome}</span>
+                      </div>
+                      <Button size="sm" variant="outline" className="text-xs h-7 border-primary/30 text-primary" onClick={() => openWhatsApp(c, `Parabéns, ${c.nome.split(" ")[0]}! 🎂🎉 Desejamos um dia maravilhoso! Com carinho, sua profissional de estética favorita! 💕`)}>
+                        <MessageCircle className="w-3 h-3 mr-1" /> Parabéns
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-muted-foreground text-sm text-center py-4">Follow-ups serão calculados com base nos agendamentos reais.</p>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -210,6 +243,7 @@ export default function ClientesTab() {
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Telefone</p><p className="text-sm text-foreground">{selectedClient.telefone || "—"}</p></div>
                 <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Status</p><Badge className={cn(selectedClient.status === "ativa" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground", "border-0 mt-1 text-[10px]")}>{selectedClient.status === "ativa" ? "Ativa" : "Inativa"}</Badge></div>
+                {selectedClient.birthday && <div className="p-2.5 rounded-lg bg-secondary/50 col-span-2"><p className="text-[10px] text-muted-foreground">Aniversário</p><p className="text-sm text-foreground">{new Date(selectedClient.birthday + "T12:00").toLocaleDateString("pt-BR")}</p></div>}
               </div>
               {selectedClient.notas && <div className="p-2.5 rounded-lg bg-secondary/50 mt-2"><p className="text-[10px] text-muted-foreground mb-1">Observações</p><p className="text-sm text-foreground">{selectedClient.notas}</p></div>}
             </>
@@ -227,6 +261,7 @@ export default function ClientesTab() {
                 <div className="col-span-2"><Label className="text-muted-foreground text-xs">Nome</Label><Input value={editingClient.nome} onChange={e => setEditingClient({ ...editingClient, nome: e.target.value })} className="bg-secondary border-border mt-1" /></div>
                 <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input value={editingClient.telefone || ""} onChange={e => setEditingClient({ ...editingClient, telefone: e.target.value })} className="bg-secondary border-border mt-1" /></div>
                 <div><Label className="text-muted-foreground text-xs">Email</Label><Input value={editingClient.email || ""} onChange={e => setEditingClient({ ...editingClient, email: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+                <div><Label className="text-muted-foreground text-xs">Aniversário</Label><Input type="date" value={editingClient.birthday || ""} onChange={e => setEditingClient({ ...editingClient, birthday: e.target.value })} className="bg-secondary border-border mt-1" /></div>
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editingClient.status || "ativa"} onValueChange={v => setEditingClient({ ...editingClient, status: v })}>
                     <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
@@ -249,6 +284,7 @@ export default function ClientesTab() {
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Nome completo</Label><Input value={newForm.nome} onChange={e => setNewForm({ ...newForm, nome: e.target.value })} placeholder="Nome da cliente" className="bg-secondary border-border mt-1" /></div>
             <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input value={newForm.telefone} onChange={e => setNewForm({ ...newForm, telefone: e.target.value })} placeholder="(00) 00000-0000" className="bg-secondary border-border mt-1" /></div>
             <div><Label className="text-muted-foreground text-xs">Email</Label><Input value={newForm.email} onChange={e => setNewForm({ ...newForm, email: e.target.value })} placeholder="email@email.com" className="bg-secondary border-border mt-1" /></div>
+            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Data de Aniversário</Label><Input type="date" value={newForm.birthday} onChange={e => setNewForm({ ...newForm, birthday: e.target.value })} className="bg-secondary border-border mt-1" /></div>
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Textarea value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Alergias, sensibilidades..." className="bg-secondary border-border mt-1" /></div>
           </div>
           <Button onClick={createClient} disabled={saving} className="w-full mt-4 gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar Cliente"}</Button>
@@ -257,14 +293,14 @@ export default function ClientesTab() {
 
       {/* WhatsApp */}
       <Dialog open={!!whatsappClient} onOpenChange={() => setWhatsappClient(null)}>
-        <DialogContent className="max-w-sm bg-card border-border">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm bg-card border-border">
           {whatsappClient && (
             <>
-              <DialogHeader><p className="font-semibold text-foreground text-base">WhatsApp — {whatsappClient.nome.split(" ")[0]}</p></DialogHeader>
+              <DialogHeader><p className="font-semibold text-foreground text-base break-words">WhatsApp — {whatsappClient.nome.split(" ")[0]}</p></DialogHeader>
               <div className="space-y-2 mt-2">
                 {whatsappMessages.map(m => (
                   <Button key={m.label} variant="outline" className="w-full justify-start text-left h-auto py-2.5 border-border text-foreground" onClick={() => openWhatsApp(whatsappClient, m.msg)}>
-                    <div><p className="text-xs font-medium">{m.label}</p><p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{m.msg.replace("{{nome}}", whatsappClient.nome.split(" ")[0])}</p></div>
+                    <div className="min-w-0"><p className="text-xs font-medium break-words">{m.label}</p><p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 break-words">{m.msg.replace("{{nome}}", whatsappClient.nome.split(" ")[0])}</p></div>
                   </Button>
                 ))}
                 <div className="pt-2 border-t border-border">
