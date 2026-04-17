@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoAgendamentos, demoClientes, demoServicos, demoEstoque, demoFinanceiro } from "@/data/demoData";
 import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,7 @@ interface ServicoOption { id: string; nome: string; preco: number | null; }
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
 export default function DashboardTab() {
-  const { user, profile } = useAuth();
+  const { user, profile, isDemo } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appt[]>([]);
   const [monthRevenue, setMonthRevenue] = useState(0);
@@ -65,11 +66,21 @@ export default function DashboardTab() {
   const todayStr = formatDateStr(new Date());
 
   const fetchDashboard = async () => {
-    if (!user) return;
-    setLoading(true);
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
     const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
+
+    if (isDemo) {
+      setAppointments(demoAgendamentos.filter(a => a.data >= monthStart && a.data <= monthEnd) as Appt[]);
+      setMonthRevenue(demoFinanceiro.filter(t => t.tipo === "receita" && t.data >= monthStart && t.data <= monthEnd).reduce((s, t) => s + t.valor, 0));
+      setLowStock(demoEstoque.filter(p => (p.quantidade || 0) < (p.quantidade_minima || 0)) as LowStock[]);
+      setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
+      setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
+      setLoading(false);
+      return;
+    }
+    if (!user) return;
+    setLoading(true);
 
     const [aRes, fRes, sRes, cRes, svRes] = await Promise.all([
       supabase.from("agendamentos").select("id, data, horario, status, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).gte("data", monthStart).lte("data", monthEnd).order("data").order("horario"),
@@ -86,7 +97,7 @@ export default function DashboardTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchDashboard(); }, [user]);
+  useEffect(() => { fetchDashboard(); }, [user, isDemo]);
 
   const todayAppts = appointments.filter(a => a.data === todayStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
 
@@ -97,7 +108,9 @@ export default function DashboardTab() {
   };
 
   const createAppt = async () => {
-    if (!user || !newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" }); return; }
+    if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("agendamentos").insert({
       user_id: user.id, data: newForm.data, horario: newForm.horario,
@@ -113,7 +126,9 @@ export default function DashboardTab() {
   };
 
   const createQuickClient = async () => {
-    if (!user || !newClientName.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!newClientName.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setNewClientOpen(false); return; }
+    if (!user) return;
     const { data, error } = await supabase.from("clientes").insert({ nome: newClientName, telefone: newClientPhone || null, user_id: user.id }).select("id, nome").single();
     if (error) { toast.error("Erro ao criar cliente"); return; }
     toast.success("Cliente criado!");
