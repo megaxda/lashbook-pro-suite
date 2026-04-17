@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoClientes } from "@/data/demoData";
 import { Search, Plus, Eye, Pencil, Trash2, MessageCircle, MoreHorizontal, Cake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ const whatsappMessages = [
 ];
 
 export default function ClientesTab() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [clients, setClients] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,6 +42,11 @@ export default function ClientesTab() {
   const [saving, setSaving] = useState(false);
 
   const fetchClients = async () => {
+    if (isDemo) {
+      setClients(demoClientes as Cliente[]);
+      setLoading(false);
+      return;
+    }
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase.from("clientes").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
@@ -49,7 +55,7 @@ export default function ClientesTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(); }, [user]);
+  useEffect(() => { fetchClients(); }, [user, isDemo]);
 
   const filtered = clients.filter(c => {
     const matchSearch = c.nome.toLowerCase().includes(search.toLowerCase()) || (c.telefone || "").includes(search) || (c.email || "").toLowerCase().includes(search.toLowerCase());
@@ -67,8 +73,12 @@ export default function ClientesTab() {
     return d.getDate() === todayDay && (d.getMonth() + 1) === todayMonth;
   });
 
+  const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
+
   const createClient = async () => {
-    if (!user || !newForm.nome.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!newForm.nome.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (demoBlock()) { setNewDialogOpen(false); return; }
+    if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("clientes").insert({
       nome: newForm.nome, telefone: newForm.telefone || null, email: newForm.email || null,
@@ -84,6 +94,7 @@ export default function ClientesTab() {
 
   const updateClient = async () => {
     if (!editingClient) return;
+    if (demoBlock()) { setEditingClient(null); return; }
     setSaving(true);
     const { error } = await supabase.from("clientes").update({
       nome: editingClient.nome, telefone: editingClient.telefone, email: editingClient.email,
@@ -97,6 +108,7 @@ export default function ClientesTab() {
   };
 
   const deleteClient = async (id: string) => {
+    if (demoBlock()) return;
     const { error } = await supabase.from("clientes").delete().eq("id", id);
     if (error) { toast.error("Erro ao excluir"); return; }
     toast.success("Cliente excluído!");
@@ -104,6 +116,7 @@ export default function ClientesTab() {
   };
 
   const toggleStatus = async (c: Cliente) => {
+    if (demoBlock()) return;
     const newStatus = c.status === "ativa" ? "inativa" : "ativa";
     const { error } = await supabase.from("clientes").update({ status: newStatus }).eq("id", c.id);
     if (error) toast.error("Erro ao alterar status");

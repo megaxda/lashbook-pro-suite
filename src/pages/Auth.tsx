@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 
 export default function Auth() {
-  const { user, signIn, loading } = useAuth();
+  const { user, signIn, loading, enableDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,14 +28,9 @@ export default function Auth() {
     }
   };
 
-  const handleDemo = async () => {
-    setIsSubmitting(true);
-    try {
-      const { error } = await signIn('demo@finbeauty.com.br', 'demo123');
-      if (error) toast.error('Conta demo indisponível: ' + error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleDemo = () => {
+    enableDemo();
+    toast.success('Bem-vinda ao Modo Demonstração — Studio Bella!');
   };
 
   return (

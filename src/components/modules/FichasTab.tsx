@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoClientes, demoFichas } from "@/data/demoData";
 import { Plus, FileText, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ interface ClienteOption { id: string; nome: string; telefone: string | null; }
 const areaOptions = ["Cílios", "Sobrancelha", "Unhas", "Estética Facial", "Estética Corporal", "Cabelo", "Maquiagem", "Depilação", "Outro"];
 
 export default function FichasTab() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [fichas, setFichas] = useState<Ficha[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,12 @@ export default function FichasTab() {
   const [form, setForm] = useState<any>({});
 
   const fetchFichas = async () => {
+    if (isDemo) {
+      setFichas(demoFichas as Ficha[]);
+      setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome, telefone: c.telefone })));
+      setLoading(false);
+      return;
+    }
     if (!user) return;
     setLoading(true);
     const [fRes, cRes] = await Promise.all([
@@ -46,7 +53,7 @@ export default function FichasTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchFichas(); }, [user]);
+  useEffect(() => { fetchFichas(); }, [user, isDemo]);
 
   const openNew = () => {
     setIsCreating(true);
@@ -54,7 +61,9 @@ export default function FichasTab() {
   };
 
   const saveFicha = async () => {
-    if (!user || !form.cliente_id) { toast.error("Selecione um cliente"); return; }
+    if (!form.cliente_id) { toast.error("Selecione um cliente"); return; }
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setIsCreating(false); setForm({}); return; }
+    if (!user) return;
     setSaving(true);
     const consentData: any = { assinado: form.consent || false };
     const consentSignedAt = form.consent ? new Date().toISOString() : null;
@@ -75,6 +84,7 @@ export default function FichasTab() {
   };
 
   const toggleConsentOnExisting = async (ficha: Ficha, newVal: boolean) => {
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return; }
     const consentSignedAt = newVal ? new Date().toISOString() : null;
     const { error } = await supabase.from("fichas").update({
       consentimentos: { assinado: newVal },
