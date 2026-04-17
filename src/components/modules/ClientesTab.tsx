@@ -73,8 +73,12 @@ export default function ClientesTab() {
     return d.getDate() === todayDay && (d.getMonth() + 1) === todayMonth;
   });
 
+  const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
+
   const createClient = async () => {
-    if (!user || !newForm.nome.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!newForm.nome.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (demoBlock()) { setNewDialogOpen(false); return; }
+    if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("clientes").insert({
       nome: newForm.nome, telefone: newForm.telefone || null, email: newForm.email || null,
@@ -90,6 +94,7 @@ export default function ClientesTab() {
 
   const updateClient = async () => {
     if (!editingClient) return;
+    if (demoBlock()) { setEditingClient(null); return; }
     setSaving(true);
     const { error } = await supabase.from("clientes").update({
       nome: editingClient.nome, telefone: editingClient.telefone, email: editingClient.email,
@@ -103,6 +108,7 @@ export default function ClientesTab() {
   };
 
   const deleteClient = async (id: string) => {
+    if (demoBlock()) return;
     const { error } = await supabase.from("clientes").delete().eq("id", id);
     if (error) { toast.error("Erro ao excluir"); return; }
     toast.success("Cliente excluído!");
@@ -110,6 +116,7 @@ export default function ClientesTab() {
   };
 
   const toggleStatus = async (c: Cliente) => {
+    if (demoBlock()) return;
     const newStatus = c.status === "ativa" ? "inativa" : "ativa";
     const { error } = await supabase.from("clientes").update({ status: newStatus }).eq("id", c.id);
     if (error) toast.error("Erro ao alterar status");
