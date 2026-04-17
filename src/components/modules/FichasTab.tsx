@@ -61,7 +61,9 @@ export default function FichasTab() {
   };
 
   const saveFicha = async () => {
-    if (!user || !form.cliente_id) { toast.error("Selecione um cliente"); return; }
+    if (!form.cliente_id) { toast.error("Selecione um cliente"); return; }
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setIsCreating(false); setForm({}); return; }
+    if (!user) return;
     setSaving(true);
     const consentData: any = { assinado: form.consent || false };
     const consentSignedAt = form.consent ? new Date().toISOString() : null;
@@ -82,6 +84,7 @@ export default function FichasTab() {
   };
 
   const toggleConsentOnExisting = async (ficha: Ficha, newVal: boolean) => {
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return; }
     const consentSignedAt = newVal ? new Date().toISOString() : null;
     const { error } = await supabase.from("fichas").update({
       consentimentos: { assinado: newVal },
