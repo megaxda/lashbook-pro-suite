@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoAgendamentos, demoClientes, demoServicos } from "@/data/demoData";
 import { Plus, ChevronLeft, ChevronRight, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ function getDaysInMonth(date: Date) {
 }
 
 export default function AgendamentosTab() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const nav = useNavigate();
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
@@ -77,6 +78,13 @@ export default function AgendamentosTab() {
   const [newClientPhone, setNewClientPhone] = useState("");
 
   const fetchAll = async () => {
+    if (isDemo) {
+      setAppointments(demoAgendamentos as Agendamento[]);
+      setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
+      setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
+      setLoading(false);
+      return;
+    }
     if (!user) return;
     setLoading(true);
     const [aRes, cRes, sRes] = await Promise.all([
@@ -91,7 +99,9 @@ export default function AgendamentosTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, [user]);
+  useEffect(() => { fetchAll(); }, [user, isDemo]);
+
+  const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const navigate = (dir: number) => {
     const d = new Date(currentDate);
@@ -106,7 +116,9 @@ export default function AgendamentosTab() {
   const todayStr = formatDateStr(currentDate);
 
   const createAppt = async () => {
-    if (!user || !newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" }); return; }
+    if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("agendamentos").insert({
       user_id: user.id, data: newForm.data, horario: newForm.horario,
@@ -123,6 +135,7 @@ export default function AgendamentosTab() {
 
   const updateAppt = async () => {
     if (!selectedAppt) return;
+    if (demoBlock()) { setSelectedAppt(null); return; }
     setSaving(true);
     const { error } = await supabase.from("agendamentos").update({ status: editStatus, forma_pagamento: editPayment || null, notas: editNotes || null }).eq("id", selectedAppt.id);
     setSaving(false);
@@ -133,7 +146,9 @@ export default function AgendamentosTab() {
   };
 
   const createQuickClient = async () => {
-    if (!user || !newClientName.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!newClientName.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (demoBlock()) { setNewClientOpen(false); return; }
+    if (!user) return;
     const { data, error } = await supabase.from("clientes").insert({ nome: newClientName, telefone: newClientPhone || null, user_id: user.id }).select("id, nome").single();
     if (error) { toast.error("Erro ao criar cliente"); return; }
     toast.success("Cliente criado!");
