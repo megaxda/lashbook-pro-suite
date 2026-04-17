@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoEstoque } from "@/data/demoData";
 import { Package, Plus, AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ interface Produto {
 }
 
 export default function EstoqueTab() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [products, setProducts] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [editProduct, setEditProduct] = useState<Produto | null>(null);
@@ -32,6 +33,7 @@ export default function EstoqueTab() {
   const [saving, setSaving] = useState(false);
 
   const fetchProducts = async () => {
+    if (isDemo) { setProducts(demoEstoque as Produto[]); setLoading(false); return; }
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase.from("estoque").select("*").eq("user_id", user.id).order("nome");
@@ -40,7 +42,9 @@ export default function EstoqueTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchProducts(); }, [user]);
+  useEffect(() => { fetchProducts(); }, [user, isDemo]);
+
+  const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const totalValue = products.reduce((s, p) => s + (p.preco_custo || 0) * (p.quantidade || 0), 0);
   const belowMin = products.filter(p => (p.quantidade || 0) < (p.quantidade_minima || 0));
@@ -49,7 +53,9 @@ export default function EstoqueTab() {
   const openNew = () => { setNewProduct(true); setForm({ nome: "", marca: "", unidade: "un", quantidade: 0, quantidade_minima: 0, preco_custo: 0, fornecedor: "" }); };
 
   const saveProduct = async () => {
-    if (!user || !form.nome?.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!form.nome?.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (demoBlock()) { setEditProduct(null); setNewProduct(false); setForm({}); return; }
+    if (!user) return;
     setSaving(true);
     if (editProduct) {
       const { error } = await supabase.from("estoque").update({ nome: form.nome, marca: form.marca, quantidade: form.quantidade, quantidade_minima: form.quantidade_minima, unidade: form.unidade, preco_custo: form.preco_custo, fornecedor: form.fornecedor }).eq("id", editProduct.id);
@@ -68,6 +74,7 @@ export default function EstoqueTab() {
   };
 
   const deleteProduct = async (id: string) => {
+    if (demoBlock()) return;
     const { error } = await supabase.from("estoque").delete().eq("id", id);
     if (error) toast.error("Erro ao excluir");
     else { toast.success("Produto excluído!"); fetchProducts(); }

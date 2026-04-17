@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoServicos } from "@/data/demoData";
 import { Plus, Scissors, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ interface Servico {
 }
 
 export default function ServicosTab() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [services, setServices] = useState<Servico[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Servico | null>(null);
@@ -31,6 +32,7 @@ export default function ServicosTab() {
   const [saving, setSaving] = useState(false);
 
   const fetchServices = async () => {
+    if (isDemo) { setServices(demoServicos as Servico[]); setLoading(false); return; }
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase.from("servicos").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
@@ -39,13 +41,17 @@ export default function ServicosTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchServices(); }, [user]);
+  useEffect(() => { fetchServices(); }, [user, isDemo]);
+
+  const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const openNew = () => { setIsNew(true); setForm({ nome: "", duracao: 60, preco: 0, descricao: "", ativo: true }); };
   const openEdit = (s: Servico) => { setEditing(s); setForm({ ...s }); };
 
   const save = async () => {
-    if (!user || !form.nome?.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!form.nome?.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (demoBlock()) { setEditing(null); setIsNew(false); setForm({}); return; }
+    if (!user) return;
     setSaving(true);
     if (editing) {
       const { error } = await supabase.from("servicos").update({ nome: form.nome, duracao: form.duracao, preco: form.preco, descricao: form.descricao, ativo: form.ativo }).eq("id", editing.id);
@@ -62,6 +68,7 @@ export default function ServicosTab() {
   };
 
   const remove = async (id: string) => {
+    if (demoBlock()) return;
     const { error } = await supabase.from("servicos").delete().eq("id", id);
     if (error) { toast.error("Erro ao excluir"); return; }
     toast.success("Serviço excluído!");

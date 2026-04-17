@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { demoFinanceiro } from "@/data/demoData";
 import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from "recharts";
@@ -23,7 +24,7 @@ interface Transacao {
 }
 
 export default function FinanceiroTab() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [transactions, setTransactions] = useState<Transacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -35,6 +36,7 @@ export default function FinanceiroTab() {
   const [newCategory, setNewCategory] = useState("");
 
   const fetchTransactions = async () => {
+    if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setLoading(false); return; }
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase.from("financeiro").select("*").eq("user_id", user.id).order("data", { ascending: false });
@@ -43,7 +45,7 @@ export default function FinanceiroTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchTransactions(); }, [user]);
+  useEffect(() => { fetchTransactions(); }, [user, isDemo]);
 
   const receitas = transactions.filter(t => t.tipo === "receita");
   const despesas = transactions.filter(t => t.tipo === "despesa");
@@ -58,7 +60,9 @@ export default function FinanceiroTab() {
   ];
 
   const addTransaction = async () => {
-    if (!user || !newDesc || !newAmount || !newDate) { toast.error("Preencha todos os campos"); return; }
+    if (!newDesc || !newAmount || !newDate) { toast.error("Preencha todos os campos"); return; }
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setDialogOpen(false); return; }
+    if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("financeiro").insert({
       user_id: user.id, tipo: newType, descricao: newDesc, valor: parseFloat(newAmount), data: newDate, categoria: newCategory || null,
