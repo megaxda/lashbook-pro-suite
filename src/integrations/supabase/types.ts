@@ -430,7 +430,51 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_public_booking: {
+        Args: {
+          _comprovante_url: string
+          _data: string
+          _email: string
+          _horario: string
+          _nome: string
+          _notas: string
+          _servico_id: string
+          _slug: string
+          _telefone: string
+        }
+        Returns: string
+      }
       current_user_is_admin: { Args: never; Returns: boolean }
+      get_public_profile_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          bio: string
+          cobrar_sinal: boolean
+          foto_url: string
+          id: string
+          instagram: string
+          nome: string
+          outros_links: Json
+          pix_key: string
+          pix_key_type: string
+          site: string
+          slug: string
+          studio_hours: Json
+          studio_name: string
+          valor_sinal: number
+          whatsapp: string
+        }[]
+      }
+      get_public_services_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          descricao: string
+          duracao: number
+          id: string
+          nome: string
+          preco: number
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
