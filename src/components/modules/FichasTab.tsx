@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import NovaFichaWizard from "@/components/fichas/NovaFichaWizard";
 
 interface Ficha {
   id: string; cliente_id: string | null; historico: string | null; restricoes: string | null;
@@ -55,10 +56,7 @@ export default function FichasTab() {
 
   useEffect(() => { fetchFichas(); }, [user, isDemo]);
 
-  const openNew = () => {
-    setIsCreating(true);
-    setForm({ cliente_id: "", area: "", procedimento: "", historico: "", restricoes: "", observacoes: "", consent: false });
-  };
+  const openNew = () => { setIsCreating(true); };
 
   const saveFicha = async () => {
     if (!form.cliente_id) { toast.error("Selecione um cliente"); return; }
