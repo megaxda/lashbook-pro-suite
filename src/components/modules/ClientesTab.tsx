@@ -168,12 +168,13 @@ export default function ClientesTab() {
                 <thead><tr className="border-b border-border">
                   <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Cliente</th>
                   <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Telefone</th>
+                  <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden md:table-cell">Email</th>
                   <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Status</th>
                   <th className="text-right p-2.5 text-muted-foreground font-medium text-xs w-10"></th>
                 </tr></thead>
                 <tbody>
                   {filtered.map(c => (
-                    <tr key={c.id} className="border-b border-border/50 hover:bg-secondary/50 transition-colors">
+                    <tr key={c.id} onClick={() => setSelectedClient(c)} className="border-b border-border/50 hover:bg-secondary/50 transition-colors cursor-pointer">
                       <td className="p-2.5">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-[10px] font-bold text-primary-foreground flex-shrink-0">
@@ -183,13 +184,14 @@ export default function ClientesTab() {
                         </div>
                       </td>
                       <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{c.telefone || "—"}</td>
+                      <td className="p-2.5 text-muted-foreground text-xs hidden md:table-cell truncate max-w-[160px]">{c.email || "—"}</td>
                       <td className="p-2.5">
                         <Badge variant={c.status === "ativa" ? "default" : "secondary"} className={cn("text-[10px] border-0", c.status === "ativa" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{c.status === "ativa" ? "Ativa" : "Inativa"}</Badge>
                       </td>
-                      <td className="p-2.5 text-right">
+                      <td className="p-2.5 text-right" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="ghost" className="text-muted-foreground h-7 w-7 p-0"><MoreHorizontal className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="ghost" className="text-muted-foreground h-9 w-9 min-h-[36px] p-0"><MoreHorizontal className="w-4 h-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-popover border-border">
                             <DropdownMenuItem onClick={() => setSelectedClient(c)} className="gap-2 text-xs"><Eye className="w-3.5 h-3.5" /> Ver</DropdownMenuItem>
@@ -202,7 +204,7 @@ export default function ClientesTab() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground text-sm">Nenhum cliente encontrado.</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground text-sm">Nenhum cliente encontrado.</td></tr>}
                 </tbody>
               </table>
             </div>

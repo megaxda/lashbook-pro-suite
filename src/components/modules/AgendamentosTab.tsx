@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { demoAgendamentos, demoClientes, demoServicos } from "@/data/demoData";
 import { Plus, ChevronLeft, ChevronRight, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { localDateStr, parseDateStr, addDays } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -25,15 +26,28 @@ interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
 
 const statusColorMap: Record<string, string> = {
-  confirmado: "bg-success/15 text-success", pendente: "bg-warning/15 text-warning",
-  concluido: "bg-muted text-muted-foreground", cancelado: "bg-destructive/15 text-destructive",
+  confirmado: "bg-success/15 text-success",
+  pendente: "bg-warning/15 text-warning",
+  em_atendimento: "bg-info/15 text-info",
+  concluido: "bg-muted text-muted-foreground",
+  cancelado: "bg-destructive/15 text-destructive",
+  no_show: "bg-destructive/30 text-destructive",
+  bloqueio: "bg-secondary text-secondary-foreground",
+};
+
+const statusDotColor: Record<string, string> = {
+  confirmado: "hsl(145,63%,42%)",
+  pendente: "hsl(45,93%,47%)",
+  em_atendimento: "hsl(210,80%,55%)",
+  concluido: "hsl(0,0%,55%)",
+  cancelado: "hsl(0,62%,50%)",
+  no_show: "hsl(0,80%,30%)",
+  bloqueio: "hsl(0,0%,30%)",
 };
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
-const allStatuses = ["confirmado", "pendente", "concluido", "cancelado"];
+const allStatuses = ["confirmado", "pendente", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
-
-function formatDateStr(d: Date) { return d.toISOString().slice(0, 10); }
 
 function getWeekDates(date: Date) {
   const day = date.getDay();
@@ -67,12 +81,9 @@ export default function AgendamentosTab() {
   const [editPayment, setEditPayment] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
-  const [dayModalAppts, setDayModalAppts] = useState<Agendamento[]>([]);
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
   const [saving, setSaving] = useState(false);
-
-  // Quick client creation
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
@@ -99,7 +110,7 @@ export default function AgendamentosTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, [user, isDemo]);
+  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
@@ -113,7 +124,8 @@ export default function AgendamentosTab() {
   };
 
   const openAppt = (a: Agendamento) => { setSelectedAppt(a); setEditStatus(a.status || "pendente"); setEditPayment(a.forma_pagamento || ""); setEditNotes(a.notas || ""); };
-  const todayStr = formatDateStr(currentDate);
+  const currentDateStr = localDateStr(currentDate);
+  const todayStr = localDateStr();
 
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
@@ -166,22 +178,26 @@ export default function AgendamentosTab() {
     }
   };
 
-  const openDayModal = (date: Date) => {
-    const ds = formatDateStr(date);
-    setDayModalDate(ds);
-    setDayModalAppts(appointments.filter(a => a.data === ds));
-  };
+  const openDayModal = (date: Date) => setDayModalDate(localDateStr(date));
+
+  const dayModalAppts = useMemo(
+    () => dayModalDate ? appointments.filter(a => a.data === dayModalDate).sort((a, b) => (a.horario || "").localeCompare(b.horario || "")) : [],
+    [dayModalDate, appointments]
+  );
 
   const renderCard = (a: Agendamento) => (
-    <div key={a.id} onClick={() => openAppt(a)} className="bg-card rounded-xl p-3 sm:p-4 border border-border hover:border-primary/20 transition-colors cursor-pointer">
+    <div key={a.id} onClick={() => openAppt(a)} className="bg-card rounded-xl p-3 sm:p-4 border border-border hover:border-primary/20 transition-colors cursor-pointer min-h-[64px]">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="text-center min-w-[40px]"><p className="text-base font-bold text-foreground">{a.horario?.slice(0, 5)}</p></div>
-          <div className="w-px h-8 bg-border" />
+          <div className="text-center min-w-[44px]">
+            <p className="text-base font-bold text-foreground">{a.horario?.slice(0, 5)}</p>
+            <p className="text-[9px] text-muted-foreground">{parseDateStr(a.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</p>
+          </div>
+          <div className="w-px h-10 bg-border" />
           <div className="min-w-0">
             <div className="flex items-center gap-1">
               <p className="font-semibold text-foreground text-sm truncate">{a.clientes?.nome || "Sem cliente"}</p>
-              {a.origem === "linkbio" && <Globe className="w-3 h-3 text-primary flex-shrink-0" />}
+              {a.origem === "link_bio" && <Globe className="w-3 h-3 text-primary flex-shrink-0" />}
             </div>
             <p className="text-xs text-muted-foreground truncate">{a.servicos?.nome || "Sem serviço"} · R$ {a.servicos?.preco || 0}</p>
           </div>
@@ -194,8 +210,13 @@ export default function AgendamentosTab() {
   if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando agendamentos...</p></div>;
 
   const renderDiario = () => {
-    const appts = appointments.filter(a => a.data === todayStr);
-    return <div className="space-y-2">{appts.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p>}{appts.map(renderCard)}</div>;
+    const appts = appointments.filter(a => a.data === currentDateStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+    return (
+      <div className="space-y-2">
+        {appts.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento neste dia.</p>}
+        {appts.map(renderCard)}
+      </div>
+    );
   };
 
   const renderSemanal = () => {
@@ -205,13 +226,18 @@ export default function AgendamentosTab() {
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {weekDays.map(d => <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
         {weekDates.map((date, i) => {
-          const ds = formatDateStr(date); const appts = appointments.filter(a => a.data === ds);
-          const isToday = ds === formatDateStr(new Date());
+          const ds = localDateStr(date);
+          const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+          const isToday = ds === todayStr;
           return (
-            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[80px] sm:min-h-[100px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50", isToday && "border-primary/50 bg-primary/5")}>
+            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50", isToday && "border-primary/50 bg-primary/5")}>
               <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
-              {appts.slice(0, 2).map(a => <div key={a.id} className="text-[9px] p-0.5 rounded bg-primary/10 text-foreground mb-0.5 truncate">{a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}</div>)}
-              {appts.length > 2 && <p className="text-[9px] text-muted-foreground">+{appts.length - 2}</p>}
+              {appts.slice(0, 3).map(a => (
+                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
+                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
+                </div>
+              ))}
+              {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
             </div>
           );
         })}
@@ -222,17 +248,31 @@ export default function AgendamentosTab() {
   const renderMensal = () => {
     const days = getDaysInMonth(currentDate);
     const weekDays = ["S", "T", "Q", "Q", "S", "S", "D"];
-    const todayDs = formatDateStr(new Date());
     return (
       <div className="grid grid-cols-7 gap-0.5">
-        {weekDays.map(d => <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
+        {weekDays.map((d, i) => <div key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
         {days.map((date, i) => {
           if (!date) return <div key={i} />;
-          const ds = formatDateStr(date); const appts = appointments.filter(a => a.data === ds);
+          const ds = localDateStr(date);
+          const appts = appointments.filter(a => a.data === ds);
+          const isToday = ds === todayStr;
+          const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
           return (
-            <button key={i} onClick={() => openDayModal(date)} className={cn("min-h-[36px] sm:min-h-[44px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors", ds === todayDs ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground", appts.length > 0 && ds !== todayDs && "text-foreground")}>
+            <button
+              key={i}
+              onClick={() => openDayModal(date)}
+              className={cn(
+                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors",
+                isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
+                appts.length > 0 && !isToday && "text-foreground"
+              )}
+            >
               {date.getDate()}
-              {appts.length > 0 && <div className="flex gap-0.5 mt-0.5">{appts.slice(0, 3).map((_, j) => <div key={j} className="w-1 h-1 rounded-full bg-primary" />)}</div>}
+              {appts.length > 0 && (
+                <div className="flex gap-0.5 mt-0.5">
+                  {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
+                </div>
+              )}
             </button>
           );
         })}
@@ -240,87 +280,120 @@ export default function AgendamentosTab() {
     );
   };
 
+  // Status legend
+  const legend = [
+    { label: "Confirmado", color: statusDotColor.confirmado },
+    { label: "Pendente", color: statusDotColor.pendente },
+    { label: "Em atend.", color: statusDotColor.em_atendimento },
+    { label: "Concluído", color: statusDotColor.concluido },
+    { label: "Cancelado", color: statusDotColor.cancelado },
+  ];
+
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-24 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-foreground">Agendamentos</h2>
           <p className="text-muted-foreground text-xs sm:text-sm">{appointments.length} agendamentos</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex bg-secondary rounded-lg p-0.5">
-            {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
+          <div className="flex bg-secondary rounded-lg p-0.5 overflow-x-auto">
+            {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-3 py-1.5 rounded-md text-[11px] font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
           </div>
-          <Button size="sm" className="gradient-brand text-primary-foreground h-8 text-xs" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
+          {/* Hide desktop "Novo" — mobile uses FAB */}
+          <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex min-h-[36px]" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button size="icon" variant="outline" className="border-border text-muted-foreground h-8 w-8" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4" /></Button>
-        <span className="text-xs sm:text-sm font-semibold text-foreground">
+        <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4" /></Button>
+        <span className="text-xs sm:text-sm font-semibold text-foreground flex-1 text-center sm:text-left">
           {view === "Mensal" ? currentDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : currentDate.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
         </span>
-        <Button size="icon" variant="outline" className="border-border text-muted-foreground h-8 w-8" onClick={() => navigate(1)}><ChevronRight className="w-4 h-4" /></Button>
+        <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(1)}><ChevronRight className="w-4 h-4" /></Button>
       </div>
 
-      {view === "Lista" && <div className="space-y-2">{appointments.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : appointments.map(renderCard)}</div>}
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+        {legend.map(l => (
+          <div key={l.label} className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
+            {l.label}
+          </div>
+        ))}
+      </div>
+
+      {view === "Lista" && (
+        <div className="space-y-2">
+          {appointments.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : appointments.map(renderCard)}
+        </div>
+      )}
       {view === "Diário" && renderDiario()}
       {view === "Semanal" && renderSemanal()}
       {view === "Mensal" && renderMensal()}
 
+      {/* FAB - Mobile */}
+      <button
+        onClick={() => setNewOpen(true)}
+        className="sm:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full gradient-brand text-primary-foreground shadow-lg glow-brand flex items-center justify-center hover:scale-105 transition-transform"
+        aria-label="Novo agendamento"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+
       {/* New appointment */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
-        <DialogContent className="max-w-md bg-card border-border max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border w-full max-w-md max-h-[90vh] overflow-y-auto sm:rounded-lg sm:w-auto sm:max-h-[85vh] rounded-none h-screen sm:h-auto">
           <DialogHeader><DialogTitle className="text-foreground">Novo Agendamento</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3 mt-2">
             <div className="col-span-2">
               <div className="flex items-center justify-between">
                 <Label className="text-muted-foreground text-xs">Cliente</Label>
-                <Button size="sm" variant="ghost" className="text-primary text-xs h-6 px-1" onClick={() => setNewClientOpen(true)}>
+                <Button size="sm" variant="ghost" className="text-primary text-xs h-7 px-2" onClick={() => setNewClientOpen(true)}>
                   <Plus className="w-3 h-3 mr-0.5" /> Novo Cliente
                 </Button>
               </div>
               <Select value={newForm.cliente_id} onValueChange={v => setNewForm({ ...newForm, cliente_id: v })}>
-                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
+            <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
             <div className="col-span-2">
               <Label className="text-muted-foreground text-xs">Serviço</Label>
               <Select value={newForm.servico_id} onValueChange={v => setNewForm({ ...newForm, servico_id: v })} onOpenChange={open => { if (open) handleServiceClick(); }}>
-                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} - R$ {s.preco || 0}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
               <Select value={newForm.forma_pagamento} onValueChange={v => setNewForm({ ...newForm, forma_pagamento: v })}>
-                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1" /></div>
+            <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
-          <Button onClick={createAppt} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar"}</Button>
+          <Button onClick={createAppt} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar"}</Button>
         </DialogContent>
       </Dialog>
 
-      {/* Quick new client (nested) */}
+      {/* Quick new client */}
       <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
         <DialogContent className="max-w-sm bg-card border-border">
           <DialogHeader><DialogTitle className="text-foreground">Novo Cliente Rápido</DialogTitle></DialogHeader>
           <div className="space-y-3 mt-2">
-            <div><Label className="text-muted-foreground text-xs">Nome</Label><Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Nome da cliente" className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="(00) 00000-0000" className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Nome</Label><Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Nome da cliente" className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
+            <div><Label className="text-muted-foreground text-xs">Telefone</Label><Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="(00) 00000-0000" className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
-          <Button onClick={createQuickClient} className="w-full mt-3 gradient-brand text-primary-foreground">Salvar Cliente</Button>
+          <Button onClick={createQuickClient} className="w-full mt-3 gradient-brand text-primary-foreground min-h-[44px]">Salvar Cliente</Button>
         </DialogContent>
       </Dialog>
 
       {/* Detail/Edit modal */}
       <Dialog open={!!selectedAppt} onOpenChange={() => setSelectedAppt(null)}>
-        <DialogContent className="max-w-md bg-card border-border">
+        <DialogContent className="max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           {selectedAppt && (
             <>
               <DialogHeader><DialogTitle className="text-foreground">Detalhes</DialogTitle></DialogHeader>
@@ -328,24 +401,24 @@ export default function AgendamentosTab() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Cliente</p><p className="font-medium text-foreground text-sm">{selectedAppt.clientes?.nome || "—"}</p></div>
                   <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Serviço</p><p className="font-medium text-foreground text-sm">{selectedAppt.servicos?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Data/Hora</p><p className="font-medium text-foreground text-sm">{new Date(selectedAppt.data + "T12:00").toLocaleDateString("pt-BR")} {selectedAppt.horario?.slice(0, 5)}</p></div>
+                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Data/Hora</p><p className="font-medium text-foreground text-sm">{parseDateStr(selectedAppt.data).toLocaleDateString("pt-BR")} {selectedAppt.horario?.slice(0, 5)}</p></div>
                   <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Valor</p><p className="font-medium text-foreground text-sm">R$ {selectedAppt.servicos?.preco || 0}</p></div>
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
                   <Select value={editPayment} onValueChange={setEditPayment}>
-                    <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Observações</Label>
-                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border mt-1 min-h-[50px]" /></div>
-                <Button onClick={updateAppt} disabled={saving} className="w-full gradient-brand text-primary-foreground text-xs">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border mt-1 min-h-[60px]" /></div>
+                <Button onClick={updateAppt} disabled={saving} className="w-full gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
               </div>
             </>
           )}
@@ -354,21 +427,24 @@ export default function AgendamentosTab() {
 
       {/* Day detail modal */}
       <Dialog open={!!dayModalDate} onOpenChange={() => setDayModalDate(null)}>
-        <DialogContent className="max-w-md bg-card border-border max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-md bg-card border-border max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-foreground">
-              {dayModalDate ? new Date(dayModalDate + "T12:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) : ""}
+              {dayModalDate ? parseDateStr(dayModalDate).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 mt-2">
             {dayModalAppts.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento.</p>}
             {dayModalAppts.map(a => (
-              <div key={a.id} onClick={() => { setDayModalDate(null); openAppt(a); }} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary">
+              <div key={a.id} onClick={() => { setDayModalDate(null); openAppt(a); }} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary min-h-[56px]">
                 <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p></div>
                 <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-[10px]", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
               </div>
             ))}
           </div>
+          <Button onClick={() => { const ds = dayModalDate; setDayModalDate(null); setNewForm(f => ({ ...f, data: ds || "" })); setNewOpen(true); }} className="w-full gradient-brand text-primary-foreground mt-2 min-h-[44px]">
+            <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
+          </Button>
         </DialogContent>
       </Dialog>
     </div>
