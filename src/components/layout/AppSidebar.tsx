@@ -2,10 +2,11 @@ import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home, Users, Calendar, DollarSign, Package, Scissors,
-  FileText, HelpCircle, User, Shield, LogOut, ChevronLeft, ChevronRight, Menu, X
+  FileText, HelpCircle, User, Shield, LogOut, ChevronLeft, ChevronRight, Menu, X, MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const navItems = [
   { label: "Início", icon: Home, path: "/home_profissional", tab: undefined },
@@ -19,26 +20,35 @@ const navItems = [
   { label: "Minha Conta", icon: User, path: "/account" },
 ];
 
-const mobileNavItems = [
+// Bottom nav: 4 principais + "Mais" abre sheet com o restante
+const mobileBottomNav = [
   { label: "Início", icon: Home, path: "/home_profissional", tab: undefined },
   { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes" },
+  { label: "Agenda", icon: Calendar, path: "/home_profissional", tab: "Agendamentos" },
   { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro" },
-  { label: "Conta", icon: User, path: "/account" },
+];
+
+const mobileMoreItems = [
+  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque" },
+  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos" },
+  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas" },
+  { label: "Minha Conta", icon: User, path: "/account" },
+  { label: "Como Utilizar", icon: HelpCircle, path: "/home_profissional", tab: "ComoUtilizar" },
 ];
 
 export default function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const currentTab = searchParams.get("tab");
   const { signOut, profile } = useAuth();
 
   const isAdmin = profile?.role === "admin";
-
   const allNavItems = isAdmin ? [...navItems, { label: "Admin", icon: Shield, path: "/admin", tab: undefined }] : navItems;
+  const allMoreItems = isAdmin ? [...mobileMoreItems, { label: "Admin", icon: Shield, path: "/admin", tab: undefined }] : mobileMoreItems;
 
-  const isActive = (item: typeof navItems[0]) => {
+  const isActive = (item: { path: string; tab?: string }) => {
     if (item.path === "/home_profissional" && location.pathname === "/home_profissional") {
       if (!item.tab && !currentTab) return true;
       if (item.tab && currentTab === item.tab) return true;
@@ -47,7 +57,9 @@ export default function AppSidebar() {
     return false;
   };
 
-  const getLink = (item: typeof navItems[0]) =>
+  const isMoreActive = () => allMoreItems.some(i => isActive(i));
+
+  const getLink = (item: { path: string; tab?: string }) =>
     item.tab ? `${item.path}?tab=${item.tab}` : item.path;
 
   const initials = profile?.nome?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "FB";
@@ -85,7 +97,6 @@ export default function AppSidebar() {
           <NavLink
             key={item.label}
             to={getLink(item)}
-            onClick={() => setMobileOpen(false)}
             className={cn(
               "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
               collapsed && "justify-center px-2",
@@ -121,25 +132,7 @@ export default function AppSidebar() {
 
   return (
     <>
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-card border border-border text-foreground"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
-
-      {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="relative w-60 bg-sidebar border-r border-sidebar-border h-full">
-            <button onClick={() => setMobileOpen(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
-            </button>
-            {sidebarContent}
-          </div>
-        </div>
-      )}
-
+      {/* Desktop sidebar */}
       <aside className={cn(
         "hidden lg:flex flex-col h-screen sticky top-0 bg-sidebar border-r border-sidebar-border transition-all duration-300",
         collapsed ? "w-[68px]" : "w-60"
@@ -147,13 +140,14 @@ export default function AppSidebar() {
         {sidebarContent}
       </aside>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around py-1.5 px-1">
-        {mobileNavItems.map(item => (
+      {/* Mobile bottom nav (5 items: 4 principais + Mais) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around items-stretch px-1 pb-[env(safe-area-inset-bottom)]">
+        {mobileBottomNav.map(item => (
           <NavLink
             key={item.label}
             to={getLink(item)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors",
+              "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[10px] font-medium transition-colors",
               isActive(item) ? "text-primary" : "text-muted-foreground"
             )}
           >
@@ -161,7 +155,51 @@ export default function AppSidebar() {
             {item.label}
           </NavLink>
         ))}
+        <button
+          onClick={() => setMoreOpen(true)}
+          className={cn(
+            "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[10px] font-medium transition-colors",
+            isMoreActive() ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <MoreHorizontal className="w-5 h-5" />
+          Mais
+        </button>
       </nav>
+
+      {/* Mobile "Mais" sheet */}
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="lg:hidden bg-card border-border rounded-t-2xl pb-[env(safe-area-inset-bottom)]">
+          <SheetHeader>
+            <SheetTitle className="text-foreground text-left">Mais opções</SheetTitle>
+          </SheetHeader>
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            {allMoreItems.map(item => (
+              <NavLink
+                key={item.label}
+                to={getLink(item)}
+                onClick={() => setMoreOpen(false)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border min-h-[80px] text-xs font-medium transition-all",
+                  isActive(item)
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border bg-secondary/40 text-foreground hover:bg-secondary"
+                )}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-center leading-tight">{item.label}</span>
+              </NavLink>
+            ))}
+            <button
+              onClick={() => { setMoreOpen(false); signOut(); }}
+              className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive min-h-[80px] text-xs font-medium hover:bg-destructive/10 transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Sair</span>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
