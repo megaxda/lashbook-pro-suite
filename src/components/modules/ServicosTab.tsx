@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { demoServicos } from "@/data/demoData";
-import { Plus, Scissors, Trash2 } from "lucide-react";
+import { Plus, Scissors, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -89,15 +89,20 @@ export default function ServicosTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {services.map(s => (
-          <div key={s.id} onClick={() => openEdit(s)} className="bg-card rounded-xl p-4 border border-border hover:border-primary/20 transition-colors cursor-pointer">
+          <div key={s.id} className="bg-card rounded-xl p-4 border border-border hover:border-primary/20 transition-colors">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-primary/10 text-primary"><Scissors className="w-3.5 h-3.5" /></div>
-                <h3 className="font-semibold text-foreground text-sm">{s.nome}</h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary flex-shrink-0"><Scissors className="w-3.5 h-3.5" /></div>
+                <h3 className="font-semibold text-foreground text-sm truncate">{s.nome}</h3>
               </div>
-              <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={e => { e.stopPropagation(); remove(s.id); }}>
-                <Trash2 className="w-3 h-3" />
-              </Button>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button size="icon" variant="ghost" className="h-9 w-9 min-h-[36px] text-muted-foreground hover:text-primary" onClick={() => openEdit(s)} aria-label="Editar">
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-9 w-9 min-h-[36px] text-muted-foreground hover:text-destructive" onClick={() => remove(s.id)} aria-label="Excluir">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-base font-bold text-foreground">R$ {(s.preco || 0).toFixed(0)}</span>
