@@ -430,6 +430,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_slug_available: { Args: { _slug: string }; Returns: boolean }
       create_public_booking: {
         Args: {
           _comprovante_url: string
@@ -476,6 +477,7 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      set_my_slug: { Args: { _slug: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
