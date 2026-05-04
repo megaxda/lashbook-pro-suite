@@ -387,12 +387,12 @@ export default function LinkBioPage() {
           </div>
         )}
 
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-foreground break-words">
             {profile.studio_name || profile.nome}
           </h1>
           {profile.bio && (
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed whitespace-pre-line">
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed whitespace-pre-line break-words">
               {profile.bio}
             </p>
           )}
