@@ -1,138 +1,93 @@
+# Correções de responsividade + Link Bio funcional
 
+## Problema 1 — Overflow em diálogos, popups e inputs
 
-# Plan: FinBeauty — Comprehensive Fixes & Improvements
+Hoje todos os `DialogContent` do app usam o padrão da shadcn que define `max-w-lg` fixo, sem `max-h`, sem scroll, sem padding mobile. Em telas estreitas o conteúdo "atravessa" a caixa porque:
 
-## Overview
-This plan covers 25 items: security fixes, database migrations, UI/UX improvements across Dashboard, Agendamentos, Clientes, Follow-Up, Fichas, Login, Link Bio, Mobile layout, and nomenclature changes.
+- `Input` não tem `min-w-0`, então dentro de flex/grid empurra o pai.
+- `DialogContent` não tem `max-h-[90vh] overflow-y-auto`, conteúdo longo (wizard de ficha, agendamento, financeiro) corta ou estoura.
+- Labels longas (nome de cliente, descrição de serviço) sem `truncate`/`break-words` quebram layout.
+- No mobile o dialog ocupa `max-w-lg` mas com `p-6` sobra pouco espaço para o conteúdo.
 
----
+### O que será feito
 
-## Phase 1: Database Migrations (SQL)
+1. **`src/components/ui/dialog.tsx`** — atualizar `DialogContent` para:
+   - `w-[calc(100%-1rem)] max-w-lg` (margem segura no mobile)
+   - `max-h-[90vh] overflow-y-auto`
+   - `p-4 sm:p-6`
+   - `gap-3 sm:gap-4`
 
-**Migration 1 — Security & Schema:**
-- Add `birthday` column (date, nullable) to `clientes` table
-- Add `consent_signed_at` column (timestamptz, nullable) to `fichas` table
-- Add UNIQUE constraint on `slug` in `profiles`
-- Create RLS policy on `profiles` to block users from updating their own `role` column (use a `BEFORE UPDATE` trigger that prevents role changes unless done by service_role)
-- Add UPDATE policy on `fichas-fotos` storage bucket
+2. **`src/components/ui/input.tsx`** — adicionar `min-w-0` na classe base para nunca empurrar containers flex.
 
-**Security approach for role column:**
-- Create a trigger function `prevent_role_change()` that checks if `OLD.role != NEW.role` and raises an exception unless the current user is the service role
-- This ensures no authenticated user can escalate privileges via the API
+3. **Modais existentes** (Clientes, Agendamentos, Financeiro, Estoque, Serviços, Fichas, Dashboard):
+   - Envolver formulários com `space-y-3` consistente.
+   - Trocar `grid grid-cols-2` em telas pequenas por `grid grid-cols-1 sm:grid-cols-2`.
+   - Adicionar `truncate` / `break-words` em títulos e descrições renderizadas.
+   - Garantir que cada `<Input>`/`<Select>` esteja dentro de um wrapper `min-w-0`.
 
----
+4. **Wizard de Ficha (`NovaFichaWizard.tsx`)** — header sticky com botões de navegação que não saem da tela e área de conteúdo com scroll próprio.
 
-## Phase 2: Admin Route Protection (App.tsx)
+5. **`SignaturePad`** — canvas responsivo (`w-full h-40`) em vez de largura fixa.
 
-- Create `AdminRoute` wrapper component that checks `profile?.role === 'admin'` and redirects non-admins to `/home_profissional`
-- Wrap `/admin` route with this component
-- The sidebar already hides the Admin link for non-admins; this adds server-verified protection
+## Problema 2 — Link Bio não funciona para o aluno criar
 
----
+Sintomas atuais:
+- O campo "slug" em `/account` aba **Link Bio** verifica duplicidade via `supabase.from("profiles").select("id").eq("slug", ...)` — mas a RLS de `profiles` só permite ler o próprio perfil, então a checagem **sempre devolve 0 e diz "disponível"**, mesmo se outro usuário já tiver o slug. No save, se houver UNIQUE no banco, falha sem mensagem clara.
+- Não há sanitização do slug (aceita espaços, acentos, maiúsculas).
+- Não há botão de **copiar link** nem **abrir preview**.
+- O usuário não vê claramente qual URL final foi gerada.
+- Sem feedback de sucesso óbvio.
 
-## Phase 3: Login Page (Auth.tsx)
+### O que será feito
 
-- Remove "Não tem conta? Cadastre-se" link entirely
-- Add "Acessar Demonstração" button that calls `signIn('demo@finbeauty.com.br', 'demo123')`
-- Add route `/creatifin` in App.tsx with a simple signup form (nome, email, senha) — public but secret URL
+1. **Migration SQL**:
+   - Criar índice `UNIQUE` em `profiles.slug` (parcial, ignorando NULL) caso ainda não exista.
+   - Criar RPC `check_slug_available(_slug text)` com `SECURITY DEFINER` que retorna boolean — permite checagem sem expor outras linhas via RLS.
+   - Criar RPC `set_my_slug(_slug text)` `SECURITY DEFINER` que valida formato (`^[a-z0-9-]{3,40}$`), checa duplicidade e grava no `profiles` do usuário autenticado, devolvendo `{ ok, error }`.
 
----
+2. **`src/pages/AccountPage.tsx` — aba Link Bio**:
+   - Sanitizar slug em tempo real: `value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')`.
+   - Mostrar contador 3–40 caracteres e regras (`a-z 0-9 -`).
+   - Debounce 400 ms chamando `check_slug_available`. Estados: idle / checking / available / taken / invalid.
+   - Ao salvar, chamar `set_my_slug` (e demais campos via update normal). Tratar erro retornado pela RPC com toast claro.
+   - Quando há slug válido salvo, mostrar bloco destacado:
+     - URL completa: `https://<host>/u/<slug>`
+     - Botão **Copiar link**
+     - Botão **Abrir preview** (`target="_blank"`)
+     - QR code simples (gerado via `https://api.qrserver.com/v1/create-qr-code/?data=...&size=160x160`) para o aluno mostrar no celular.
+   - Tornar o card todo responsivo (stack vertical no mobile, lado-a-lado no `sm:`).
 
-## Phase 4: Dashboard (DashboardTab.tsx)
+3. **`src/pages/LinkBioPage.tsx`** — pequenos ajustes:
+   - Confirmar que o estado vazio (`!profile`) explica que o slug ainda não existe.
+   - Garantir `break-words` na bio e no nome para nomes longos.
 
-- When `todayAppts.length === 0`, show a `+ Novo Agendamento` button inside the empty state
-- This button opens the **inline** new appointment dialog (same popup used in AgendamentosTab) directly on the Dashboard — no navigation
-- Extract the "New Appointment" dialog into a shared component or duplicate inline with full create logic (client select, service select, date, time, save to Supabase)
-- Add "+ Novo Cliente" mini-button next to client select in the appointment popup
-- If services list is empty when clicking service select, show message and redirect to Serviços
+## Detalhes técnicos
 
----
+- Não tocar em `src/integrations/supabase/{client,types}.ts` — types regeneram automaticamente após a migration.
+- Migration vai precisar de aprovação do usuário (tool de migration pede confirmação).
+- Nenhuma mudança em rotas; `/u/:slug` continua público.
+- `dateUtils`, AuthContext e RLS de outras tabelas permanecem como estão.
 
-## Phase 5: Agendamentos Popup Improvements (AgendamentosTab.tsx)
+## Arquivos afetados
 
-- Add "+ Novo Cliente" button next to cliente Select field that opens a nested Dialog for quick client creation (without closing the appointment popup)
-- Make Data/Horário fields `grid-cols-2` with equal 50% width
-- If `servicos.length === 0` when user opens service dropdown, auto-open service creation or show inline message with link
+```text
+NEW   supabase/migrations/<timestamp>_link_bio_slug.sql
+EDIT  src/components/ui/dialog.tsx
+EDIT  src/components/ui/input.tsx
+EDIT  src/pages/AccountPage.tsx
+EDIT  src/pages/LinkBioPage.tsx
+EDIT  src/components/fichas/NovaFichaWizard.tsx
+EDIT  src/components/fichas/SignaturePad.tsx
+EDIT  src/components/modules/ClientesTab.tsx
+EDIT  src/components/modules/AgendamentosTab.tsx
+EDIT  src/components/modules/FinanceiroTab.tsx
+EDIT  src/components/modules/EstoqueTab.tsx
+EDIT  src/components/modules/ServicosTab.tsx
+EDIT  src/components/modules/FichasTab.tsx
+EDIT  src/components/modules/DashboardTab.tsx
+```
 
----
+## Fora do escopo desta etapa
 
-## Phase 6: Clientes (ClientesTab.tsx)
-
-- Add `birthday` field (type="date") to new client form and edit client form
-- Update interface and Supabase insert/update to include `birthday`
-- Fix WhatsApp modal responsiveness: `max-w-[calc(100vw-2rem)]`, proper padding, `break-words`
-
----
-
-## Phase 7: Follow-Up — Birthday Section
-
-- In ClientesTab (Follow-Up tab), query clients where `birthday` day+month matches today
-- Show "Aniversariantes de Hoje" card with client names and WhatsApp button with birthday message template
-
----
-
-## Phase 8: Fichas de Anamnese (FichasTab.tsx)
-
-- When consent toggle is activated, save `consent_signed_at = new Date().toISOString()` to the fichas record
-- Display formatted timestamp below toggle: "Assinado em DD/MM/AAAA às HH:MM:SS"
-- Add "Enviar PDF via WhatsApp" button (generates simple text summary, opens wa.me link with message)
-
----
-
-## Phase 9: Mobile Layout Fix (AppSidebar.tsx)
-
-- The sidebar already uses drawer overlay on mobile — verify the hamburger button doesn't overlap content
-- Add `pl-12 lg:pl-0` or similar top padding to `MainLayout` on mobile so content doesn't hide behind the hamburger button
-- Ensure bottom nav doesn't overlap content (already has `pb-20 lg:pb-8`)
-
----
-
-## Phase 10: Link Bio & Account Page (AccountPage.tsx)
-
-- Wire "Salvar Link Bio" to actually save slug, links, sinal config to `profiles` table via Supabase
-- Add real-time slug uniqueness check: on blur/change, query `profiles` where `slug = value AND id != user.id`
-- Show error badge if slug is taken
-- Replace all "Label" placeholders with "Nome"
-
----
-
-## Phase 11: Secret Route /creatifin
-
-- New page `CreateFinPage.tsx` with simple form: nome, email, senha
-- Calls `supabase.auth.signUp()` with provided data
-- Added to App.tsx routes (public, no auth required)
-
----
-
-## Phase 12: Global Nomenclature
-
-- Search and replace all instances of placeholder text "Label" (case-insensitive in UI strings) with "Nome" across all components
-
----
-
-## Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `supabase/migrations/new.sql` | New migration for birthday, consent_signed_at, slug unique, role protection trigger, storage policy |
-| `src/App.tsx` | Add AdminRoute, /creatifin route |
-| `src/pages/Auth.tsx` | Remove signup link, add demo button |
-| `src/pages/CreateFinPage.tsx` | New secret signup page |
-| `src/components/modules/DashboardTab.tsx` | Inline new appointment dialog, empty state button |
-| `src/components/modules/AgendamentosTab.tsx` | Inline new client button, equal-width date/time, empty services handling |
-| `src/components/modules/ClientesTab.tsx` | Birthday field, WhatsApp modal fix, birthday section in follow-up |
-| `src/components/modules/FichasTab.tsx` | Consent timestamp, WhatsApp PDF button |
-| `src/components/layout/AppSidebar.tsx` | Mobile hamburger position fix |
-| `src/components/layout/MainLayout.tsx` | Mobile top padding for hamburger |
-| `src/pages/AccountPage.tsx` | Wire Supabase save, slug check, "Label"→"Nome" |
-| `src/pages/AdminPage.tsx` | Admin role guard |
-
----
-
-## Technical Notes
-
-- The role protection trigger uses `SECURITY DEFINER` and checks `current_setting('role') != 'service_role'` to allow only backend/service calls to change roles
-- Slug uniqueness uses a DB constraint + client-side validation for instant feedback
-- The demo account login simply uses existing `signIn` — the demo user account needs to exist in the database (will document this)
-- PDF generation for fichas will use a text-based summary opened via wa.me URL (no actual PDF file generation needed for MVP)
-
+- Upload de capa, temas claro/escuro/rosa do Link Bio, botões pré-configurados extra (Instagram/WhatsApp/Site/Catálogo) — entram numa próxima rodada de "Link Bio completo" se você quiser.
+- Reescrita do wizard de ficha — só o ajuste de scroll/sticky aqui.
