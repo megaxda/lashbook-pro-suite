@@ -106,10 +106,10 @@ export default function ServicosTab() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-base font-bold text-foreground">R$ {(s.preco || 0).toFixed(0)}</span>
-              <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{s.duracao || 60}min</span>
+              <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{s.duracao || 60}min</span>
             </div>
             <div className="flex items-center gap-1.5 mt-2">
-              <Badge className={cn("text-[10px] border-0 px-1.5 py-0", s.ativo ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{s.ativo ? "Ativo" : "Inativo"}</Badge>
+              <Badge className={cn("text-xs border-0 px-1.5 py-0", s.ativo ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{s.ativo ? "Ativo" : "Inativo"}</Badge>
             </div>
           </div>
         ))}

@@ -86,7 +86,7 @@ export default function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{profile?.nome || "Profissional"}</p>
-              <p className="text-[10px] text-muted-foreground truncate">Profissional</p>
+              <p className="text-xs text-muted-foreground truncate">Profissional</p>
             </div>
           )}
         </div>
@@ -147,7 +147,7 @@ export default function AppSidebar() {
             key={item.label}
             to={getLink(item)}
             className={cn(
-              "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[10px] font-medium transition-colors",
+              "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition-colors",
               isActive(item) ? "text-primary" : "text-muted-foreground"
             )}
           >
@@ -158,7 +158,7 @@ export default function AppSidebar() {
         <button
           onClick={() => setMoreOpen(true)}
           className={cn(
-            "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[10px] font-medium transition-colors",
+            "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition-colors",
             isMoreActive() ? "text-primary" : "text-muted-foreground"
           )}
         >

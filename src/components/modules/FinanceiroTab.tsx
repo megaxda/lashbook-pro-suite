@@ -87,19 +87,19 @@ export default function FinanceiroTab() {
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <TrendingUp className="w-4 h-4 text-success flex-shrink-0" />
-          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {totalReceita.toLocaleString("pt-BR")}</p><p className="text-[10px] text-muted-foreground">Receita Total</p></div>
+          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {totalReceita.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Receita Total</p></div>
         </div>
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <TrendingDown className="w-4 h-4 text-destructive flex-shrink-0" />
-          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {totalDespesa.toLocaleString("pt-BR")}</p><p className="text-[10px] text-muted-foreground">Despesas</p></div>
+          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {totalDespesa.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Despesas</p></div>
         </div>
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <DollarSign className="w-4 h-4 text-primary flex-shrink-0" />
-          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {lucro.toLocaleString("pt-BR")}</p><p className="text-[10px] text-muted-foreground">Lucro</p></div>
+          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {lucro.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Lucro</p></div>
         </div>
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <ArrowUpDown className="w-4 h-4 text-info flex-shrink-0" />
-          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {ticketMedio.toFixed(0)}</p><p className="text-[10px] text-muted-foreground">Ticket Médio</p></div>
+          <div className="min-w-0"><p className="text-sm sm:text-lg font-bold text-foreground">R$ {ticketMedio.toFixed(0)}</p><p className="text-xs text-muted-foreground">Ticket Médio</p></div>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export default function FinanceiroTab() {
         </ResponsiveContainer>
         <div className="flex justify-center gap-4 mt-2">
           {pieData.map(p => (
-            <div key={p.name} className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: p.color }} /><span className="text-[10px] text-muted-foreground">{p.name}</span></div>
+            <div key={p.name} className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: p.color }} /><span className="text-xs text-muted-foreground">{p.name}</span></div>
           ))}
         </div>
       </div>

@@ -224,7 +224,7 @@ export default function DashboardTab() {
       </div>
       <div className="text-right flex-shrink-0 ml-2">
         <p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p>
-        <Badge className={cn("border-0 text-[10px] px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
+        <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
       </div>
     </div>
   );
@@ -244,28 +244,28 @@ export default function DashboardTab() {
           <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0"><Calendar className="w-4 h-4 text-primary" /></div>
           <div className="min-w-0">
             <p className="text-lg sm:text-2xl font-bold text-foreground">{todayAppts.length}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Agenda hoje</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Agenda hoje</p>
           </div>
         </button>
         <button onClick={() => navigate("/home_profissional?tab=Financeiro")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
           <div className="p-2 rounded-lg bg-success/10 flex-shrink-0"><DollarSign className="w-4 h-4 text-success" /></div>
           <div className="min-w-0">
             <p className="text-base sm:text-2xl font-bold text-foreground truncate">R$ {monthRevenue.toLocaleString("pt-BR")}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Receita do mês</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Receita do mês</p>
           </div>
         </button>
         <button onClick={() => navigate("/home_profissional?tab=Estoque")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
           <div className="p-2 rounded-lg bg-warning/10 flex-shrink-0"><Package className="w-4 h-4 text-warning" /></div>
           <div className="min-w-0">
             <p className="text-lg sm:text-2xl font-bold text-foreground">{lowStock.length}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Estoque baixo</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Estoque baixo</p>
           </div>
         </button>
         <button onClick={() => navigate("/home_profissional?tab=Clientes")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
           <div className="p-2 rounded-lg bg-info/10 flex-shrink-0"><UserCheck className="w-4 h-4 text-info" /></div>
           <div className="min-w-0">
             <p className="text-lg sm:text-2xl font-bold text-foreground">{followUpCount}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Para retornar</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Para retornar</p>
           </div>
         </button>
       </div>
@@ -291,7 +291,7 @@ export default function DashboardTab() {
       <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-foreground">Agendamentos de Hoje</h3>
-          <span className="text-[10px] text-muted-foreground">{parseDateStr(todayDateStr).toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}</span>
+          <span className="text-xs text-muted-foreground">{parseDateStr(todayDateStr).toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}</span>
         </div>
         <div className="space-y-1.5">
           {todayAppts.length === 0 && (
@@ -314,7 +314,7 @@ export default function DashboardTab() {
           <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => { const d = new Date(calendarDate); d.setMonth(d.getMonth() + 1); setCalendarDate(d); }}><ChevronRight className="w-4 h-4" /></Button>
         </div>
         <div className="grid grid-cols-7 gap-0.5">
-          {weekDays.map((d, i) => <div key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
+          {weekDays.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
           {days.map((date, i) => {
             if (!date) return <div key={i} />;
             const ds = localDateStr(date);
@@ -354,7 +354,7 @@ export default function DashboardTab() {
             {lowStock.slice(0, 5).map(p => (
               <div key={p.id} onClick={() => navigate("/home_profissional?tab=Estoque")} className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/10 cursor-pointer hover:bg-destructive/10 transition-colors min-h-[56px]">
                 <div className="min-w-0"><p className="text-sm font-medium text-foreground truncate">{p.nome}</p><p className="text-xs text-muted-foreground">Estoque: {p.quantidade || 0} / Mín: {p.quantidade_minima || 0}</p></div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive flex-shrink-0 ml-2">Baixo</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive flex-shrink-0 ml-2">Baixo</span>
               </div>
             ))}
           </div>
@@ -374,7 +374,7 @@ export default function DashboardTab() {
             {selectedDayAppts?.map(a => (
               <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 min-h-[56px]">
                 <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p></div>
-                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-[10px]", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
+                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
               </div>
             ))}
           </div>

@@ -177,7 +177,7 @@ export default function ClientesTab() {
                     <tr key={c.id} onClick={() => setSelectedClient(c)} className="border-b border-border/50 hover:bg-secondary/50 transition-colors cursor-pointer">
                       <td className="p-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-[10px] font-bold text-primary-foreground flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-xs font-bold text-primary-foreground flex-shrink-0">
                             {c.nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                           </div>
                           <span className="font-medium text-foreground text-sm truncate">{c.nome}</span>
@@ -186,7 +186,7 @@ export default function ClientesTab() {
                       <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{c.telefone || "—"}</td>
                       <td className="p-2.5 text-muted-foreground text-xs hidden md:table-cell truncate max-w-[160px]">{c.email || "—"}</td>
                       <td className="p-2.5">
-                        <Badge variant={c.status === "ativa" ? "default" : "secondary"} className={cn("text-[10px] border-0", c.status === "ativa" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{c.status === "ativa" ? "Ativa" : "Inativa"}</Badge>
+                        <Badge variant={c.status === "ativa" ? "default" : "secondary"} className={cn("text-xs border-0", c.status === "ativa" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{c.status === "ativa" ? "Ativa" : "Inativa"}</Badge>
                       </td>
                       <td className="p-2.5 text-right" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
@@ -221,7 +221,7 @@ export default function ClientesTab() {
                   {birthdayClients.map(c => (
                     <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg bg-primary/5">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+                        <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-xs font-bold text-primary-foreground">
                           {c.nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                         <span className="text-sm font-medium text-foreground">{c.nome}</span>
@@ -256,11 +256,11 @@ export default function ClientesTab() {
                 </div>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3 mt-3">
-                <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Telefone</p><p className="text-sm text-foreground">{selectedClient.telefone || "—"}</p></div>
-                <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Status</p><Badge className={cn(selectedClient.status === "ativa" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground", "border-0 mt-1 text-[10px]")}>{selectedClient.status === "ativa" ? "Ativa" : "Inativa"}</Badge></div>
-                {selectedClient.birthday && <div className="p-2.5 rounded-lg bg-secondary/50 col-span-2"><p className="text-[10px] text-muted-foreground">Aniversário</p><p className="text-sm text-foreground">{new Date(selectedClient.birthday + "T12:00").toLocaleDateString("pt-BR")}</p></div>}
+                <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Telefone</p><p className="text-sm text-foreground">{selectedClient.telefone || "—"}</p></div>
+                <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Status</p><Badge className={cn(selectedClient.status === "ativa" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground", "border-0 mt-1 text-xs")}>{selectedClient.status === "ativa" ? "Ativa" : "Inativa"}</Badge></div>
+                {selectedClient.birthday && <div className="p-2.5 rounded-lg bg-secondary/50 col-span-2"><p className="text-xs text-muted-foreground">Aniversário</p><p className="text-sm text-foreground">{new Date(selectedClient.birthday + "T12:00").toLocaleDateString("pt-BR")}</p></div>}
               </div>
-              {selectedClient.notas && <div className="p-2.5 rounded-lg bg-secondary/50 mt-2"><p className="text-[10px] text-muted-foreground mb-1">Observações</p><p className="text-sm text-foreground">{selectedClient.notas}</p></div>}
+              {selectedClient.notas && <div className="p-2.5 rounded-lg bg-secondary/50 mt-2"><p className="text-xs text-muted-foreground mb-1">Observações</p><p className="text-sm text-foreground">{selectedClient.notas}</p></div>}
             </>
           )}
         </DialogContent>
@@ -308,20 +308,41 @@ export default function ClientesTab() {
 
       {/* WhatsApp */}
       <Dialog open={!!whatsappClient} onOpenChange={() => setWhatsappClient(null)}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm bg-card border-border">
+        <DialogContent className="sm:max-w-sm bg-card border-border">
           {whatsappClient && (
             <>
-              <DialogHeader><p className="font-semibold text-foreground text-base break-words">WhatsApp — {whatsappClient.nome.split(" ")[0]}</p></DialogHeader>
-              <div className="space-y-2 mt-2">
+              <DialogHeader>
+                <p className="t-card-title text-foreground break-words pr-6">WhatsApp — {whatsappClient.nome.split(" ")[0]}</p>
+              </DialogHeader>
+              <div className="space-y-2 mt-2 min-w-0">
                 {whatsappMessages.map(m => (
-                  <Button key={m.label} variant="outline" className="w-full justify-start text-left h-auto py-2.5 border-border text-foreground" onClick={() => openWhatsApp(whatsappClient, m.msg)}>
-                    <div className="min-w-0"><p className="text-xs font-medium break-words">{m.label}</p><p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 break-words">{m.msg.replace("{{nome}}", whatsappClient.nome.split(" ")[0])}</p></div>
+                  <Button
+                    key={m.label}
+                    variant="outline"
+                    className="w-full justify-start text-left h-auto py-3 px-3 border-border text-foreground whitespace-normal block"
+                    onClick={() => openWhatsApp(whatsappClient, m.msg)}
+                  >
+                    <p className="t-aux font-semibold text-foreground break-words">{m.label}</p>
+                    <p className="t-meta text-muted-foreground mt-1 break-words whitespace-normal">
+                      {m.msg.replace("{{nome}}", whatsappClient.nome.split(" ")[0])}
+                    </p>
                   </Button>
                 ))}
-                <div className="pt-2 border-t border-border">
-                  <Label className="text-muted-foreground text-xs">Mensagem personalizada</Label>
-                  <Textarea value={customMsg} onChange={e => setCustomMsg(e.target.value)} placeholder="Digite sua mensagem..." className="bg-secondary border-border mt-1 text-sm min-h-[60px]" />
-                  <Button size="sm" className="w-full mt-2 gradient-brand text-primary-foreground" onClick={() => { if (customMsg) openWhatsApp(whatsappClient, customMsg); }}>Enviar</Button>
+                <div className="pt-3 border-t border-border">
+                  <Label className="t-aux">Mensagem personalizada</Label>
+                  <Textarea
+                    value={customMsg}
+                    onChange={e => setCustomMsg(e.target.value)}
+                    placeholder="Digite sua mensagem..."
+                    className="bg-secondary border-border mt-1 t-body min-h-[72px]"
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full mt-2 gradient-brand text-primary-foreground t-button h-11"
+                    onClick={() => { if (customMsg) openWhatsApp(whatsappClient, customMsg); }}
+                  >
+                    Enviar
+                  </Button>
                 </div>
               </div>
             </>

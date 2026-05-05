@@ -101,15 +101,15 @@ export default function EstoqueTab() {
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <Package className="w-4 h-4 text-primary flex-shrink-0" />
-          <div><p className="text-lg font-bold text-foreground">{products.length}</p><p className="text-[10px] text-muted-foreground">Total Produtos</p></div>
+          <div><p className="text-lg font-bold text-foreground">{products.length}</p><p className="text-xs text-muted-foreground">Total Produtos</p></div>
         </div>
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <Package className="w-4 h-4 text-primary flex-shrink-0" />
-          <div><p className="text-sm sm:text-lg font-bold text-foreground">R$ {totalValue.toLocaleString("pt-BR")}</p><p className="text-[10px] text-muted-foreground">Valor Estoque</p></div>
+          <div><p className="text-sm sm:text-lg font-bold text-foreground">R$ {totalValue.toLocaleString("pt-BR")}</p><p className="text-xs text-muted-foreground">Valor Estoque</p></div>
         </div>
         <div className="flex items-center gap-2 p-3 rounded-xl bg-card border border-border">
           <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
-          <div><p className="text-lg font-bold text-foreground">{belowMin.length}</p><p className="text-[10px] text-muted-foreground">Abaixo Mínimo</p></div>
+          <div><p className="text-lg font-bold text-foreground">{belowMin.length}</p><p className="text-xs text-muted-foreground">Abaixo Mínimo</p></div>
         </div>
       </div>
 
@@ -129,11 +129,11 @@ export default function EstoqueTab() {
                 const isLow = (p.quantidade || 0) < (p.quantidade_minima || 0);
                 return (
                   <tr key={p.id} onClick={() => openEdit(p)} className="border-b border-border/50 hover:bg-secondary/50 transition-colors cursor-pointer">
-                    <td className="p-2.5"><p className="font-medium text-foreground text-sm">{p.nome}</p>{p.marca && <p className="text-[10px] text-muted-foreground">{p.marca}</p>}</td>
+                    <td className="p-2.5"><p className="font-medium text-foreground text-sm">{p.nome}</p>{p.marca && <p className="text-xs text-muted-foreground">{p.marca}</p>}</td>
                     <td className={cn("p-2.5 text-center font-semibold text-sm", isLow ? "text-destructive" : "text-foreground")}>{p.quantidade || 0}</td>
                     <td className="p-2.5 text-center text-muted-foreground text-xs hidden sm:table-cell">{p.quantidade_minima || 0}</td>
                     <td className="p-2.5 text-right text-muted-foreground text-xs hidden sm:table-cell">R$ {(p.preco_custo || 0).toFixed(2)}</td>
-                    <td className="p-2.5 text-center"><Badge className={cn("border-0 text-[10px]", isLow ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success")}>{isLow ? "Baixo" : "OK"}</Badge></td>
+                    <td className="p-2.5 text-center"><Badge className={cn("border-0 text-xs", isLow ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success")}>{isLow ? "Baixo" : "OK"}</Badge></td>
                     <td className="p-2.5"><Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={e => { e.stopPropagation(); deleteProduct(p.id); }}><Trash2 className="w-3 h-3" /></Button></td>
                   </tr>
                 );

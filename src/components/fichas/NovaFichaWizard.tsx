@@ -242,7 +242,7 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
               key={o}
               type="button"
               onClick={() => setResp(p.id, o)}
-              className={`flex-1 text-[11px] px-2 py-1 rounded-md border transition-colors ${
+              className={`flex-1 text-xs px-2 py-1 rounded-md border transition-colors ${
                 r?.v === o ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/30"
               }`}
             >
@@ -296,7 +296,7 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
                 </Select>
               </div>
             )}
-            <div className="text-[11px] text-muted-foreground p-2 rounded bg-secondary/40">
+            <div className="text-xs text-muted-foreground p-2 rounded bg-secondary/40">
               Profissional: <span className="text-foreground">{profile?.nome || "—"}</span><br />
               Data: <span className="text-foreground">{new Date().toLocaleString("pt-BR")}</span>
             </div>
@@ -327,7 +327,7 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
             <div>
               <Label className="text-xs text-muted-foreground">O que você espera deste procedimento? (máx. 300 caracteres)</Label>
               <Textarea maxLength={300} value={expectativa} onChange={e => setExpectativa(e.target.value)} className="bg-secondary border-border mt-1 min-h-[70px]" />
-              <p className="text-[10px] text-muted-foreground text-right mt-0.5">{expectativa.length}/300</p>
+              <p className="text-xs text-muted-foreground text-right mt-0.5">{expectativa.length}/300</p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">É a primeira vez que realiza este procedimento?</Label>
@@ -373,7 +373,7 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground italic">
               Você pode revogar qualquer uma destas autorizações a qualquer momento, entrando em contato com o estabelecimento.
             </p>
           </div>
@@ -384,33 +384,33 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
             {tcle ? (
               <div className="rounded-lg border border-border p-3 bg-secondary/30 space-y-2 max-h-[260px] overflow-y-auto">
                 <p className="text-sm font-bold text-foreground">{tcle.titulo}</p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Cliente: {clients.find(c => c.id === clienteId)?.nome || "—"} • Procedimento: {procedimento} • Data: {new Date().toLocaleDateString("pt-BR")} • Profissional: {profile?.nome || "—"}
                 </p>
                 <div>
                   <p className="text-xs font-semibold text-foreground mt-2">Estou ciente de que este procedimento pode causar:</p>
-                  <ul className="text-[11px] text-muted-foreground list-disc pl-4 mt-1 space-y-0.5">{tcle.ciencia.map(t => <li key={t}>{t}</li>)}</ul>
+                  <ul className="text-xs text-muted-foreground list-disc pl-4 mt-1 space-y-0.5">{tcle.ciencia.map(t => <li key={t}>{t}</li>)}</ul>
                 </div>
                 {tcle.confirmacoes && (
                   <div>
                     <p className="text-xs font-semibold text-foreground mt-2">Confirmo que:</p>
-                    <ul className="text-[11px] text-muted-foreground list-disc pl-4 mt-1 space-y-0.5">{tcle.confirmacoes.map(t => <li key={t}>{t}</li>)}</ul>
+                    <ul className="text-xs text-muted-foreground list-disc pl-4 mt-1 space-y-0.5">{tcle.confirmacoes.map(t => <li key={t}>{t}</li>)}</ul>
                   </div>
                 )}
                 {tcle.compromissos && (
                   <div>
                     <p className="text-xs font-semibold text-foreground mt-2">Me comprometo a:</p>
-                    <ul className="text-[11px] text-muted-foreground list-disc pl-4 mt-1 space-y-0.5">{tcle.compromissos.map(t => <li key={t}>{t}</li>)}</ul>
+                    <ul className="text-xs text-muted-foreground list-disc pl-4 mt-1 space-y-0.5">{tcle.compromissos.map(t => <li key={t}>{t}</li>)}</ul>
                   </div>
                 )}
-                {tcle.rodape && <p className="text-[11px] text-muted-foreground italic mt-2">{tcle.rodape}</p>}
+                {tcle.rodape && <p className="text-xs text-muted-foreground italic mt-2">{tcle.rodape}</p>}
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">TCLE não disponível para esta área.</p>
             )}
 
             <div className="rounded-lg p-2.5 bg-primary/5 border border-primary/15 space-y-2">
-              <p className="text-[11px] text-foreground">{declaracaoFinal}</p>
+              <p className="text-xs text-foreground">{declaracaoFinal}</p>
               <div className="flex items-center justify-between">
                 <Label className="text-xs text-foreground">Li e estou de acordo com o TCLE</Label>
                 <Switch checked={tcleAceito} onCheckedChange={setTcleAceito} />
@@ -422,7 +422,7 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
               <SignaturePad value={signature} onChange={setSignature} />
             </div>
 
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Registro: {new Date().toLocaleString("pt-BR")}{meta.ip ? ` • IP: ${meta.ip}` : ""}{meta.geo ? ` • Geo: ${meta.geo}` : ""}
             </p>
           </div>
@@ -449,7 +449,7 @@ export default function NovaFichaWizard({ open, onOpenChange, clients, onSaved }
               key={s}
               type="button"
               onClick={() => i < step && setStep(i)}
-              className={`text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition-colors ${
+              className={`text-xs px-2 py-1 rounded-md whitespace-nowrap transition-colors ${
                 i === step ? "bg-primary text-primary-foreground" : i < step ? "bg-secondary text-foreground" : "bg-secondary/40 text-muted-foreground"
               }`}
             >

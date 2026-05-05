@@ -202,7 +202,7 @@ export default function AgendamentosTab() {
             <p className="text-xs text-muted-foreground truncate">{a.servicos?.nome || "Sem serviço"} · R$ {a.servicos?.preco || 0}</p>
           </div>
         </div>
-        <Badge className={cn("border-0 text-[10px] px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
+        <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
       </div>
     </div>
   );
@@ -224,7 +224,7 @@ export default function AgendamentosTab() {
     const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
     return (
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-        {weekDays.map(d => <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
+        {weekDays.map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
         {weekDates.map((date, i) => {
           const ds = localDateStr(date);
           const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
@@ -250,7 +250,7 @@ export default function AgendamentosTab() {
     const weekDays = ["S", "T", "Q", "Q", "S", "S", "D"];
     return (
       <div className="grid grid-cols-7 gap-0.5">
-        {weekDays.map((d, i) => <div key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
+        {weekDays.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
         {days.map((date, i) => {
           if (!date) return <div key={i} />;
           const ds = localDateStr(date);
@@ -298,7 +298,7 @@ export default function AgendamentosTab() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex bg-secondary rounded-lg p-0.5 overflow-x-auto">
-            {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-3 py-1.5 rounded-md text-[11px] font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
+            {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
           </div>
           {/* Hide desktop "Novo" — mobile uses FAB */}
           <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex min-h-[36px]" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
@@ -314,7 +314,7 @@ export default function AgendamentosTab() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
         {legend.map(l => (
           <div key={l.label} className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
@@ -399,10 +399,10 @@ export default function AgendamentosTab() {
               <DialogHeader><DialogTitle className="text-foreground">Detalhes</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Cliente</p><p className="font-medium text-foreground text-sm">{selectedAppt.clientes?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Serviço</p><p className="font-medium text-foreground text-sm">{selectedAppt.servicos?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Data/Hora</p><p className="font-medium text-foreground text-sm">{parseDateStr(selectedAppt.data).toLocaleDateString("pt-BR")} {selectedAppt.horario?.slice(0, 5)}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-[10px] text-muted-foreground">Valor</p><p className="font-medium text-foreground text-sm">R$ {selectedAppt.servicos?.preco || 0}</p></div>
+                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Cliente</p><p className="font-medium text-foreground text-sm">{selectedAppt.clientes?.nome || "—"}</p></div>
+                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Serviço</p><p className="font-medium text-foreground text-sm">{selectedAppt.servicos?.nome || "—"}</p></div>
+                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Data/Hora</p><p className="font-medium text-foreground text-sm">{parseDateStr(selectedAppt.data).toLocaleDateString("pt-BR")} {selectedAppt.horario?.slice(0, 5)}</p></div>
+                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Valor</p><p className="font-medium text-foreground text-sm">R$ {selectedAppt.servicos?.preco || 0}</p></div>
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
@@ -438,7 +438,7 @@ export default function AgendamentosTab() {
             {dayModalAppts.map(a => (
               <div key={a.id} onClick={() => { setDayModalDate(null); openAppt(a); }} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary min-h-[56px]">
                 <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p></div>
-                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-[10px]", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
+                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
               </div>
             ))}
           </div>
