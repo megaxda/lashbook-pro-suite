@@ -1,93 +1,91 @@
-# Correções de responsividade + Link Bio funcional
+# Plano: Admin + Tipografia padronizada + Fix popup WhatsApp
 
-## Problema 1 — Overflow em diálogos, popups e inputs
+## 1. Promover `nathancarvalhon@gmail.com` a administrador
 
-Hoje todos os `DialogContent` do app usam o padrão da shadcn que define `max-w-lg` fixo, sem `max-h`, sem scroll, sem padding mobile. Em telas estreitas o conteúdo "atravessa" a caixa porque:
+Migration SQL que atualiza `profiles.role = 'admin'` para o usuário cujo email bate em `auth.users`.
 
-- `Input` não tem `min-w-0`, então dentro de flex/grid empurra o pai.
-- `DialogContent` não tem `max-h-[90vh] overflow-y-auto`, conteúdo longo (wizard de ficha, agendamento, financeiro) corta ou estoura.
-- Labels longas (nome de cliente, descrição de serviço) sem `truncate`/`break-words` quebram layout.
-- No mobile o dialog ocupa `max-w-lg` mas com `p-6` sobra pouco espaço para o conteúdo.
+```sql
+UPDATE public.profiles
+SET role = 'admin'
+WHERE id = (SELECT id FROM auth.users WHERE email = 'nathancarvalhon@gmail.com');
+```
 
-### O que será feito
+Se o usuário ainda não existir (não fez signup), a migration não falha — apenas não atualiza nada. Nesse caso o usuário precisa criar conta primeiro em `/auth` e depois rodamos novamente. Vou checar antes de aplicar.
 
-1. **`src/components/ui/dialog.tsx`** — atualizar `DialogContent` para:
-   - `w-[calc(100%-1rem)] max-w-lg` (margem segura no mobile)
-   - `max-h-[90vh] overflow-y-auto`
-   - `p-4 sm:p-6`
-   - `gap-3 sm:gap-4`
+## 2. Corrigir popup do WhatsApp (e padrão geral de Dialog)
 
-2. **`src/components/ui/input.tsx`** — adicionar `min-w-0` na classe base para nunca empurrar containers flex.
+**Problema na imagem:** os botões pré-configurados ("Confirmação de agendamento", "Lembrete de retorno", "Reativação de cliente") têm o texto da mensagem (segunda linha) estourando para fora do card branco.
 
-3. **Modais existentes** (Clientes, Agendamentos, Financeiro, Estoque, Serviços, Fichas, Dashboard):
-   - Envolver formulários com `space-y-3` consistente.
-   - Trocar `grid grid-cols-2` em telas pequenas por `grid grid-cols-1 sm:grid-cols-2`.
-   - Adicionar `truncate` / `break-words` em títulos e descrições renderizadas.
-   - Garantir que cada `<Input>`/`<Select>` esteja dentro de um wrapper `min-w-0`.
+**Causa:** em `src/components/modules/ClientesTab.tsx` (linha 311), o `DialogContent` usa `max-w-[calc(100vw-2rem)] sm:max-w-sm`, mas o `<div className="min-w-0">` dentro do `Button` está dentro de um `Button` que por padrão tem `display: inline-flex` sem `w-full` no filho — o `min-w-0` não propaga e o `<p>` com `break-words` ainda assim respeita a largura natural do texto porque o pai não tem largura limitada.
 
-4. **Wizard de Ficha (`NovaFichaWizard.tsx`)** — header sticky com botões de navegação que não saem da tela e área de conteúdo com scroll próprio.
+**Correção em `ClientesTab.tsx` (popup WhatsApp, linhas 309–330):**
+- Trocar a classe do botão para incluir `w-full` no wrapper interno: `<div className="min-w-0 w-full">`.
+- Adicionar `whitespace-normal` no botão (shadcn `Button` tem `whitespace-nowrap` por padrão, que é o real culpado do overflow).
+- Garantir `overflow-hidden` no `DialogContent`.
 
-5. **`SignaturePad`** — canvas responsivo (`w-full h-40`) em vez de largura fixa.
+```tsx
+<Button ... className="w-full justify-start text-left h-auto py-2.5 border-border text-foreground whitespace-normal">
+  <div className="min-w-0 w-full">
+    <p className="text-sm font-semibold break-words">{m.label}</p>
+    <p className="text-xs text-muted-foreground mt-0.5 break-words">{...}</p>
+  </div>
+</Button>
+```
 
-## Problema 2 — Link Bio não funciona para o aluno criar
+**Varredura geral:** rodar busca por outros usos de `Button` com conteúdo multilinha e aplicar `whitespace-normal` onde houver mensagem/descrição. Locais conhecidos a revisar: `ClientesTab`, `AgendamentosTab`, `FichasTab`, `LinkBioPage`.
 
-Sintomas atuais:
-- O campo "slug" em `/account` aba **Link Bio** verifica duplicidade via `supabase.from("profiles").select("id").eq("slug", ...)` — mas a RLS de `profiles` só permite ler o próprio perfil, então a checagem **sempre devolve 0 e diz "disponível"**, mesmo se outro usuário já tiver o slug. No save, se houver UNIQUE no banco, falha sem mensagem clara.
-- Não há sanitização do slug (aceita espaços, acentos, maiúsculas).
-- Não há botão de **copiar link** nem **abrir preview**.
-- O usuário não vê claramente qual URL final foi gerada.
-- Sem feedback de sucesso óbvio.
+## 3. Padronização de tipografia mobile (diretriz fornecida)
 
-### O que será feito
+Criar tokens utilitários em `src/index.css` dentro de `@layer components` para uso consistente em toda a UI:
 
-1. **Migration SQL**:
-   - Criar índice `UNIQUE` em `profiles.slug` (parcial, ignorando NULL) caso ainda não exista.
-   - Criar RPC `check_slug_available(_slug text)` com `SECURITY DEFINER` que retorna boolean — permite checagem sem expor outras linhas via RLS.
-   - Criar RPC `set_my_slug(_slug text)` `SECURITY DEFINER` que valida formato (`^[a-z0-9-]{3,40}$`), checa duplicidade e grava no `profiles` do usuário autenticado, devolvendo `{ ok, error }`.
+```css
+@layer components {
+  .t-screen-title { @apply text-[26px] sm:text-[28px] font-bold leading-tight; }
+  .t-card-title   { @apply text-[17px] sm:text-[18px] font-semibold; }
+  .t-card-desc    { @apply text-[14px] sm:text-[15px] text-muted-foreground; }
+  .t-body         { @apply text-base; }                /* 16px */
+  .t-button       { @apply text-base font-semibold; }  /* 16px / 600 */
+  .t-aux          { @apply text-[13px] sm:text-sm text-muted-foreground; } /* 13–14px */
+  .t-meta         { @apply text-xs; }                  /* 12px mínimo */
+}
+```
 
-2. **`src/pages/AccountPage.tsx` — aba Link Bio**:
-   - Sanitizar slug em tempo real: `value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')`.
-   - Mostrar contador 3–40 caracteres e regras (`a-z 0-9 -`).
-   - Debounce 400 ms chamando `check_slug_available`. Estados: idle / checking / available / taken / invalid.
-   - Ao salvar, chamar `set_my_slug` (e demais campos via update normal). Tratar erro retornado pela RPC com toast claro.
-   - Quando há slug válido salvo, mostrar bloco destacado:
-     - URL completa: `https://<host>/u/<slug>`
-     - Botão **Copiar link**
-     - Botão **Abrir preview** (`target="_blank"`)
-     - QR code simples (gerado via `https://api.qrserver.com/v1/create-qr-code/?data=...&size=160x160`) para o aluno mostrar no celular.
-   - Tornar o card todo responsivo (stack vertical no mobile, lado-a-lado no `sm:`).
+E proibir uso de `text-[10px]` e `text-[11px]` no app — substituir pelas classes acima. Vou rodar `rg "text-\[10px\]|text-\[11px\]"` e trocar todas as ocorrências por `text-xs` (12px) ou `t-meta`.
 
-3. **`src/pages/LinkBioPage.tsx`** — pequenos ajustes:
-   - Confirmar que o estado vazio (`!profile`) explica que o slug ainda não existe.
-   - Garantir `break-words` na bio e no nome para nomes longos.
+**Aplicação inicial:**
+- Títulos das telas (h1 dos Tabs): `t-screen-title`.
+- Títulos de cards e tabelas: `t-card-title`.
+- Descrições/subtítulos: `t-card-desc`.
+- Botões principais: `t-button`.
+- Labels auxiliares (datas, status, contadores): `t-aux` ou `t-meta`.
 
-## Detalhes técnicos
+Não vou reescrever 100% dos componentes nesta passada — vou aplicar nos módulos mais visíveis (Dashboard, Clientes, Agendamentos, Financeiro, Fichas, Estoque, Serviços, Account, LinkBio) e deixar o utilitário disponível para o resto.
 
-- Não tocar em `src/integrations/supabase/{client,types}.ts` — types regeneram automaticamente após a migration.
-- Migration vai precisar de aprovação do usuário (tool de migration pede confirmação).
-- Nenhuma mudança em rotas; `/u/:slug` continua público.
-- `dateUtils`, AuthContext e RLS de outras tabelas permanecem como estão.
+## 4. Pequenos ajustes de Dialog que ficaram pendentes
+
+- Adicionar `overflow-hidden` no `DialogContent` base (`src/components/ui/dialog.tsx`) para evitar conteúdo "vazando" lateralmente em qualquer modal.
+- Confirmar que `Button` com texto longo respeita `whitespace-normal` quando passado.
 
 ## Arquivos afetados
 
 ```text
-NEW   supabase/migrations/<timestamp>_link_bio_slug.sql
-EDIT  src/components/ui/dialog.tsx
-EDIT  src/components/ui/input.tsx
-EDIT  src/pages/AccountPage.tsx
-EDIT  src/pages/LinkBioPage.tsx
-EDIT  src/components/fichas/NovaFichaWizard.tsx
-EDIT  src/components/fichas/SignaturePad.tsx
-EDIT  src/components/modules/ClientesTab.tsx
-EDIT  src/components/modules/AgendamentosTab.tsx
-EDIT  src/components/modules/FinanceiroTab.tsx
-EDIT  src/components/modules/EstoqueTab.tsx
-EDIT  src/components/modules/ServicosTab.tsx
-EDIT  src/components/modules/FichasTab.tsx
-EDIT  src/components/modules/DashboardTab.tsx
+NEW   supabase/migrations/<timestamp>_promote_admin_nathan.sql
+EDIT  src/index.css                         (tokens de tipografia)
+EDIT  src/components/modules/ClientesTab.tsx (fix popup WhatsApp + tipografia)
+EDIT  src/components/modules/AgendamentosTab.tsx (tipografia)
+EDIT  src/components/modules/DashboardTab.tsx    (tipografia)
+EDIT  src/components/modules/FinanceiroTab.tsx   (tipografia)
+EDIT  src/components/modules/EstoqueTab.tsx      (tipografia)
+EDIT  src/components/modules/ServicosTab.tsx     (tipografia)
+EDIT  src/components/modules/FichasTab.tsx       (tipografia)
+EDIT  src/pages/AccountPage.tsx                  (tipografia)
+EDIT  src/pages/LinkBioPage.tsx                  (tipografia)
 ```
 
-## Fora do escopo desta etapa
+## Fora do escopo
 
-- Upload de capa, temas claro/escuro/rosa do Link Bio, botões pré-configurados extra (Instagram/WhatsApp/Site/Catálogo) — entram numa próxima rodada de "Link Bio completo" se você quiser.
-- Reescrita do wizard de ficha — só o ajuste de scroll/sticky aqui.
+- Não vou trocar a fonte global (continua Plus Jakarta Sans).
+- Não vou redesenhar componentes; só ajustar tamanhos/pesos conforme a diretriz.
+- Não vou mexer em RLS nem em outras features de admin além de promover o usuário.
+
+Posso aplicar?
