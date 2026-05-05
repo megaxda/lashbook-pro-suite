@@ -100,3 +100,16 @@
     border-radius: 999px;
   }
 }
+
+@layer components {
+  /* Tokens de tipografia mobile-first.
+     Diretriz: nunca abaixo de 12px. Botões 16px/600. Títulos de tela 26-28px. */
+  .t-screen-title { @apply text-[26px] sm:text-[28px] font-bold leading-tight tracking-tight; }
+  .t-section-title { @apply text-[20px] sm:text-[22px] font-semibold leading-tight; }
+  .t-card-title   { @apply text-[17px] sm:text-[18px] font-semibold leading-snug; }
+  .t-card-desc    { @apply text-[14px] sm:text-[15px] text-muted-foreground leading-snug; }
+  .t-body         { @apply text-base leading-normal; }
+  .t-button       { @apply text-base font-semibold; }
+  .t-aux          { @apply text-[13px] sm:text-sm text-muted-foreground; }
+  .t-meta         { @apply text-xs; }
+}
