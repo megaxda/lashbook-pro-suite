@@ -121,12 +121,12 @@ export default function FichasTab() {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground text-sm">{f.clientes?.nome || "Sem cliente"}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {area} · {proc} · {new Date(f.created_at).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">
+                <Badge variant="outline" className="text-xs border-border text-muted-foreground">
                   {area}
                 </Badge>
               </div>
@@ -154,13 +154,13 @@ export default function FichasTab() {
               <div className="space-y-3 mt-2">
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2.5 rounded-lg bg-secondary/50">
-                    <p className="text-[10px] text-muted-foreground">Área</p>
+                    <p className="text-xs text-muted-foreground">Área</p>
                     <p className="text-foreground font-medium">
                       {selectedFicha.dados_cliente?.area || "—"}
                     </p>
                   </div>
                   <div className="p-2.5 rounded-lg bg-secondary/50">
-                    <p className="text-[10px] text-muted-foreground">Procedimento</p>
+                    <p className="text-xs text-muted-foreground">Procedimento</p>
                     <p className="text-foreground font-medium">
                       {(Array.isArray(selectedFicha.procedimentos) && selectedFicha.procedimentos[0]?.nome) || "—"}
                     </p>
@@ -169,19 +169,19 @@ export default function FichasTab() {
 
                 <div className="p-2.5 rounded-lg bg-secondary/50 space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] text-muted-foreground">Consentimento</p>
+                    <p className="text-xs text-muted-foreground">Consentimento</p>
                     <Badge
                       className={
                         selectedFicha.consentimentos?.assinado
-                          ? "bg-success/15 text-success border-0 text-[10px]"
-                          : "bg-destructive/15 text-destructive border-0 text-[10px]"
+                          ? "bg-success/15 text-success border-0 text-xs"
+                          : "bg-destructive/15 text-destructive border-0 text-xs"
                       }
                     >
                       {selectedFicha.consentimentos?.assinado ? "Assinado" : "Pendente"}
                     </Badge>
                   </div>
                   {selectedFicha.consent_signed_at && (
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Assinado em {new Date(selectedFicha.consent_signed_at).toLocaleDateString("pt-BR")}
                       {" às "}
                       {new Date(selectedFicha.consent_signed_at).toLocaleTimeString("pt-BR")}
@@ -198,7 +198,7 @@ export default function FichasTab() {
 
                 {selectedFicha.observacoes && (
                   <div className="p-2.5 rounded-lg bg-secondary/50">
-                    <p className="text-[10px] text-muted-foreground">Expectativas</p>
+                    <p className="text-xs text-muted-foreground">Expectativas</p>
                     <p className="text-sm text-foreground">{selectedFicha.observacoes}</p>
                   </div>
                 )}

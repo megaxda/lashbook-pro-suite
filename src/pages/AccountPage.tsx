@@ -251,7 +251,7 @@ export default function AccountPage() {
             {savedSlug && (
               <div className="rounded-lg bg-primary/5 border border-primary/15 p-3 space-y-3">
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Link ativo</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Link ativo</p>
                   <p className="text-sm font-medium text-primary break-all">{publicUrl}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
