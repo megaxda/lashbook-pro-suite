@@ -308,27 +308,27 @@ export default function ClientesTab() {
 
       {/* WhatsApp */}
       <Dialog open={!!whatsappClient} onOpenChange={() => setWhatsappClient(null)}>
-        <DialogContent className="sm:max-w-sm bg-card border-border">
+        <DialogContent className="sm:max-w-sm bg-card border-border overflow-hidden">
           {whatsappClient && (
             <>
               <DialogHeader>
                 <p className="t-card-title text-foreground break-words pr-6">WhatsApp — {whatsappClient.nome.split(" ")[0]}</p>
               </DialogHeader>
-              <div className="space-y-2 mt-2 min-w-0">
+              <div className="space-y-2 mt-2 min-w-0 w-full">
                 {whatsappMessages.map(m => (
-                  <Button
+                  <button
                     key={m.label}
-                    variant="outline"
-                    className="w-full justify-start text-left h-auto py-3 px-3 border-border text-foreground whitespace-normal block"
+                    type="button"
+                    className="w-full min-w-0 text-left py-3 px-3 rounded-md border border-border bg-background hover:bg-accent transition-colors"
                     onClick={() => openWhatsApp(whatsappClient, m.msg)}
                   >
                     <p className="t-aux font-semibold text-foreground break-words">{m.label}</p>
-                    <p className="t-meta text-muted-foreground mt-1 break-words whitespace-normal">
+                    <p className="t-meta text-muted-foreground mt-1 break-words line-clamp-2">
                       {m.msg.replace("{{nome}}", whatsappClient.nome.split(" ")[0])}
                     </p>
-                  </Button>
+                  </button>
                 ))}
-                <div className="pt-3 border-t border-border">
+                <div className="pt-3 border-t border-border min-w-0">
                   <Label className="t-aux">Mensagem personalizada</Label>
                   <Textarea
                     value={customMsg}
