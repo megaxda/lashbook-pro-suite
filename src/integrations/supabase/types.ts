@@ -306,13 +306,16 @@ export type Database = {
           foto_url: string | null
           id: string
           instagram: string | null
+          last_login: string | null
           nome: string | null
           outros_links: Json | null
           pix_key: string | null
           pix_key_type: string | null
+          plano: string | null
           role: string
           site: string | null
           slug: string | null
+          status_conta: string | null
           studio_hours: Json | null
           studio_name: string | null
           telefone: string | null
@@ -328,13 +331,16 @@ export type Database = {
           foto_url?: string | null
           id: string
           instagram?: string | null
+          last_login?: string | null
           nome?: string | null
           outros_links?: Json | null
           pix_key?: string | null
           pix_key_type?: string | null
+          plano?: string | null
           role?: string
           site?: string | null
           slug?: string | null
+          status_conta?: string | null
           studio_hours?: Json | null
           studio_name?: string | null
           telefone?: string | null
@@ -350,13 +356,16 @@ export type Database = {
           foto_url?: string | null
           id?: string
           instagram?: string | null
+          last_login?: string | null
           nome?: string | null
           outros_links?: Json | null
           pix_key?: string | null
           pix_key_type?: string | null
+          plano?: string | null
           role?: string
           site?: string | null
           slug?: string | null
+          status_conta?: string | null
           studio_hours?: Json | null
           studio_name?: string | null
           telefone?: string | null
