@@ -258,3 +258,102 @@ export default function AdminPage() {
     </div>
   );
 }
+
+function generatePassword(len = 10) {
+  const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function CreateUserPanel() {
+  const [form, setForm] = useState({ nome: "", email: "", telefone: "", password: generatePassword(), plano: "basico", role: "user" });
+  const [loading, setLoading] = useState(false);
+  const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
+
+  const handleCreate = async () => {
+    if (!form.email || !form.password || form.password.length < 6) {
+      toast.error("Email e senha (mín. 6 caracteres) obrigatórios");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", { body: form });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setCreated({ email: form.email, password: form.password });
+      toast.success("Usuário criado com sucesso!");
+      setForm({ nome: "", email: "", telefone: "", password: generatePassword(), plano: "basico", role: "user" });
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao criar usuário");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyCreds = () => {
+    if (!created) return;
+    navigator.clipboard.writeText(`Email: ${created.email}\nSenha: ${created.password}`);
+    toast.success("Credenciais copiadas!");
+  };
+
+  return (
+    <div className="max-w-xl">
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5 text-primary" /> Criar novo usuário</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label>Nome</Label><Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Telefone</Label><Input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} /></div>
+            <div className="space-y-1.5 sm:col-span-2"><Label>Email *</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Senha *</Label>
+              <div className="flex gap-2">
+                <Input value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+                <Button type="button" variant="outline" size="icon" onClick={() => setForm(f => ({ ...f, password: generatePassword() }))}><RefreshCw className="w-4 h-4" /></Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Plano</Label>
+              <Select value={form.plano} onValueChange={v => setForm(f => ({ ...f, plano: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="basico">Básico</SelectItem><SelectItem value="pro">Pro</SelectItem><SelectItem value="enterprise">Enterprise</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Função</Label>
+              <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="user">Usuário</SelectItem><SelectItem value="admin">Administrador</SelectItem></SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button onClick={handleCreate} disabled={loading} className="w-full gradient-brand text-primary-foreground">
+            {loading ? "Criando..." : "Criar conta"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!created} onOpenChange={open => !open && setCreated(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-500" /> Conta criada!</DialogTitle>
+            <DialogDescription>Compartilhe estas credenciais com o usuário. Ele poderá fazer login imediatamente.</DialogDescription>
+          </DialogHeader>
+          {created && (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-secondary p-3 space-y-2">
+                <div><Label className="text-xs text-muted-foreground">Email</Label><p className="font-mono text-sm">{created.email}</p></div>
+                <div><Label className="text-xs text-muted-foreground">Senha</Label><p className="font-mono text-sm">{created.password}</p></div>
+              </div>
+              <Button onClick={copyCreds} variant="outline" className="w-full gap-2"><Copy className="w-4 h-4" /> Copiar credenciais</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
