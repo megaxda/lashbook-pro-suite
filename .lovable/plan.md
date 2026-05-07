@@ -1,91 +1,56 @@
-# Plano: Admin + Tipografia padronizada + Fix popup WhatsApp
+## Plano de implementação
 
-## 1. Promover `nathancarvalhon@gmail.com` a administrador
+### 1. Criação manual de usuários no Painel Admin
 
-Migration SQL que atualiza `profiles.role = 'admin'` para o usuário cujo email bate em `auth.users`.
+Adicionar nova aba **"Criar Usuário"** em `src/pages/AdminPage.tsx`, ao lado de Analítica e Usuários.
 
-```sql
-UPDATE public.profiles
-SET role = 'admin'
-WHERE id = (SELECT id FROM auth.users WHERE email = 'nathancarvalhon@gmail.com');
-```
+- Formulário com: Nome, Email, Senha (com gerador automático), Telefone, Plano (básico/pro/enterprise), Função (usuário/admin)
+- Botão "Criar conta"
+- Edge Function nova `admin-create-user` (com `verify_jwt = true`) que:
+  - Verifica se quem chama é admin (via `current_user_is_admin()`)
+  - Usa `SUPABASE_SERVICE_ROLE_KEY` + `supabase.auth.admin.createUser()` para criar a conta já confirmada
+  - Atualiza `profiles` com nome, telefone, plano e role
+- Após criar, mostrar toast de sucesso e exibir as credenciais geradas em um dialog (com botão de copiar) para o admin compartilhar com o novo usuário
+- Refresh automático da lista de usuários
 
-Se o usuário ainda não existir (não fez signup), a migration não falha — apenas não atualiza nada. Nesse caso o usuário precisa criar conta primeiro em `/auth` e depois rodamos novamente. Vou checar antes de aplicar.
+### 2. Fluxo de agendamento via Link Bio
 
-## 2. Corrigir popup do WhatsApp (e padrão geral de Dialog)
+**Diagnóstico:** A função `create_public_booking` já está correta — ela localiza o profissional pelo `slug`, cria/reaproveita o cliente e insere o agendamento vinculado ao `user_id` do dono do link. Então o agendamento JÁ vai para a agenda do dono.
 
-**Problema na imagem:** os botões pré-configurados ("Confirmação de agendamento", "Lembrete de retorno", "Reativação de cliente") têm o texto da mensagem (segunda linha) estourando para fora do card branco.
+**Ajustes necessários em `src/pages/LinkBioPage.tsx`:**
+- Após a chamada bem-sucedida de `create_public_booking`, substituir/garantir uma tela final clara de "Agendamento marcado com sucesso!" com:
+  - Ícone de check verde grande
+  - Resumo: profissional, serviço, data, horário
+  - Mensagem: "Em breve você receberá uma confirmação. Aguarde o contato do profissional."
+  - Botão "Fazer novo agendamento"
+- Toast de sucesso `toast.success("Agendamento marcado com sucesso!")`
+- Garantir que erros sejam tratados (toast de erro)
 
-**Causa:** em `src/components/modules/ClientesTab.tsx` (linha 311), o `DialogContent` usa `max-w-[calc(100vw-2rem)] sm:max-w-sm`, mas o `<div className="min-w-0">` dentro do `Button` está dentro de um `Button` que por padrão tem `display: inline-flex` sem `w-full` no filho — o `min-w-0` não propaga e o `<p>` com `break-words` ainda assim respeita a largura natural do texto porque o pai não tem largura limitada.
+### 3. Bug visual do popup de WhatsApp Follow-up
 
-**Correção em `ClientesTab.tsx` (popup WhatsApp, linhas 309–330):**
-- Trocar a classe do botão para incluir `w-full` no wrapper interno: `<div className="min-w-0 w-full">`.
-- Adicionar `whitespace-normal` no botão (shadcn `Button` tem `whitespace-nowrap` por padrão, que é o real culpado do overflow).
-- Garantir `overflow-hidden` no `DialogContent`.
+**Problema (screenshot):** Os cards de templates de mensagem em `ClientesTab.tsx` estão com texto cortado/atravessando a borda direita do dialog, e o dialog parece estourar a viewport no mobile.
 
-```tsx
-<Button ... className="w-full justify-start text-left h-auto py-2.5 border-border text-foreground whitespace-normal">
-  <div className="min-w-0 w-full">
-    <p className="text-sm font-semibold break-words">{m.label}</p>
-    <p className="text-xs text-muted-foreground mt-0.5 break-words">{...}</p>
-  </div>
-</Button>
-```
+**Correções em `src/components/modules/ClientesTab.tsx` (dialog de templates WhatsApp):**
+- Cada card de template:
+  - Container com `w-full min-w-0 overflow-hidden`
+  - Título em `truncate` ou `line-clamp-1`
+  - Preview da mensagem em `line-clamp-2 break-words` (não usar `whitespace-nowrap`)
+  - Padding consistente
+- Dialog content já tem `w-[calc(100%-1rem)] max-w-lg` no `dialog.tsx` — confirmar que o conteúdo interno respeita `min-w-0`
+- Textarea da mensagem personalizada com `resize-none` e largura `w-full`
+- Botão "Enviar" full-width com tipografia `.t-button`
 
-**Varredura geral:** rodar busca por outros usos de `Button` com conteúdo multilinha e aplicar `whitespace-normal` onde houver mensagem/descrição. Locais conhecidos a revisar: `ClientesTab`, `AgendamentosTab`, `FichasTab`, `LinkBioPage`.
+### Detalhes técnicos
 
-## 3. Padronização de tipografia mobile (diretriz fornecida)
+**Arquivos a alterar:**
+- `src/pages/AdminPage.tsx` — nova aba "Criar Usuário" + dialog de credenciais
+- `src/components/modules/ClientesTab.tsx` — fix overflow do dialog WhatsApp
+- `src/pages/LinkBioPage.tsx` — tela final de sucesso aprimorada
 
-Criar tokens utilitários em `src/index.css` dentro de `@layer components` para uso consistente em toda a UI:
+**Arquivos a criar:**
+- `supabase/functions/admin-create-user/index.ts` — edge function para criação de usuário pelo admin
+- `supabase/config.toml` — adicionar bloco `[functions.admin-create-user]` com `verify_jwt = true`
 
-```css
-@layer components {
-  .t-screen-title { @apply text-[26px] sm:text-[28px] font-bold leading-tight; }
-  .t-card-title   { @apply text-[17px] sm:text-[18px] font-semibold; }
-  .t-card-desc    { @apply text-[14px] sm:text-[15px] text-muted-foreground; }
-  .t-body         { @apply text-base; }                /* 16px */
-  .t-button       { @apply text-base font-semibold; }  /* 16px / 600 */
-  .t-aux          { @apply text-[13px] sm:text-sm text-muted-foreground; } /* 13–14px */
-  .t-meta         { @apply text-xs; }                  /* 12px mínimo */
-}
-```
+**Migrações:** Nenhuma necessária (a `create_public_booking` já está correta).
 
-E proibir uso de `text-[10px]` e `text-[11px]` no app — substituir pelas classes acima. Vou rodar `rg "text-\[10px\]|text-\[11px\]"` e trocar todas as ocorrências por `text-xs` (12px) ou `t-meta`.
-
-**Aplicação inicial:**
-- Títulos das telas (h1 dos Tabs): `t-screen-title`.
-- Títulos de cards e tabelas: `t-card-title`.
-- Descrições/subtítulos: `t-card-desc`.
-- Botões principais: `t-button`.
-- Labels auxiliares (datas, status, contadores): `t-aux` ou `t-meta`.
-
-Não vou reescrever 100% dos componentes nesta passada — vou aplicar nos módulos mais visíveis (Dashboard, Clientes, Agendamentos, Financeiro, Fichas, Estoque, Serviços, Account, LinkBio) e deixar o utilitário disponível para o resto.
-
-## 4. Pequenos ajustes de Dialog que ficaram pendentes
-
-- Adicionar `overflow-hidden` no `DialogContent` base (`src/components/ui/dialog.tsx`) para evitar conteúdo "vazando" lateralmente em qualquer modal.
-- Confirmar que `Button` com texto longo respeita `whitespace-normal` quando passado.
-
-## Arquivos afetados
-
-```text
-NEW   supabase/migrations/<timestamp>_promote_admin_nathan.sql
-EDIT  src/index.css                         (tokens de tipografia)
-EDIT  src/components/modules/ClientesTab.tsx (fix popup WhatsApp + tipografia)
-EDIT  src/components/modules/AgendamentosTab.tsx (tipografia)
-EDIT  src/components/modules/DashboardTab.tsx    (tipografia)
-EDIT  src/components/modules/FinanceiroTab.tsx   (tipografia)
-EDIT  src/components/modules/EstoqueTab.tsx      (tipografia)
-EDIT  src/components/modules/ServicosTab.tsx     (tipografia)
-EDIT  src/components/modules/FichasTab.tsx       (tipografia)
-EDIT  src/pages/AccountPage.tsx                  (tipografia)
-EDIT  src/pages/LinkBioPage.tsx                  (tipografia)
-```
-
-## Fora do escopo
-
-- Não vou trocar a fonte global (continua Plus Jakarta Sans).
-- Não vou redesenhar componentes; só ajustar tamanhos/pesos conforme a diretriz.
-- Não vou mexer em RLS nem em outras features de admin além de promover o usuário.
-
-Posso aplicar?
+**Sem mudanças em:** lógica de banco existente, RLS, autenticação.
