@@ -120,6 +120,7 @@ export default function LinkBioPage() {
         _comprovante_url: comprovanteUrl,
       });
       if (error) throw error;
+      toast.success("Agendamento marcado com sucesso!");
       setStep("done");
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar agendamento");
