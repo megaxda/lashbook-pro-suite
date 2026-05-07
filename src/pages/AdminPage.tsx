@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy } from "lucide-react";
+import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import StatCard from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/badge";
