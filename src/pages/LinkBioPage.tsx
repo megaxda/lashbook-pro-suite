@@ -333,16 +333,24 @@ export default function LinkBioPage() {
 
   // ---------- STEP: DONE ----------
   if (step === "done") {
+    const fmtDate = date ? new Date(date + "T12:00:00").toLocaleDateString("pt-BR") : "";
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center space-y-4 animate-fade-in max-w-sm">
-          <div className="w-16 h-16 rounded-full gradient-brand flex items-center justify-center mx-auto">
-            <Check className="w-8 h-8 text-primary-foreground" />
+        <div className="text-center space-y-4 animate-fade-in max-w-sm w-full">
+          <div className="w-20 h-20 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto">
+            <Check className="w-10 h-10 text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">Agendamento enviado! 🎉</h2>
-          <p className="text-sm text-muted-foreground">
-            Você receberá uma confirmação em breve via WhatsApp.
+          <h2 className="t-screen-title text-foreground">Agendamento marcado com sucesso!</h2>
+          <p className="t-body text-muted-foreground">
+            Em breve você receberá uma confirmação. Aguarde o contato do profissional.
           </p>
+          {selectedService && (
+            <div className="rounded-xl border border-border bg-card p-4 text-left space-y-1 t-aux">
+              <p><span className="text-muted-foreground">Profissional:</span> <span className="text-foreground font-medium">{profile.studio_name || profile.nome}</span></p>
+              <p><span className="text-muted-foreground">Serviço:</span> <span className="text-foreground font-medium">{selectedService.nome}</span></p>
+              <p><span className="text-muted-foreground">Data:</span> <span className="text-foreground font-medium">{fmtDate} às {time}</span></p>
+            </div>
+          )}
           <Button
             onClick={() => {
               setStep("home");
@@ -355,10 +363,9 @@ export default function LinkBioPage() {
               setNotes("");
               setReceiptFile(null);
             }}
-            variant="outline"
-            className="border-primary/30 text-primary"
+            className="w-full gradient-brand text-primary-foreground t-button"
           >
-            Voltar ao início
+            Fazer novo agendamento
           </Button>
         </div>
       </div>
