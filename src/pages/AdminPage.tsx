@@ -112,7 +112,12 @@ export default function AdminPage() {
         <TabsList className="bg-secondary">
           <TabsTrigger value="analytics" className="gap-2"><BarChart3 className="w-4 h-4" /> Analítica</TabsTrigger>
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Usuários</TabsTrigger>
+          <TabsTrigger value="create" className="gap-2"><UserPlus className="w-4 h-4" /> Criar Usuário</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="create">
+          <CreateUserPanel />
+        </TabsContent>
 
         <TabsContent value="analytics">
           {isLoading ? (
