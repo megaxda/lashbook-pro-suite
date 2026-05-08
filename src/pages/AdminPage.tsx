@@ -363,3 +363,94 @@ function CreateUserPanel() {
   );
 }
 
+function NotificationsPanel({ users }: { users: UserRow[] }) {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [url, setUrl] = useState("/");
+  const [target, setTarget] = useState<"all" | "user">("all");
+  const [userId, setUserId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [lastResult, setLastResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+
+  const handleSend = async () => {
+    if (!title || !body) {
+      toast.error("Preencha título e mensagem");
+      return;
+    }
+    if (target === "user" && !userId) {
+      toast.error("Selecione um usuário");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: { title, body, url, target, user_id: target === "user" ? userId : undefined },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const res = data as { sent: number; failed: number; total: number };
+      setLastResult(res);
+      toast.success(`Enviadas: ${res.sent} · Falhas: ${res.failed}`);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao enviar notificação");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-xl">
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5 text-primary" /> Enviar notificação push</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Título *</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Nova atualização disponível" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Mensagem *</Label>
+            <Textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Conteúdo da notificação" rows={3} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>URL ao clicar</Label>
+            <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="/" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Destinatários</Label>
+            <Select value={target} onValueChange={v => setTarget(v as "all" | "user")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os usuários</SelectItem>
+                <SelectItem value="user">Usuário específico</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {target === "user" && (
+            <div className="space-y-1.5">
+              <Label>Usuário</Label>
+              <Select value={userId} onValueChange={setUserId}>
+                <SelectTrigger><SelectValue placeholder="Selecione um usuário" /></SelectTrigger>
+                <SelectContent>
+                  {users.map(u => (
+                    <SelectItem key={u.id} value={u.id}>{u.nome || u.email || u.id}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {lastResult && (
+            <div className="rounded-lg bg-secondary p-3 text-sm space-y-1">
+              <p className="text-muted-foreground">Último envio</p>
+              <p className="text-foreground">Inscrições: <span className="font-medium">{lastResult.total}</span> · Enviadas: <span className="text-emerald-500 font-medium">{lastResult.sent}</span> · Falhas: <span className="text-destructive font-medium">{lastResult.failed}</span></p>
+            </div>
+          )}
+          <Button onClick={handleSend} disabled={loading} className="w-full gradient-brand text-primary-foreground gap-2">
+            <Send className="w-4 h-4" /> {loading ? "Enviando..." : "Enviar notificação"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
