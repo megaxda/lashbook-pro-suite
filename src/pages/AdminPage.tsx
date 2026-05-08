@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import StatCard from "@/components/ui/StatCard";
@@ -109,14 +110,19 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="analytics" className="space-y-6">
-        <TabsList className="bg-secondary">
+        <TabsList className="bg-secondary flex-wrap h-auto">
           <TabsTrigger value="analytics" className="gap-2"><BarChart3 className="w-4 h-4" /> Analítica</TabsTrigger>
           <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Usuários</TabsTrigger>
           <TabsTrigger value="create" className="gap-2"><UserPlus className="w-4 h-4" /> Criar Usuário</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="create">
           <CreateUserPanel />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <NotificationsPanel users={typedUsers} />
         </TabsContent>
 
         <TabsContent value="analytics">
