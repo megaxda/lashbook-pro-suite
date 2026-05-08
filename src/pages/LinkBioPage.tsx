@@ -100,10 +100,14 @@ export default function LinkBioPage() {
     try {
       let comprovanteUrl: string | null = null;
       if (profile?.cobrar_sinal && receiptFile) {
-        const path = `${slug}/${Date.now()}-${receiptFile.name}`;
+        const extMatch = receiptFile.name.match(/\.([a-zA-Z0-9]+)$/);
+        const ext = (extMatch?.[1] || "bin").toLowerCase();
+        const safeSlug = (slug || "anon").replace(/[^a-z0-9-]/gi, "").toLowerCase();
+        const rand = Math.random().toString(36).slice(2, 10);
+        const path = `${safeSlug}/${Date.now()}-${rand}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from("comprovantes")
-          .upload(path, receiptFile);
+          .upload(path, receiptFile, { contentType: receiptFile.type || undefined });
         if (upErr) throw upErr;
         comprovanteUrl = path;
       }
