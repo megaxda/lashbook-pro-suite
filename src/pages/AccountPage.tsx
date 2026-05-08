@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 function sanitizeSlug(input: string) {
   return input
