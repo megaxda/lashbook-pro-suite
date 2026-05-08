@@ -67,8 +67,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
+  const tryAutoPushSubscribe = async (userId: string) => {
+    try {
+      if (typeof window === "undefined") return;
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register("/sw.js"));
+      const existing = await reg.pushManager.getSubscription();
+      if (!existing) return;
+      const json = existing.toJSON();
+      await supabase.from("push_subscriptions").upsert(
+        { user_id: userId, endpoint: existing.endpoint, p256dh: json.keys?.p256dh || "", auth: json.keys?.auth || "" },
+        { onConflict: "endpoint" },
+      );
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
-    // Check demo flag first
     if (typeof window !== 'undefined' && localStorage.getItem(DEMO_FLAG_KEY) === '1') {
       activateDemo();
       return;
@@ -77,15 +92,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      else setProfile(null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        tryAutoPushSubscribe(session.user.id);
+      } else setProfile(null);
       setLoading(false);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        tryAutoPushSubscribe(session.user.id);
+      }
       setLoading(false);
     });
 

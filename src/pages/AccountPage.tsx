@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 function sanitizeSlug(input: string) {
   return input
@@ -341,6 +342,35 @@ export default function AccountPage() {
           </Button>
         </TabsContent>
       </Tabs>
+      <PushNotificationsCard />
     </div>
   );
 }
+
+function PushNotificationsCard() {
+  const { supported, permission, subscribed, loading, subscribe } = usePushSubscription();
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="t-card-title text-foreground">Notificações push</span>
+      </div>
+      {!supported ? (
+        <p className="t-aux text-muted-foreground">Seu navegador não suporta notificações push.</p>
+      ) : subscribed && permission === "granted" ? (
+        <p className="t-aux text-success">Notificações ativadas neste dispositivo.</p>
+      ) : (
+        <>
+          <p className="t-aux text-muted-foreground">Receba avisos importantes mesmo com o app fechado.</p>
+          <button
+            onClick={subscribe}
+            disabled={loading}
+            className="t-button px-4 py-2 rounded-lg gradient-brand text-primary-foreground disabled:opacity-60"
+          >
+            {loading ? "Ativando..." : "Ativar notificações"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
