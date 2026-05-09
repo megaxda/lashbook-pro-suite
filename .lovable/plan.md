@@ -1,64 +1,47 @@
-## Módulo de Push Notifications no Painel Admin
+## Cadastro com trial de 7 dias + controle no admin
 
-### Estado atual
-- Tabela `push_subscriptions` já existe (endpoint, p256dh, auth, user_id)
-- `public/sw.js` já trata `push` e `notificationclick`
-- **Falta:** registro da subscription no cliente, chaves VAPID, edge function de envio e UI admin
+### Visão geral
+Adicionar aba "Criar conta" na tela de login. Quem se cadastrar por ali ganha 7 dias de acesso. Após esse período, a conta é bloqueada e o usuário não consegue mais entrar no app — somente o admin pode liberar (estender por X dias ou liberar para sempre) pelo painel.
 
-### O que será construído
+### Mudanças no banco
+Adicionar à tabela `profiles`:
+- `access_expires_at timestamptz NULL` — data limite de acesso. `NULL` = acesso ilimitado (admins, contas liberadas para sempre, ou contas criadas internamente via `/creatifin`).
+- `signup_origin text DEFAULT 'internal'` — marca origem (`'public'` para cadastros pela tela de login, `'internal'` para os criados via `/creatifin`).
 
-**1. Chaves VAPID (secrets)**
-Gerar par de chaves VAPID e salvar como secrets de runtime:
-- `VAPID_PUBLIC_KEY` (também exposta ao cliente)
-- `VAPID_PRIVATE_KEY`
-- `VAPID_SUBJECT` (mailto)
+Atualizar a função `handle_new_user()` para ler `raw_user_meta_data->>'signup_origin'`:
+- Se for `'public'` → grava `signup_origin = 'public'` e `access_expires_at = now() + interval '7 days'`.
+- Caso contrário → mantém `access_expires_at = NULL` (acesso ilimitado, comportamento atual).
 
-Adicionar `VAPID_PUBLIC_KEY` também como variável pública (ou retornar via edge function `get-vapid-public-key`) para o cliente usar no subscribe.
+Política RLS continua a mesma — o bloqueio é feito na camada de app (mais simples, permite mostrar tela explicativa ao usuário).
 
-**2. Registro da subscription (lado cliente)**
-Novo hook `src/hooks/usePushSubscription.ts`:
-- Registra `/sw.js`
-- Pede permissão de notificação
-- Cria `PushSubscription` com a public key
-- Salva/upserta em `push_subscriptions` (user_id = usuário logado)
+### Tela de login (`src/pages/Auth.tsx`)
+Adicionar tabs "Entrar" / "Criar conta". A aba de cadastro pede nome, email e senha e chama `signUp` passando `signup_origin: 'public'` no `data`. Mensagem de sucesso avisa: *"Conta criada! Você tem 7 dias de acesso gratuito."*
 
-Disparar automaticamente após login (no `AuthContext` ou `MainLayout`) com checagem de suporte (`'serviceWorker' in navigator && 'PushManager' in window`).
+### Bloqueio de acesso
+No `AuthContext`, após carregar o `profile`, calcular `isBlocked = profile.access_expires_at && new Date(profile.access_expires_at) < new Date()` (admins nunca são bloqueados). Expor `isBlocked` no contexto.
 
-Botão "Ativar notificações" em `AccountPage` para usuários que negaram inicialmente.
+Criar componente `AccountBlocked` (tela cheia) com mensagem: *"Seu período de teste de 7 dias terminou. Entre em contato com o administrador para liberar o acesso."* + botão "Sair".
 
-**3. Edge Function `send-push` (verify_jwt = true, admin-only)**
-- Valida JWT, confirma `current_user_is_admin()`
-- Body: `{ title, body, url?, target: 'all' | { user_id } }`
-- Carrega subscriptions da tabela conforme target
-- Usa `web-push` (via npm em Deno) com chaves VAPID para enviar
-- Remove subscriptions inválidas (410/404)
-- Retorna `{ sent, failed }`
+No `ProtectedRoute` (App.tsx), se `isBlocked` → renderiza `AccountBlocked` em vez do conteúdo. `AdminRoute` continua acessível para admins.
 
-**4. UI Admin — nova aba "Notificações" em `AdminPage.tsx`**
-Formulário:
-- Título (obrigatório)
-- Mensagem (obrigatório, textarea)
-- URL de destino (opcional, default `/`)
-- Destinatário: radio "Todos os usuários" / "Usuário específico"
-  - Se específico: combobox listando usuários (`profiles` já carregado em useAdminUsers)
-- Botão "Enviar notificação" → invoca `send-push`
-- Toast com resultado (X enviadas, Y falhas)
-- Histórico simples opcional (últimos envios em memória da sessão)
+### Painel admin (`AdminPage.tsx` + `useAdminUsers.ts`)
+Na lista de usuários, mostrar uma coluna/badge de status:
+- "Ativo (ilimitado)" se `access_expires_at` é `NULL`
+- "Trial — expira em DD/MM" se futuro
+- "Bloqueado" se passado
+
+Adicionar ações por usuário:
+- **Estender prazo** → input de dias (ex: 7, 30, 90) → atualiza `access_expires_at = now() + dias`.
+- **Liberar para sempre** → seta `access_expires_at = NULL`.
+- **Bloquear agora** → seta `access_expires_at = now() - 1 minuto`.
 
 ### Detalhes técnicos
-**Arquivos a criar:**
-- `supabase/functions/send-push/index.ts`
-- `src/hooks/usePushSubscription.ts`
-- `supabase/config.toml` — bloco `[functions.send-push]` com `verify_jwt = true`
+- Migration nova: 2 colunas em `profiles` + `CREATE OR REPLACE FUNCTION public.handle_new_user()` atualizada.
+- `AuthContext` expõe `isBlocked: boolean`.
+- Refresh do profile em ações do admin via `queryClient.invalidateQueries(['admin-users'])` (já existente).
+- A função `is_admin`/`current_user_is_admin` existente continua sendo usada para distinguir admins (eles sempre têm `access_expires_at = NULL` por padrão e além disso ignoramos bloqueio se `role = 'admin'`).
 
-**Arquivos a editar:**
-- `src/pages/AdminPage.tsx` — nova aba "Notificações"
-- `src/contexts/AuthContext.tsx` ou `src/components/layout/MainLayout.tsx` — disparar registro da subscription após login
-- `src/pages/AccountPage.tsx` — toggle "Receber notificações push"
-
-**Migrações:** nenhuma (tabela `push_subscriptions` já existe com RLS por user_id).
-
-**Secrets necessários (vou pedir após sua aprovação):** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. Posso gerar o par VAPID para você e instruir como colar.
-
-### Resposta direta à pergunta
-Sim — o admin poderá escolher entre **enviar para todos** ou **selecionar um usuário específico**. Ambos funcionarão.
+### Arquivos
+- **Migration**: nova SQL com `ALTER TABLE profiles` + `handle_new_user` atualizada.
+- **Editar**: `src/pages/Auth.tsx`, `src/contexts/AuthContext.tsx`, `src/App.tsx`, `src/pages/AdminPage.tsx`, `src/hooks/useAdminUsers.ts`.
+- **Criar**: `src/components/AccountBlocked.tsx`.
