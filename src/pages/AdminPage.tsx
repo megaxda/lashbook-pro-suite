@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send } from "lucide-react";
+import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send, Clock, Infinity as InfinityIcon, Ban } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-type DialogMode = "plan" | "edit" | "details" | "magic-link" | null;
+type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | null;
 
 interface UserRow {
   id: string;
@@ -28,6 +28,8 @@ interface UserRow {
   status_conta?: string;
   created_at?: string;
   last_login?: string;
+  access_expires_at?: string | null;
+  signup_origin?: string | null;
 }
 
 export default function AdminPage() {
@@ -37,6 +39,7 @@ export default function AdminPage() {
   const [newPlan, setNewPlan] = useState("");
   const [editForm, setEditForm] = useState({ nome: "", email: "", telefone: "" });
   const [magicLink, setMagicLink] = useState("");
+  const [extendDays, setExtendDays] = useState<number>(30);
 
   const typedUsers = users as UserRow[];
 
@@ -78,9 +81,32 @@ export default function AdminPage() {
     setDialogMode(null);
   };
 
+  const handleExtendAccess = () => {
+    if (!selectedUser) return;
+    const newDate = new Date(Date.now() + extendDays * 24 * 60 * 60 * 1000).toISOString();
+    updateUser.mutate({ id: selectedUser.id, updates: { access_expires_at: newDate } });
+    setDialogMode(null);
+  };
+
+  const handleUnlockForever = (user: UserRow) => {
+    updateUser.mutate({ id: user.id, updates: { access_expires_at: null } });
+  };
+
+  const handleBlockNow = (user: UserRow) => {
+    const past = new Date(Date.now() - 60 * 1000).toISOString();
+    updateUser.mutate({ id: user.id, updates: { access_expires_at: past } });
+  };
+
   const copyMagicLink = () => {
     navigator.clipboard.writeText(magicLink);
     toast.success("Link copiado!");
+  };
+
+  const accessInfo = (u: UserRow) => {
+    if (!u.access_expires_at) return { label: "Ilimitado", cls: "bg-emerald-500/15 text-emerald-400 border-0" };
+    const exp = new Date(u.access_expires_at);
+    if (exp.getTime() < Date.now()) return { label: "Bloqueado", cls: "bg-destructive/15 text-destructive border-0" };
+    return { label: `Até ${exp.toLocaleDateString("pt-BR")}`, cls: "bg-amber-500/15 text-amber-400 border-0" };
   };
 
   const planBadge = (plan: string) => {
@@ -163,19 +189,23 @@ export default function AdminPage() {
                     <TableHead className="hidden md:table-cell">Telefone</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Acesso</TableHead>
                     <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
                     <TableHead className="hidden lg:table-cell">Último Acesso</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {typedUsers.map(u => (
+                  {typedUsers.map(u => {
+                    const acc = accessInfo(u);
+                    return (
                     <TableRow key={u.id} className="border-border/50">
                       <TableCell className="font-medium text-foreground">{u.nome || u.email?.split("@")[0] || "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden sm:table-cell">{u.email || "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden md:table-cell">{u.telefone || "—"}</TableCell>
                       <TableCell><Badge className={planBadge(u.plano || "basico")}>{u.plano || "basico"}</Badge></TableCell>
                       <TableCell><Badge className={statusBadge(u.status_conta || "ativo")}>{u.status_conta || "ativo"}</Badge></TableCell>
+                      <TableCell><Badge className={acc.cls}>{acc.label}</Badge></TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">{u.last_login ? new Date(u.last_login).toLocaleDateString("pt-BR") : "—"}</TableCell>
                       <TableCell>
@@ -187,6 +217,10 @@ export default function AdminPage() {
                               {(u.status_conta || "ativo") === "ativo" ? <><PauseCircle className="w-4 h-4" /> Pausar Conta</> : <><PlayCircle className="w-4 h-4" /> Ativar Conta</>}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openDialog("extend", u)} className="gap-2"><Clock className="w-4 h-4" /> Estender prazo</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUnlockForever(u)} className="gap-2"><InfinityIcon className="w-4 h-4" /> Liberar para sempre</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleBlockNow(u)} className="gap-2 text-destructive focus:text-destructive"><Ban className="w-4 h-4" /> Bloquear agora</DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => openDialog("edit", u)} className="gap-2"><Pencil className="w-4 h-4" /> Editar Dados</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("details", u)} className="gap-2"><Eye className="w-4 h-4" /> Ver Detalhes</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("magic-link", u)} className="gap-2"><Link2 className="w-4 h-4" /> Gerar Link Mágico</DropdownMenuItem>
@@ -194,9 +228,10 @@ export default function AdminPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {typedUsers.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">Nenhum usuário encontrado.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">Nenhum usuário encontrado.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -259,6 +294,37 @@ export default function AdminPage() {
             <Input value={magicLink} readOnly className="bg-secondary border-border" />
             <Button onClick={copyMagicLink} variant="outline"><Copy className="w-4 h-4" /></Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogMode === "extend"} onOpenChange={open => !open && setDialogMode(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Estender prazo de acesso</DialogTitle>
+            <DialogDescription>
+              Defina por quantos dias {selectedUser?.nome || selectedUser?.email} terá acesso a partir de hoje.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {[7, 15, 30, 60, 90, 180, 365].map(d => (
+                <Button key={d} type="button" variant={extendDays === d ? "default" : "outline"} size="sm" onClick={() => setExtendDays(d)}>
+                  {d} dias
+                </Button>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Label>Dias personalizados</Label>
+              <Input type="number" min={1} value={extendDays} onChange={e => setExtendDays(Math.max(1, Number(e.target.value) || 1))} className="bg-secondary border-border" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Novo limite: <strong className="text-foreground">{new Date(Date.now() + extendDays * 86400000).toLocaleDateString("pt-BR")}</strong>
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogMode(null)}>Cancelar</Button>
+            <Button onClick={handleExtendAccess}>Aplicar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

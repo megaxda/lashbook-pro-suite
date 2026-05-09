@@ -298,6 +298,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_expires_at: string | null
           bio: string | null
           cobrar_sinal: boolean | null
           created_at: string
@@ -313,6 +314,7 @@ export type Database = {
           pix_key_type: string | null
           plano: string | null
           role: string
+          signup_origin: string
           site: string | null
           slug: string | null
           status_conta: string | null
@@ -323,6 +325,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          access_expires_at?: string | null
           bio?: string | null
           cobrar_sinal?: boolean | null
           created_at?: string
@@ -338,6 +341,7 @@ export type Database = {
           pix_key_type?: string | null
           plano?: string | null
           role?: string
+          signup_origin?: string
           site?: string | null
           slug?: string | null
           status_conta?: string | null
@@ -348,6 +352,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          access_expires_at?: string | null
           bio?: string | null
           cobrar_sinal?: boolean | null
           created_at?: string
@@ -363,6 +368,7 @@ export type Database = {
           pix_key_type?: string | null
           plano?: string | null
           role?: string
+          signup_origin?: string
           site?: string | null
           slug?: string | null
           status_conta?: string | null
