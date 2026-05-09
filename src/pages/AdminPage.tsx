@@ -296,6 +296,37 @@ export default function AdminPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={dialogMode === "extend"} onOpenChange={open => !open && setDialogMode(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Estender prazo de acesso</DialogTitle>
+            <DialogDescription>
+              Defina por quantos dias {selectedUser?.nome || selectedUser?.email} terá acesso a partir de hoje.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {[7, 15, 30, 60, 90, 180, 365].map(d => (
+                <Button key={d} type="button" variant={extendDays === d ? "default" : "outline"} size="sm" onClick={() => setExtendDays(d)}>
+                  {d} dias
+                </Button>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Label>Dias personalizados</Label>
+              <Input type="number" min={1} value={extendDays} onChange={e => setExtendDays(Math.max(1, Number(e.target.value) || 1))} className="bg-secondary border-border" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Novo limite: <strong className="text-foreground">{new Date(Date.now() + extendDays * 86400000).toLocaleDateString("pt-BR")}</strong>
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogMode(null)}>Cancelar</Button>
+            <Button onClick={handleExtendAccess}>Aplicar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
