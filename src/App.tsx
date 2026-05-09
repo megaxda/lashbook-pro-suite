@@ -12,13 +12,15 @@ import LinkBioPage from "@/pages/LinkBioPage";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import CreateFinPage from "@/pages/CreateFinPage";
+import AccountBlocked from "@/components/AccountBlocked";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isBlocked } = useAuth();
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-primary">Carregando...</div></div>;
   if (!user) return <Navigate to="/auth" replace />;
+  if (isBlocked) return <AccountBlocked />;
   return <>{children}</>;
 }
 

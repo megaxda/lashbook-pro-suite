@@ -23,6 +23,8 @@ interface Profile {
   whatsapp: string | null;
   site: string | null;
   outros_links: any;
+  access_expires_at: string | null;
+  signup_origin: string | null;
 }
 
 interface AuthContextType {
@@ -31,6 +33,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isDemo: boolean;
+  isBlocked: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -148,8 +151,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) await fetchProfile(user.id);
   };
 
+  const isBlocked = !!(
+    profile &&
+    profile.role !== 'admin' &&
+    profile.access_expires_at &&
+    new Date(profile.access_expires_at).getTime() < Date.now()
+  );
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, isDemo, signIn, signUp, signOut, refreshProfile, enableDemo }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isDemo, isBlocked, signIn, signUp, signOut, refreshProfile, enableDemo }}>
       {children}
     </AuthContext.Provider>
   );
