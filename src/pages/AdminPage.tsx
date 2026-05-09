@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send } from "lucide-react";
+import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send, Clock, Infinity as InfinityIcon, Ban } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-type DialogMode = "plan" | "edit" | "details" | "magic-link" | null;
+type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | null;
 
 interface UserRow {
   id: string;
@@ -28,6 +28,8 @@ interface UserRow {
   status_conta?: string;
   created_at?: string;
   last_login?: string;
+  access_expires_at?: string | null;
+  signup_origin?: string | null;
 }
 
 export default function AdminPage() {
@@ -37,6 +39,7 @@ export default function AdminPage() {
   const [newPlan, setNewPlan] = useState("");
   const [editForm, setEditForm] = useState({ nome: "", email: "", telefone: "" });
   const [magicLink, setMagicLink] = useState("");
+  const [extendDays, setExtendDays] = useState<number>(30);
 
   const typedUsers = users as UserRow[];
 
@@ -78,9 +81,32 @@ export default function AdminPage() {
     setDialogMode(null);
   };
 
+  const handleExtendAccess = () => {
+    if (!selectedUser) return;
+    const newDate = new Date(Date.now() + extendDays * 24 * 60 * 60 * 1000).toISOString();
+    updateUser.mutate({ id: selectedUser.id, updates: { access_expires_at: newDate } });
+    setDialogMode(null);
+  };
+
+  const handleUnlockForever = (user: UserRow) => {
+    updateUser.mutate({ id: user.id, updates: { access_expires_at: null } });
+  };
+
+  const handleBlockNow = (user: UserRow) => {
+    const past = new Date(Date.now() - 60 * 1000).toISOString();
+    updateUser.mutate({ id: user.id, updates: { access_expires_at: past } });
+  };
+
   const copyMagicLink = () => {
     navigator.clipboard.writeText(magicLink);
     toast.success("Link copiado!");
+  };
+
+  const accessInfo = (u: UserRow) => {
+    if (!u.access_expires_at) return { label: "Ilimitado", cls: "bg-emerald-500/15 text-emerald-400 border-0" };
+    const exp = new Date(u.access_expires_at);
+    if (exp.getTime() < Date.now()) return { label: "Bloqueado", cls: "bg-destructive/15 text-destructive border-0" };
+    return { label: `Até ${exp.toLocaleDateString("pt-BR")}`, cls: "bg-amber-500/15 text-amber-400 border-0" };
   };
 
   const planBadge = (plan: string) => {
