@@ -189,19 +189,23 @@ export default function AdminPage() {
                     <TableHead className="hidden md:table-cell">Telefone</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Acesso</TableHead>
                     <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
                     <TableHead className="hidden lg:table-cell">Último Acesso</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {typedUsers.map(u => (
+                  {typedUsers.map(u => {
+                    const acc = accessInfo(u);
+                    return (
                     <TableRow key={u.id} className="border-border/50">
                       <TableCell className="font-medium text-foreground">{u.nome || u.email?.split("@")[0] || "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden sm:table-cell">{u.email || "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden md:table-cell">{u.telefone || "—"}</TableCell>
                       <TableCell><Badge className={planBadge(u.plano || "basico")}>{u.plano || "basico"}</Badge></TableCell>
                       <TableCell><Badge className={statusBadge(u.status_conta || "ativo")}>{u.status_conta || "ativo"}</Badge></TableCell>
+                      <TableCell><Badge className={acc.cls}>{acc.label}</Badge></TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">{u.last_login ? new Date(u.last_login).toLocaleDateString("pt-BR") : "—"}</TableCell>
                       <TableCell>
@@ -213,6 +217,10 @@ export default function AdminPage() {
                               {(u.status_conta || "ativo") === "ativo" ? <><PauseCircle className="w-4 h-4" /> Pausar Conta</> : <><PlayCircle className="w-4 h-4" /> Ativar Conta</>}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openDialog("extend", u)} className="gap-2"><Clock className="w-4 h-4" /> Estender prazo</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUnlockForever(u)} className="gap-2"><InfinityIcon className="w-4 h-4" /> Liberar para sempre</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleBlockNow(u)} className="gap-2 text-destructive focus:text-destructive"><Ban className="w-4 h-4" /> Bloquear agora</DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => openDialog("edit", u)} className="gap-2"><Pencil className="w-4 h-4" /> Editar Dados</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("details", u)} className="gap-2"><Eye className="w-4 h-4" /> Ver Detalhes</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("magic-link", u)} className="gap-2"><Link2 className="w-4 h-4" /> Gerar Link Mágico</DropdownMenuItem>
@@ -220,9 +228,10 @@ export default function AdminPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {typedUsers.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">Nenhum usuário encontrado.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">Nenhum usuário encontrado.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
