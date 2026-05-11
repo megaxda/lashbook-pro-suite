@@ -44,7 +44,7 @@ export default function Auth() {
     }
     setSuSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: suEmail,
         password: suPassword,
         options: {
@@ -52,11 +52,24 @@ export default function Auth() {
           data: { full_name: suNome, signup_origin: 'public' },
         },
       });
-      if (error) toast.error(error.message);
-      else {
-        toast.success('Conta criada! Você tem 7 dias de acesso gratuito.');
-        setSuNome(''); setSuEmail(''); setSuPassword('');
+      if (error) {
+        toast.error(error.message);
+        return;
       }
+      // If session already returned (auto-confirm enabled), user is logged in
+      if (data.session) {
+        toast.success('Conta criada! Você tem 7 dias de acesso gratuito.');
+        // Navigate handled by <Navigate> when user becomes truthy
+      } else {
+        // Try sign-in immediately as fallback
+        const { error: siErr } = await signIn(suEmail, suPassword);
+        if (siErr) {
+          toast.success('Conta criada! Verifique seu email para ativar.');
+        } else {
+          toast.success('Conta criada! Bem-vinda — você tem 7 dias grátis.');
+        }
+      }
+      setSuNome(''); setSuEmail(''); setSuPassword('');
     } finally {
       setSuSubmitting(false);
     }
