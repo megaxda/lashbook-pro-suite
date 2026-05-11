@@ -216,6 +216,42 @@ export default function FinanceiroTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader><DialogTitle className="text-foreground">Editar Lançamento</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3 mt-2">
+              <div><Label className="text-muted-foreground text-xs">Tipo</Label>
+                <Select value={editing.tipo} onValueChange={v => setEditing({ ...editing, tipo: v })}>
+                  <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border"><SelectItem value="receita">Receita</SelectItem><SelectItem value="despesa">Despesa</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={editing.descricao || ""} onChange={e => setEditing({ ...editing, descricao: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label><Input type="number" value={editing.valor} onChange={e => setEditing({ ...editing, valor: parseFloat(e.target.value) || 0 })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={editing.data} onChange={e => setEditing({ ...editing, data: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Categoria</Label><Input value={editing.categoria || ""} onChange={e => setEditing({ ...editing, categoria: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+              <Button onClick={saveEdit} disabled={saving} className="w-full gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar alterações"}</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Excluir lançamento?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
