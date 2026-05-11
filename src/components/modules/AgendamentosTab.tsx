@@ -130,7 +130,21 @@ export default function AgendamentosTab() {
     setCurrentDate(d);
   };
 
-  const openAppt = (a: Agendamento) => { setSelectedAppt(a); setEditStatus(a.status || "pendente"); setEditPayment(a.forma_pagamento || ""); setEditNotes(a.notas || ""); };
+  const openAppt = async (a: Agendamento) => {
+    setSelectedAppt(a);
+    setEditStatus(a.status || "pendente");
+    setEditPayment(a.forma_pagamento || "");
+    setEditNotes(a.notas || "");
+    setEditData(a.data);
+    setEditHorario(a.horario?.slice(0, 5) || "");
+    setEditClienteId(a.cliente_id || "");
+    setEditServicoId(a.servico_id || "");
+    setComprovanteUrl(null);
+    if (a.comprovante_url && !isDemo) {
+      const { data } = await supabase.storage.from("comprovantes").createSignedUrl(a.comprovante_url, 600);
+      setComprovanteUrl(data?.signedUrl || null);
+    }
+  };
   const currentDateStr = localDateStr(currentDate);
   const todayStr = localDateStr();
 
@@ -156,10 +170,31 @@ export default function AgendamentosTab() {
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
     setSaving(true);
-    const { error } = await supabase.from("agendamentos").update({ status: editStatus, forma_pagamento: editPayment || null, notas: editNotes || null }).eq("id", selectedAppt.id);
+    const { error } = await supabase.from("agendamentos").update({
+      status: editStatus,
+      forma_pagamento: editPayment || null,
+      notas: editNotes || null,
+      data: editData,
+      horario: editHorario,
+      cliente_id: editClienteId || null,
+      servico_id: editServicoId || null,
+    }).eq("id", selectedAppt.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
     toast.success("Agendamento atualizado!");
+    setSelectedAppt(null);
+    fetchAll();
+  };
+
+  const deleteAppt = async () => {
+    if (!selectedAppt) return;
+    if (demoBlock()) { setSelectedAppt(null); return; }
+    if (!confirm("Excluir este agendamento?")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("agendamentos").delete().eq("id", selectedAppt.id);
+    setDeleting(false);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Agendamento excluído.");
     setSelectedAppt(null);
     fetchAll();
   };
