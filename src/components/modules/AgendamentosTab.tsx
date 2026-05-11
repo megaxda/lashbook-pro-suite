@@ -120,6 +120,20 @@ export default function AgendamentosTab() {
 
   useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
+  // Auto-open appointment from ?open=ID (e.g., when navigating from dashboard)
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (!openId || appointments.length === 0) return;
+    const target = appointments.find(a => a.id === openId);
+    if (target) {
+      openAppt(target);
+      const next = new URLSearchParams(searchParams);
+      next.delete("open");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line
+  }, [appointments, searchParams]);
+
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const navigate = (dir: number) => {
