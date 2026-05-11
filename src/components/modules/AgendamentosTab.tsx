@@ -13,12 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Agendamento {
   id: string; data: string; horario: string; status: string | null; notas: string | null;
   origem: string | null; forma_pagamento: string | null; sinal_pago: boolean | null;
   cliente_id: string | null; servico_id: string | null; user_id: string;
+  comprovante_url: string | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
 
@@ -70,6 +71,7 @@ function getDaysInMonth(date: Date) {
 export default function AgendamentosTab() {
   const { user, isDemo } = useAuth();
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
@@ -80,6 +82,12 @@ export default function AgendamentosTab() {
   const [editStatus, setEditStatus] = useState("");
   const [editPayment, setEditPayment] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editData, setEditData] = useState("");
+  const [editHorario, setEditHorario] = useState("");
+  const [editClienteId, setEditClienteId] = useState("");
+  const [editServicoId, setEditServicoId] = useState("");
+  const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
@@ -112,6 +120,20 @@ export default function AgendamentosTab() {
 
   useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
+  // Auto-open appointment from ?open=ID (e.g., when navigating from dashboard)
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (!openId || appointments.length === 0) return;
+    const target = appointments.find(a => a.id === openId);
+    if (target) {
+      openAppt(target);
+      const next = new URLSearchParams(searchParams);
+      next.delete("open");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line
+  }, [appointments, searchParams]);
+
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const navigate = (dir: number) => {
@@ -123,7 +145,21 @@ export default function AgendamentosTab() {
     setCurrentDate(d);
   };
 
-  const openAppt = (a: Agendamento) => { setSelectedAppt(a); setEditStatus(a.status || "pendente"); setEditPayment(a.forma_pagamento || ""); setEditNotes(a.notas || ""); };
+  const openAppt = async (a: Agendamento) => {
+    setSelectedAppt(a);
+    setEditStatus(a.status || "pendente");
+    setEditPayment(a.forma_pagamento || "");
+    setEditNotes(a.notas || "");
+    setEditData(a.data);
+    setEditHorario(a.horario?.slice(0, 5) || "");
+    setEditClienteId(a.cliente_id || "");
+    setEditServicoId(a.servico_id || "");
+    setComprovanteUrl(null);
+    if (a.comprovante_url && !isDemo) {
+      const { data } = await supabase.storage.from("comprovantes").createSignedUrl(a.comprovante_url, 600);
+      setComprovanteUrl(data?.signedUrl || null);
+    }
+  };
   const currentDateStr = localDateStr(currentDate);
   const todayStr = localDateStr();
 
@@ -149,10 +185,31 @@ export default function AgendamentosTab() {
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
     setSaving(true);
-    const { error } = await supabase.from("agendamentos").update({ status: editStatus, forma_pagamento: editPayment || null, notas: editNotes || null }).eq("id", selectedAppt.id);
+    const { error } = await supabase.from("agendamentos").update({
+      status: editStatus,
+      forma_pagamento: editPayment || null,
+      notas: editNotes || null,
+      data: editData,
+      horario: editHorario,
+      cliente_id: editClienteId || null,
+      servico_id: editServicoId || null,
+    }).eq("id", selectedAppt.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
     toast.success("Agendamento atualizado!");
+    setSelectedAppt(null);
+    fetchAll();
+  };
+
+  const deleteAppt = async () => {
+    if (!selectedAppt) return;
+    if (demoBlock()) { setSelectedAppt(null); return; }
+    if (!confirm("Excluir este agendamento?")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("agendamentos").delete().eq("id", selectedAppt.id);
+    setDeleting(false);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Agendamento excluído.");
     setSelectedAppt(null);
     fetchAll();
   };
@@ -399,10 +456,28 @@ export default function AgendamentosTab() {
               <DialogHeader><DialogTitle className="text-foreground">Detalhes</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Cliente</p><p className="font-medium text-foreground text-sm">{selectedAppt.clientes?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Serviço</p><p className="font-medium text-foreground text-sm">{selectedAppt.servicos?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Data/Hora</p><p className="font-medium text-foreground text-sm">{parseDateStr(selectedAppt.data).toLocaleDateString("pt-BR")} {selectedAppt.horario?.slice(0, 5)}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Valor</p><p className="font-medium text-foreground text-sm">R$ {selectedAppt.servicos?.preco || 0}</p></div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground text-xs">Cliente</Label>
+                    <Select value={editClienteId} onValueChange={setEditClienteId}>
+                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground text-xs">Serviço (valor)</Label>
+                    <Select value={editServicoId} onValueChange={setEditServicoId}>
+                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} — R$ {s.preco || 0}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Data</Label>
+                    <Input type="date" value={editData} onChange={e => setEditData(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Horário</Label>
+                    <Input type="time" value={editHorario} onChange={e => setEditHorario(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                  </div>
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
@@ -418,7 +493,20 @@ export default function AgendamentosTab() {
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Observações</Label>
                   <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border mt-1 min-h-[60px]" /></div>
-                <Button onClick={updateAppt} disabled={saving} className="w-full gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+                {selectedAppt.comprovante_url && (
+                  <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20">
+                    <p className="text-xs text-muted-foreground mb-1">Comprovante de pagamento</p>
+                    {comprovanteUrl ? (
+                      <a href={comprovanteUrl} target="_blank" rel="noreferrer" className="text-primary text-sm font-medium underline">Abrir comprovante enviado</a>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Carregando...</p>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button onClick={updateAppt} disabled={saving} className="flex-1 gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+                  <Button onClick={deleteAppt} disabled={deleting} variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 min-h-[44px]">Excluir</Button>
+                </div>
               </div>
             </>
           )}

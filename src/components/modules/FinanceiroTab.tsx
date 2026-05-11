@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { demoFinanceiro } from "@/data/demoData";
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,6 +35,8 @@ export default function FinanceiroTab() {
   const [newAmount, setNewAmount] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [editing, setEditing] = useState<Transacao | null>(null);
+  const [deleting, setDeleting] = useState<Transacao | null>(null);
 
   const fetchTransactions = async () => {
     if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setLoading(false); return; }
@@ -72,6 +75,31 @@ export default function FinanceiroTab() {
     toast.success("Transação salva!");
     setNewDesc(""); setNewAmount(""); setNewDate(""); setNewCategory("");
     setDialogOpen(false);
+    fetchTransactions();
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setEditing(null); return; }
+    setSaving(true);
+    const { error } = await supabase.from("financeiro").update({
+      tipo: editing.tipo, descricao: editing.descricao, valor: Number(editing.valor) || 0,
+      data: editing.data, categoria: editing.categoria,
+    }).eq("id", editing.id);
+    setSaving(false);
+    if (error) { toast.error("Erro ao salvar"); return; }
+    toast.success("Lançamento atualizado!");
+    setEditing(null);
+    fetchTransactions();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setDeleting(null); return; }
+    const { error } = await supabase.from("financeiro").delete().eq("id", deleting.id);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Lançamento excluído.");
+    setDeleting(null);
     fetchTransactions();
   };
 
@@ -129,12 +157,17 @@ export default function FinanceiroTab() {
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Descrição</th>
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Data</th>
                 <th className="text-right p-2.5 text-muted-foreground font-medium text-xs">Valor</th>
+                <th className="p-2.5 w-[88px]" />
               </tr></thead>
-              <tbody>{receitas.length === 0 ? <tr><td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">Nenhuma receita.</td></tr> : receitas.map(t => (
+              <tbody>{receitas.length === 0 ? <tr><td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">Nenhuma receita.</td></tr> : receitas.map(t => (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
                   <td className="p-2.5 text-foreground text-sm">{t.descricao || "—"}</td>
                   <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{new Date(t.data + "T12:00").toLocaleDateString("pt-BR")}</td>
                   <td className="p-2.5 text-right font-semibold text-success text-sm">+R$ {t.valor.toLocaleString("pt-BR")}</td>
+                  <td className="p-1.5 text-right whitespace-nowrap">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditing({ ...t })} aria-label="Editar"><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(t)} aria-label="Excluir"><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
@@ -147,12 +180,17 @@ export default function FinanceiroTab() {
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Descrição</th>
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Data</th>
                 <th className="text-right p-2.5 text-muted-foreground font-medium text-xs">Valor</th>
+                <th className="p-2.5 w-[88px]" />
               </tr></thead>
-              <tbody>{despesas.length === 0 ? <tr><td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">Nenhuma despesa.</td></tr> : despesas.map(t => (
+              <tbody>{despesas.length === 0 ? <tr><td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">Nenhuma despesa.</td></tr> : despesas.map(t => (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
                   <td className="p-2.5 text-foreground text-sm">{t.descricao || "—"}</td>
                   <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{new Date(t.data + "T12:00").toLocaleDateString("pt-BR")}</td>
                   <td className="p-2.5 text-right font-semibold text-destructive text-sm">-R$ {t.valor.toLocaleString("pt-BR")}</td>
+                  <td className="p-1.5 text-right whitespace-nowrap">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditing({ ...t })} aria-label="Editar"><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(t)} aria-label="Excluir"><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
@@ -178,6 +216,42 @@ export default function FinanceiroTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader><DialogTitle className="text-foreground">Editar Lançamento</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3 mt-2">
+              <div><Label className="text-muted-foreground text-xs">Tipo</Label>
+                <Select value={editing.tipo} onValueChange={v => setEditing({ ...editing, tipo: v })}>
+                  <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border"><SelectItem value="receita">Receita</SelectItem><SelectItem value="despesa">Despesa</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={editing.descricao || ""} onChange={e => setEditing({ ...editing, descricao: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label><Input type="number" value={editing.valor} onChange={e => setEditing({ ...editing, valor: parseFloat(e.target.value) || 0 })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={editing.data} onChange={e => setEditing({ ...editing, data: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Categoria</Label><Input value={editing.categoria || ""} onChange={e => setEditing({ ...editing, categoria: e.target.value })} className="bg-secondary border-border mt-1" /></div>
+              <Button onClick={saveEdit} disabled={saving} className="w-full gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar alterações"}</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Excluir lançamento?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
