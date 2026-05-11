@@ -71,6 +71,7 @@ function getDaysInMonth(date: Date) {
 export default function AgendamentosTab() {
   const { user, isDemo } = useAuth();
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
