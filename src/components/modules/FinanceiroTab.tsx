@@ -157,12 +157,17 @@ export default function FinanceiroTab() {
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Descrição</th>
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Data</th>
                 <th className="text-right p-2.5 text-muted-foreground font-medium text-xs">Valor</th>
+                <th className="p-2.5 w-[88px]" />
               </tr></thead>
-              <tbody>{receitas.length === 0 ? <tr><td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">Nenhuma receita.</td></tr> : receitas.map(t => (
+              <tbody>{receitas.length === 0 ? <tr><td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">Nenhuma receita.</td></tr> : receitas.map(t => (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
                   <td className="p-2.5 text-foreground text-sm">{t.descricao || "—"}</td>
                   <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{new Date(t.data + "T12:00").toLocaleDateString("pt-BR")}</td>
                   <td className="p-2.5 text-right font-semibold text-success text-sm">+R$ {t.valor.toLocaleString("pt-BR")}</td>
+                  <td className="p-1.5 text-right whitespace-nowrap">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditing({ ...t })} aria-label="Editar"><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(t)} aria-label="Excluir"><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
@@ -175,12 +180,17 @@ export default function FinanceiroTab() {
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Descrição</th>
                 <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Data</th>
                 <th className="text-right p-2.5 text-muted-foreground font-medium text-xs">Valor</th>
+                <th className="p-2.5 w-[88px]" />
               </tr></thead>
-              <tbody>{despesas.length === 0 ? <tr><td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">Nenhuma despesa.</td></tr> : despesas.map(t => (
+              <tbody>{despesas.length === 0 ? <tr><td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">Nenhuma despesa.</td></tr> : despesas.map(t => (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
                   <td className="p-2.5 text-foreground text-sm">{t.descricao || "—"}</td>
                   <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{new Date(t.data + "T12:00").toLocaleDateString("pt-BR")}</td>
                   <td className="p-2.5 text-right font-semibold text-destructive text-sm">-R$ {t.valor.toLocaleString("pt-BR")}</td>
+                  <td className="p-1.5 text-right whitespace-nowrap">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditing({ ...t })} aria-label="Editar"><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleting(t)} aria-label="Excluir"><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
