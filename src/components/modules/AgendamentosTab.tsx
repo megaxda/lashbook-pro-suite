@@ -19,6 +19,7 @@ interface Agendamento {
   id: string; data: string; horario: string; status: string | null; notas: string | null;
   origem: string | null; forma_pagamento: string | null; sinal_pago: boolean | null;
   cliente_id: string | null; servico_id: string | null; user_id: string;
+  comprovante_url: string | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
 
