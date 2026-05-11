@@ -81,6 +81,12 @@ export default function AgendamentosTab() {
   const [editStatus, setEditStatus] = useState("");
   const [editPayment, setEditPayment] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editData, setEditData] = useState("");
+  const [editHorario, setEditHorario] = useState("");
+  const [editClienteId, setEditClienteId] = useState("");
+  const [editServicoId, setEditServicoId] = useState("");
+  const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
