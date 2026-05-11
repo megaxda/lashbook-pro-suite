@@ -214,7 +214,11 @@ export default function DashboardTab() {
   const weekDays = ["S", "T", "Q", "Q", "S", "S", "D"];
 
   const renderApptRow = (a: Appt) => (
-    <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors min-h-[56px]">
+    <button
+      key={a.id}
+      onClick={() => navigate(`/home_profissional?tab=Agendamentos&open=${a.id}`)}
+      className="w-full text-left flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors min-h-[56px]"
+    >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusDotColor[a.status || "pendente"] }} />
         <div className="min-w-0">
@@ -226,7 +230,7 @@ export default function DashboardTab() {
         <p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p>
         <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
       </div>
-    </div>
+    </button>
   );
 
   if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
