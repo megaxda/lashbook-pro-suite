@@ -78,6 +78,31 @@ export default function FinanceiroTab() {
     fetchTransactions();
   };
 
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setEditing(null); return; }
+    setSaving(true);
+    const { error } = await supabase.from("financeiro").update({
+      tipo: editing.tipo, descricao: editing.descricao, valor: Number(editing.valor) || 0,
+      data: editing.data, categoria: editing.categoria,
+    }).eq("id", editing.id);
+    setSaving(false);
+    if (error) { toast.error("Erro ao salvar"); return; }
+    toast.success("Lançamento atualizado!");
+    setEditing(null);
+    fetchTransactions();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); setDeleting(null); return; }
+    const { error } = await supabase.from("financeiro").delete().eq("id", deleting.id);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Lançamento excluído.");
+    setDeleting(null);
+    fetchTransactions();
+  };
+
   if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando financeiro...</p></div>;
 
   return (
