@@ -441,10 +441,28 @@ export default function AgendamentosTab() {
               <DialogHeader><DialogTitle className="text-foreground">Detalhes</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Cliente</p><p className="font-medium text-foreground text-sm">{selectedAppt.clientes?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Serviço</p><p className="font-medium text-foreground text-sm">{selectedAppt.servicos?.nome || "—"}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Data/Hora</p><p className="font-medium text-foreground text-sm">{parseDateStr(selectedAppt.data).toLocaleDateString("pt-BR")} {selectedAppt.horario?.slice(0, 5)}</p></div>
-                  <div className="p-2.5 rounded-lg bg-secondary/50"><p className="text-xs text-muted-foreground">Valor</p><p className="font-medium text-foreground text-sm">R$ {selectedAppt.servicos?.preco || 0}</p></div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground text-xs">Cliente</Label>
+                    <Select value={editClienteId} onValueChange={setEditClienteId}>
+                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground text-xs">Serviço (valor)</Label>
+                    <Select value={editServicoId} onValueChange={setEditServicoId}>
+                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} — R$ {s.preco || 0}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Data</Label>
+                    <Input type="date" value={editData} onChange={e => setEditData(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Horário</Label>
+                    <Input type="time" value={editHorario} onChange={e => setEditHorario(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                  </div>
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
@@ -460,7 +478,20 @@ export default function AgendamentosTab() {
                 </div>
                 <div><Label className="text-muted-foreground text-xs">Observações</Label>
                   <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border mt-1 min-h-[60px]" /></div>
-                <Button onClick={updateAppt} disabled={saving} className="w-full gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+                {selectedAppt.comprovante_url && (
+                  <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20">
+                    <p className="text-xs text-muted-foreground mb-1">Comprovante de pagamento</p>
+                    {comprovanteUrl ? (
+                      <a href={comprovanteUrl} target="_blank" rel="noreferrer" className="text-primary text-sm font-medium underline">Abrir comprovante enviado</a>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Carregando...</p>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button onClick={updateAppt} disabled={saving} className="flex-1 gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+                  <Button onClick={deleteAppt} disabled={deleting} variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 min-h-[44px]">Excluir</Button>
+                </div>
               </div>
             </>
           )}
