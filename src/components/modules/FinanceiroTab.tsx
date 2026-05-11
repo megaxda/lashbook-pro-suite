@@ -35,6 +35,8 @@ export default function FinanceiroTab() {
   const [newAmount, setNewAmount] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [editing, setEditing] = useState<Transacao | null>(null);
+  const [deleting, setDeleting] = useState<Transacao | null>(null);
 
   const fetchTransactions = async () => {
     if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setLoading(false); return; }
