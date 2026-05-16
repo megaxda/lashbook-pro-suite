@@ -304,24 +304,120 @@ export default function DashboardTab() {
         </ResponsiveContainer>
       </div>
 
-      {/* Today appointments */}
-      <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-foreground">Agendamentos de Hoje</h3>
-          <span className="text-xs text-muted-foreground">{parseDateStr(todayDateStr).toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}</span>
-        </div>
-        <div className="space-y-1.5">
-          {todayAppts.length === 0 && (
-            <div className="text-center py-4">
-              <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento hoje.</p>
-              <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9 min-h-[44px] sm:min-h-[36px]" onClick={() => { setNewForm(f => ({ ...f, data: todayDateStr })); setNewOpen(true); }}>
-                <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
-              </Button>
+      {/* Appointments with period filter */}
+      {(() => {
+        const cursorStr = localDateStr(apptCursor);
+        const navPeriod = (dir: number) => {
+          const d = new Date(apptCursor);
+          if (apptView === "Diário") d.setDate(d.getDate() + dir);
+          else if (apptView === "Semanal") d.setDate(d.getDate() + dir * 7);
+          else d.setMonth(d.getMonth() + dir);
+          setApptCursor(d);
+        };
+        const headerLabel = apptView === "Mensal"
+          ? apptCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+          : apptCursor.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+
+        const diarioAppts = appointments.filter(a => a.data === cursorStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+        const weekDates = getWeekDates(apptCursor);
+        const weekDays7 = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+        const monthDays = getDaysInMonth(apptCursor);
+        const monthShort = ["S", "T", "Q", "Q", "S", "S", "D"];
+
+        return (
+          <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Agendamentos</h3>
+              <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5 self-start sm:self-auto">
+                {apptViews.map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setApptView(v)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                      apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-          {todayAppts.map(renderApptRow)}
-        </div>
-      </div>
+
+            <div className="flex items-center justify-between mb-3">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(-1)}><ChevronLeft className="w-4 h-4" /></Button>
+              <span className="text-xs sm:text-sm font-medium text-foreground capitalize text-center flex-1">{headerLabel}</span>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
+            </div>
+
+            {apptView === "Diário" && (
+              <div className="space-y-1.5">
+                {diarioAppts.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento neste dia.</p>
+                    <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
+                    </Button>
+                  </div>
+                ) : diarioAppts.map(renderApptRow)}
+              </div>
+            )}
+
+            {apptView === "Semanal" && (
+              <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+                {weekDays7.map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
+                {weekDates.map((date, i) => {
+                  const ds = localDateStr(date);
+                  const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+                  const isToday = ds === todayDateStr;
+                  return (
+                    <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50", isToday && "border-primary/50 bg-primary/5")}>
+                      <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
+                      {appts.slice(0, 3).map(a => (
+                        <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
+                          {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
+                        </div>
+                      ))}
+                      {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {apptView === "Mensal" && (
+              <div className="grid grid-cols-7 gap-0.5">
+                {monthShort.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
+                {monthDays.map((date, i) => {
+                  if (!date) return <div key={i} />;
+                  const ds = localDateStr(date);
+                  const appts = appointments.filter(a => a.data === ds);
+                  const isToday = ds === todayDateStr;
+                  const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => openDayModal(date)}
+                      className={cn(
+                        "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors",
+                        isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
+                        appts.length > 0 && !isToday && "text-foreground"
+                      )}
+                    >
+                      {date.getDate()}
+                      {appts.length > 0 && (
+                        <div className="flex gap-0.5 mt-0.5">
+                          {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Calendar */}
       <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
