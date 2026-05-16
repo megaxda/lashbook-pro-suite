@@ -76,6 +76,8 @@ export default function DashboardTab() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayAppts, setSelectedDayAppts] = useState<Appt[] | null>(null);
   const [selectedDayStr, setSelectedDayStr] = useState("");
+  const [apptView, setApptView] = useState<ApptView>("Diário");
+  const [apptCursor, setApptCursor] = useState(new Date());
 
   const [newOpen, setNewOpen] = useState(false);
   const [clients, setClients] = useState<ClienteOption[]>([]);
