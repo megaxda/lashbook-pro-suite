@@ -45,6 +45,17 @@ function getDaysInMonth(date: Date) {
   return days;
 }
 
+function getWeekDates(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(d.getDate() + i); return x; });
+}
+
+const apptViews = ["Diário", "Semanal", "Mensal"] as const;
+type ApptView = typeof apptViews[number];
+
 interface Appt { id: string; data: string; horario: string; status: string | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null; }
 interface LowStock { id: string; nome: string; quantidade: number | null; quantidade_minima: number | null; }
 interface ClienteOption { id: string; nome: string; }
