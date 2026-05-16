@@ -419,46 +419,6 @@ export default function DashboardTab() {
         );
       })()}
 
-      {/* Calendar */}
-      <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
-        <div className="flex items-center justify-between mb-3">
-          <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => { const d = new Date(calendarDate); d.setMonth(d.getMonth() - 1); setCalendarDate(d); }}><ChevronLeft className="w-4 h-4" /></Button>
-          <span className="text-sm font-medium text-foreground capitalize">{calendarDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</span>
-          <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => { const d = new Date(calendarDate); d.setMonth(d.getMonth() + 1); setCalendarDate(d); }}><ChevronRight className="w-4 h-4" /></Button>
-        </div>
-        <div className="grid grid-cols-7 gap-0.5">
-          {weekDays.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-          {days.map((date, i) => {
-            if (!date) return <div key={i} />;
-            const ds = localDateStr(date);
-            const appts = appointments.filter(a => a.data === ds);
-            const isToday = ds === todayDateStr;
-            // Group dot colors by status
-            const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
-            return (
-              <button
-                key={i}
-                onClick={() => openDayModal(date)}
-                className={cn(
-                  "relative min-h-[40px] sm:min-h-[44px] rounded-md text-xs font-medium transition-colors flex flex-col items-center justify-start pt-1",
-                  isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
-                  appts.length > 0 && !isToday && "text-foreground"
-                )}
-              >
-                {date.getDate()}
-                {appts.length > 0 && (
-                  <div className="flex gap-0.5 mt-0.5">
-                    {dotStatuses.map((st, j) => (
-                      <div key={j} className="w-1 h-1 rounded-full" style={{ background: statusDotColor[st] }} />
-                    ))}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Alerts */}
       {lowStock.length > 0 && (
         <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
