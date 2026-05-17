@@ -112,20 +112,23 @@ export default function AgendamentosTab() {
       setAppointments(demoAgendamentos as Agendamento[]);
       setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
       setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
+      setBloqueios([]);
       setLoading(false);
       return;
     }
     if (!user) return;
     setLoading(true);
-    const [aRes, cRes, sRes] = await Promise.all([
+    const [aRes, cRes, sRes, bRes] = await Promise.all([
       supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
       supabase.from("clientes").select("id, nome").eq("user_id", user.id),
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
+      supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id).order("data", { ascending: true }),
     ]);
     if (aRes.error) toast.error("Erro ao carregar agendamentos");
     setAppointments(((aRes.data as any[]) || []) as Agendamento[]);
     setClients(cRes.data || []);
     setServicos(sRes.data || []);
+    setBloqueios(((bRes.data as any[]) || []) as Bloqueio[]);
     setLoading(false);
   };
 
