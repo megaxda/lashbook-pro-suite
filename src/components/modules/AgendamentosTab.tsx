@@ -91,15 +91,21 @@ export default function AgendamentosTab() {
   const [editHorario, setEditHorario] = useState("");
   const [editClienteId, setEditClienteId] = useState("");
   const [editServicoId, setEditServicoId] = useState("");
+  const [editGratuito, setEditGratuito] = useState(false);
+  const [editPagamentos, setEditPagamentos] = useState<PagamentoItem[]>([]);
   const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
+  // Bloqueios
+  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
+  const [bloqOpen, setBloqOpen] = useState(false);
+  const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
 
   const fetchAll = async () => {
     if (isDemo) {
