@@ -82,6 +82,26 @@ export default function LinkBioPage() {
     })();
   }, [slug]);
 
+  // Load blocked slots whenever date changes
+  useEffect(() => {
+    if (!slug || !date) { setBlockedSlots([]); return; }
+    (async () => {
+      const { data } = await supabase.rpc("get_blocked_slots_by_slug", { _slug: slug, _data: date });
+      setBlockedSlots((data as any[]) || []);
+    })();
+  }, [slug, date]);
+
+  const isBlocked = (t: string) => {
+    return blockedSlots.some(b => {
+      if (b.dia_todo) return true;
+      if (b.hora_inicio && b.hora_fim) {
+        return t >= b.hora_inicio.slice(0, 5) && t < b.hora_fim.slice(0, 5);
+      }
+      return false;
+    });
+  };
+  const allDayBlocked = blockedSlots.some(b => b.dia_todo);
+
   const initials =
     (profile?.studio_name || profile?.nome || "FB")
       .split(" ")
