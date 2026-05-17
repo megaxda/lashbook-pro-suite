@@ -168,6 +168,8 @@ export default function AgendamentosTab() {
     setEditHorario(a.horario?.slice(0, 5) || "");
     setEditClienteId(a.cliente_id || "");
     setEditServicoId(a.servico_id || "");
+    setEditGratuito(!!a.gratuito);
+    setEditPagamentos(Array.isArray(a.pagamentos_detalhe) ? (a.pagamentos_detalhe as PagamentoItem[]) : []);
     setComprovanteUrl(null);
     if (a.comprovante_url && !isDemo) {
       const { data } = await supabase.storage.from("comprovantes").createSignedUrl(a.comprovante_url, 600);
@@ -177,8 +179,20 @@ export default function AgendamentosTab() {
   const currentDateStr = localDateStr(currentDate);
   const todayStr = localDateStr();
 
+  const isSlotBlocked = (data: string, horario: string) => {
+    return bloqueios.some(b => {
+      if (b.data !== data) return false;
+      if (b.dia_todo) return true;
+      if (b.hora_inicio && b.hora_fim) {
+        return horario >= b.hora_inicio.slice(0, 5) && horario < b.hora_fim.slice(0, 5);
+      }
+      return false;
+    });
+  };
+
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
     if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false }); return; }
     if (!user) return;
     setSaving(true);
@@ -186,7 +200,8 @@ export default function AgendamentosTab() {
       user_id: user.id, data: newForm.data, horario: newForm.horario,
       cliente_id: newForm.cliente_id || null, servico_id: newForm.servico_id || null,
       notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
-    });
+      gratuito: newForm.gratuito,
+    } as any);
     setSaving(false);
     if (error) { toast.error("Erro ao criar agendamento"); return; }
     toast.success("Agendamento criado!");
@@ -199,15 +214,21 @@ export default function AgendamentosTab() {
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
     setSaving(true);
+    const cleanPag = editPagamentos.filter(p => p.metodo && Number(p.valor) > 0);
+    const formaResumo = cleanPag.length > 0
+      ? cleanPag.map(p => `${p.metodo} R$ ${Number(p.valor).toFixed(2)}`).join(" + ")
+      : (editPayment || null);
     const { error } = await supabase.from("agendamentos").update({
       status: editStatus,
-      forma_pagamento: editPayment || null,
+      forma_pagamento: formaResumo,
       notas: editNotes || null,
       data: editData,
       horario: editHorario,
       cliente_id: editClienteId || null,
       servico_id: editServicoId || null,
-    }).eq("id", selectedAppt.id);
+      gratuito: editGratuito,
+      pagamentos_detalhe: cleanPag as any,
+    } as any).eq("id", selectedAppt.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
     toast.success("Agendamento atualizado!");
@@ -215,7 +236,34 @@ export default function AgendamentosTab() {
     fetchAll();
   };
 
-  const deleteAppt = async () => {
+  const saveBloqueio = async () => {
+    if (!bloqForm.data) { toast.error("Informe a data"); return; }
+    if (!bloqForm.dia_todo && (!bloqForm.hora_inicio || !bloqForm.hora_fim)) {
+      toast.error("Informe o horário de início e fim"); return;
+    }
+    if (demoBlock()) { setBloqOpen(false); return; }
+    if (!user) return;
+    const { error } = await supabase.from("bloqueios_agenda").insert({
+      user_id: user.id,
+      data: bloqForm.data,
+      dia_todo: bloqForm.dia_todo,
+      hora_inicio: bloqForm.dia_todo ? null : bloqForm.hora_inicio,
+      hora_fim: bloqForm.dia_todo ? null : bloqForm.hora_fim,
+      motivo: bloqForm.motivo || null,
+    });
+    if (error) { toast.error("Erro ao criar bloqueio"); return; }
+    toast.success("Bloqueio criado!");
+    setBloqForm({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    fetchAll();
+  };
+
+  const deleteBloqueio = async (id: string) => {
+    if (demoBlock()) return;
+    const { error } = await supabase.from("bloqueios_agenda").delete().eq("id", id);
+    if (error) { toast.error("Erro ao remover"); return; }
+    toast.success("Bloqueio removido");
+    fetchAll();
+  };
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
     if (!confirm("Excluir este agendamento?")) return;
