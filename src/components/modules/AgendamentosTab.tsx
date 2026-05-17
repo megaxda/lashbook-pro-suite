@@ -117,7 +117,7 @@ export default function AgendamentosTab() {
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
     ]);
     if (aRes.error) toast.error("Erro ao carregar agendamentos");
-    setAppointments((aRes.data as Agendamento[]) || []);
+    setAppointments(((aRes.data as any[]) || []) as Agendamento[]);
     setClients(cRes.data || []);
     setServicos(sRes.data || []);
     setLoading(false);
