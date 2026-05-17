@@ -554,12 +554,45 @@ export default function AgendamentosTab() {
                     <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
-                  <Select value={editPayment} onValueChange={setEditPayment}>
-                    <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+                  <Checkbox id="edit-grat" checked={editGratuito} onCheckedChange={v => setEditGratuito(!!v)} />
+                  <Label htmlFor="edit-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — não gera receita)</Label>
                 </div>
+                {!editGratuito && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-muted-foreground text-xs">Pagamentos {editPagamentos.length > 1 && "(fracionados)"}</Label>
+                      <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-primary" onClick={() => setEditPagamentos([...editPagamentos, { metodo: "PIX", valor: 0 }])}>
+                        <Plus className="w-3 h-3 mr-0.5" /> Adicionar pagamento
+                      </Button>
+                    </div>
+                    {editPagamentos.length === 0 && (
+                      <div>
+                        <Select value={editPayment} onValueChange={setEditPayment}>
+                          <SelectTrigger className="bg-secondary border-border min-h-[44px]"><SelectValue placeholder="Forma de pagamento..." /></SelectTrigger>
+                          <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {editPagamentos.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Select value={p.metodo} onValueChange={v => { const next = [...editPagamentos]; next[i] = { ...next[i], metodo: v }; setEditPagamentos(next); }}>
+                          <SelectTrigger className="bg-secondary border-border min-h-[40px] flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Input type="number" step="0.01" min="0" value={p.valor || ""} placeholder="R$"
+                          onChange={e => { const next = [...editPagamentos]; next[i] = { ...next[i], valor: parseFloat(e.target.value) || 0 }; setEditPagamentos(next); }}
+                          className="bg-secondary border-border min-h-[40px] w-24" />
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setEditPagamentos(editPagamentos.filter((_, j) => j !== i))}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {editPagamentos.length > 0 && (
+                      <p className="text-xs text-muted-foreground text-right">Total: R$ {editPagamentos.reduce((s, p) => s + (Number(p.valor) || 0), 0).toFixed(2)}</p>
+                    )}
+                  </div>
+                )}
                 <div><Label className="text-muted-foreground text-xs">Observações</Label>
                   <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border mt-1 min-h-[60px]" /></div>
                 {selectedAppt.comprovante_url && (
