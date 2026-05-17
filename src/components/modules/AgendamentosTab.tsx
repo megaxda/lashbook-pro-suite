@@ -637,6 +637,62 @@ export default function AgendamentosTab() {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Bloqueios de agenda */}
+      <Dialog open={bloqOpen} onOpenChange={setBloqOpen}>
+        <DialogContent className="max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-foreground">Fechar agenda</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Datas e horários bloqueados não aparecem no link da bio nem permitem agendamentos.</p>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="col-span-2">
+              <Label className="text-muted-foreground text-xs">Data</Label>
+              <Input type="date" value={bloqForm.data} onChange={e => setBloqForm({ ...bloqForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" />
+            </div>
+            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+              <Checkbox id="bloq-dia" checked={bloqForm.dia_todo} onCheckedChange={v => setBloqForm({ ...bloqForm, dia_todo: !!v })} />
+              <Label htmlFor="bloq-dia" className="text-xs text-foreground cursor-pointer">Dia inteiro</Label>
+            </div>
+            {!bloqForm.dia_todo && (
+              <>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Início</Label>
+                  <Input type="time" value={bloqForm.hora_inicio} onChange={e => setBloqForm({ ...bloqForm, hora_inicio: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Fim</Label>
+                  <Input type="time" value={bloqForm.hora_fim} onChange={e => setBloqForm({ ...bloqForm, hora_fim: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                </div>
+              </>
+            )}
+            <div className="col-span-2">
+              <Label className="text-muted-foreground text-xs">Motivo (opcional)</Label>
+              <Input value={bloqForm.motivo} onChange={e => setBloqForm({ ...bloqForm, motivo: e.target.value })} placeholder="Ex: feriado, folga..." className="bg-secondary border-border mt-1 min-h-[44px]" />
+            </div>
+          </div>
+          <Button onClick={saveBloqueio} className="w-full mt-2 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
+
+          <div className="mt-3 border-t border-border pt-3">
+            <p className="text-xs font-semibold text-foreground mb-2">Bloqueios ativos</p>
+            <div className="space-y-1.5 max-h-60 overflow-y-auto">
+              {bloqueios.length === 0 && <p className="text-xs text-muted-foreground">Nenhum bloqueio cadastrado.</p>}
+              {bloqueios.map(b => (
+                <div key={b.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 text-xs">
+                  <div className="min-w-0">
+                    <p className="text-foreground font-medium">{parseDateStr(b.data).toLocaleDateString("pt-BR")}</p>
+                    <p className="text-muted-foreground">
+                      {b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0, 5)} — ${b.hora_fim?.slice(0, 5)}`}
+                      {b.motivo ? ` · ${b.motivo}` : ""}
+                    </p>
+                  </div>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteBloqueio(b.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
