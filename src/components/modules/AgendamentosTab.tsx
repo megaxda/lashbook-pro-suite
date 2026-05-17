@@ -495,6 +495,10 @@ export default function AgendamentosTab() {
                 <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+              <Checkbox id="new-grat" checked={newForm.gratuito} onCheckedChange={v => setNewForm({ ...newForm, gratuito: !!v })} />
+              <Label htmlFor="new-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — sem cobrança)</Label>
+            </div>
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
           <Button onClick={createAppt} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar"}</Button>
