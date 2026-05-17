@@ -264,6 +264,8 @@ export default function AgendamentosTab() {
     toast.success("Bloqueio removido");
     fetchAll();
   };
+
+  const deleteAppt = async () => {
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
     if (!confirm("Excluir este agendamento?")) return;
