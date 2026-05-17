@@ -176,7 +176,7 @@ export default function AgendamentosTab() {
 
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
-    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" }); return; }
+    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false }); return; }
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("agendamentos").insert({
@@ -188,7 +188,7 @@ export default function AgendamentosTab() {
     if (error) { toast.error("Erro ao criar agendamento"); return; }
     toast.success("Agendamento criado!");
     setNewOpen(false);
-    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
+    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
     fetchAll();
   };
 
