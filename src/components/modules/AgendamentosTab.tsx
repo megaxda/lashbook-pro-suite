@@ -16,13 +16,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+interface PagamentoItem { metodo: string; valor: number; }
 interface Agendamento {
   id: string; data: string; horario: string; status: string | null; notas: string | null;
   origem: string | null; forma_pagamento: string | null; sinal_pago: boolean | null;
   cliente_id: string | null; servico_id: string | null; user_id: string;
   comprovante_url: string | null;
+  gratuito?: boolean | null;
+  pagamentos_detalhe?: PagamentoItem[] | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
+interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; }
 
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
