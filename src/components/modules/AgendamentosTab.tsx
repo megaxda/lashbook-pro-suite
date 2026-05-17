@@ -421,6 +421,7 @@ export default function AgendamentosTab() {
           <div className="flex bg-secondary rounded-lg p-0.5 overflow-x-auto">
             {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
           </div>
+          <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
           {/* Hide desktop "Novo" — mobile uses FAB */}
           <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex min-h-[36px]" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
         </div>
