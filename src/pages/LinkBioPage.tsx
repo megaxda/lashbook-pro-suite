@@ -57,6 +57,7 @@ export default function LinkBioPage() {
   const [notes, setNotes] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [blockedSlots, setBlockedSlots] = useState<{ dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null }[]>([]);
 
   const selectedService = useMemo(
     () => services.find((s) => s.id === serviceId) || null,
