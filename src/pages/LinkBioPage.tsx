@@ -57,6 +57,7 @@ export default function LinkBioPage() {
   const [notes, setNotes] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [blockedSlots, setBlockedSlots] = useState<{ dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null }[]>([]);
 
   const selectedService = useMemo(
     () => services.find((s) => s.id === serviceId) || null,
@@ -80,6 +81,26 @@ export default function LinkBioPage() {
       setLoading(false);
     })();
   }, [slug]);
+
+  // Load blocked slots whenever date changes
+  useEffect(() => {
+    if (!slug || !date) { setBlockedSlots([]); return; }
+    (async () => {
+      const { data } = await supabase.rpc("get_blocked_slots_by_slug", { _slug: slug, _data: date });
+      setBlockedSlots((data as any[]) || []);
+    })();
+  }, [slug, date]);
+
+  const isBlocked = (t: string) => {
+    return blockedSlots.some(b => {
+      if (b.dia_todo) return true;
+      if (b.hora_inicio && b.hora_fim) {
+        return t >= b.hora_inicio.slice(0, 5) && t < b.hora_fim.slice(0, 5);
+      }
+      return false;
+    });
+  };
+  const allDayBlocked = blockedSlots.some(b => b.dia_todo);
 
   const initials =
     (profile?.studio_name || profile?.nome || "FB")
@@ -218,20 +239,29 @@ export default function LinkBioPage() {
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Horário</Label>
+            {date && allDayBlocked && (
+              <p className="text-xs text-destructive mt-1">Agenda fechada nesta data.</p>
+            )}
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1">
-              {TIME_SLOTS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTime(t)}
-                  className={`p-2 rounded-lg text-sm transition-colors ${
-                    time === t
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-foreground hover:bg-primary/15"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+              {TIME_SLOTS.map((t) => {
+                const blocked = !!date && isBlocked(t);
+                return (
+                  <button
+                    key={t}
+                    onClick={() => !blocked && setTime(t)}
+                    disabled={blocked}
+                    className={`p-2 rounded-lg text-sm transition-colors ${
+                      blocked
+                        ? "bg-muted/40 text-muted-foreground/50 line-through cursor-not-allowed"
+                        : time === t
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-foreground hover:bg-primary/15"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <Button

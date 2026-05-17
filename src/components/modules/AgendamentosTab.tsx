@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { demoAgendamentos, demoClientes, demoServicos } from "@/data/demoData";
-import { Plus, ChevronLeft, ChevronRight, Globe } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Globe, Ban, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { localDateStr, parseDateStr, addDays } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+interface PagamentoItem { metodo: string; valor: number; }
 interface Agendamento {
   id: string; data: string; horario: string; status: string | null; notas: string | null;
   origem: string | null; forma_pagamento: string | null; sinal_pago: boolean | null;
   cliente_id: string | null; servico_id: string | null; user_id: string;
   comprovante_url: string | null;
+  gratuito?: boolean | null;
+  pagamentos_detalhe?: PagamentoItem[] | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
+interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; }
 
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
@@ -86,35 +91,44 @@ export default function AgendamentosTab() {
   const [editHorario, setEditHorario] = useState("");
   const [editClienteId, setEditClienteId] = useState("");
   const [editServicoId, setEditServicoId] = useState("");
+  const [editGratuito, setEditGratuito] = useState(false);
+  const [editPagamentos, setEditPagamentos] = useState<PagamentoItem[]>([]);
   const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
+  // Bloqueios
+  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
+  const [bloqOpen, setBloqOpen] = useState(false);
+  const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
 
   const fetchAll = async () => {
     if (isDemo) {
       setAppointments(demoAgendamentos as Agendamento[]);
       setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
       setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
+      setBloqueios([]);
       setLoading(false);
       return;
     }
     if (!user) return;
     setLoading(true);
-    const [aRes, cRes, sRes] = await Promise.all([
+    const [aRes, cRes, sRes, bRes] = await Promise.all([
       supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
       supabase.from("clientes").select("id, nome").eq("user_id", user.id),
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
+      supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id).order("data", { ascending: true }),
     ]);
     if (aRes.error) toast.error("Erro ao carregar agendamentos");
-    setAppointments((aRes.data as Agendamento[]) || []);
+    setAppointments(((aRes.data as any[]) || []) as Agendamento[]);
     setClients(cRes.data || []);
     setServicos(sRes.data || []);
+    setBloqueios(((bRes.data as any[]) || []) as Bloqueio[]);
     setLoading(false);
   };
 
@@ -154,6 +168,8 @@ export default function AgendamentosTab() {
     setEditHorario(a.horario?.slice(0, 5) || "");
     setEditClienteId(a.cliente_id || "");
     setEditServicoId(a.servico_id || "");
+    setEditGratuito(!!a.gratuito);
+    setEditPagamentos(Array.isArray(a.pagamentos_detalhe) ? (a.pagamentos_detalhe as PagamentoItem[]) : []);
     setComprovanteUrl(null);
     if (a.comprovante_url && !isDemo) {
       const { data } = await supabase.storage.from("comprovantes").createSignedUrl(a.comprovante_url, 600);
@@ -163,21 +179,34 @@ export default function AgendamentosTab() {
   const currentDateStr = localDateStr(currentDate);
   const todayStr = localDateStr();
 
+  const isSlotBlocked = (data: string, horario: string) => {
+    return bloqueios.some(b => {
+      if (b.data !== data) return false;
+      if (b.dia_todo) return true;
+      if (b.hora_inicio && b.hora_fim) {
+        return horario >= b.hora_inicio.slice(0, 5) && horario < b.hora_fim.slice(0, 5);
+      }
+      return false;
+    });
+  };
+
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
-    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" }); return; }
+    if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
+    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false }); return; }
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("agendamentos").insert({
       user_id: user.id, data: newForm.data, horario: newForm.horario,
       cliente_id: newForm.cliente_id || null, servico_id: newForm.servico_id || null,
       notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
-    });
+      gratuito: newForm.gratuito,
+    } as any);
     setSaving(false);
     if (error) { toast.error("Erro ao criar agendamento"); return; }
     toast.success("Agendamento criado!");
     setNewOpen(false);
-    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
+    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
     fetchAll();
   };
 
@@ -185,19 +214,54 @@ export default function AgendamentosTab() {
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
     setSaving(true);
+    const cleanPag = editPagamentos.filter(p => p.metodo && Number(p.valor) > 0);
+    const formaResumo = cleanPag.length > 0
+      ? cleanPag.map(p => `${p.metodo} R$ ${Number(p.valor).toFixed(2)}`).join(" + ")
+      : (editPayment || null);
     const { error } = await supabase.from("agendamentos").update({
       status: editStatus,
-      forma_pagamento: editPayment || null,
+      forma_pagamento: formaResumo,
       notas: editNotes || null,
       data: editData,
       horario: editHorario,
       cliente_id: editClienteId || null,
       servico_id: editServicoId || null,
-    }).eq("id", selectedAppt.id);
+      gratuito: editGratuito,
+      pagamentos_detalhe: cleanPag as any,
+    } as any).eq("id", selectedAppt.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
     toast.success("Agendamento atualizado!");
     setSelectedAppt(null);
+    fetchAll();
+  };
+
+  const saveBloqueio = async () => {
+    if (!bloqForm.data) { toast.error("Informe a data"); return; }
+    if (!bloqForm.dia_todo && (!bloqForm.hora_inicio || !bloqForm.hora_fim)) {
+      toast.error("Informe o horário de início e fim"); return;
+    }
+    if (demoBlock()) { setBloqOpen(false); return; }
+    if (!user) return;
+    const { error } = await supabase.from("bloqueios_agenda").insert({
+      user_id: user.id,
+      data: bloqForm.data,
+      dia_todo: bloqForm.dia_todo,
+      hora_inicio: bloqForm.dia_todo ? null : bloqForm.hora_inicio,
+      hora_fim: bloqForm.dia_todo ? null : bloqForm.hora_fim,
+      motivo: bloqForm.motivo || null,
+    });
+    if (error) { toast.error("Erro ao criar bloqueio"); return; }
+    toast.success("Bloqueio criado!");
+    setBloqForm({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    fetchAll();
+  };
+
+  const deleteBloqueio = async (id: string) => {
+    if (demoBlock()) return;
+    const { error } = await supabase.from("bloqueios_agenda").delete().eq("id", id);
+    if (error) { toast.error("Erro ao remover"); return; }
+    toast.success("Bloqueio removido");
     fetchAll();
   };
 
@@ -357,6 +421,7 @@ export default function AgendamentosTab() {
           <div className="flex bg-secondary rounded-lg p-0.5 overflow-x-auto">
             {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
           </div>
+          <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
           {/* Hide desktop "Novo" — mobile uses FAB */}
           <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex min-h-[36px]" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
         </div>
@@ -430,6 +495,10 @@ export default function AgendamentosTab() {
                 <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+              <Checkbox id="new-grat" checked={newForm.gratuito} onCheckedChange={v => setNewForm({ ...newForm, gratuito: !!v })} />
+              <Label htmlFor="new-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — sem cobrança)</Label>
+            </div>
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
           <Button onClick={createAppt} disabled={saving} className="w-full mt-3 gradient-brand text-primary-foreground min-h-[44px]">{saving ? "Salvando..." : "Salvar"}</Button>
@@ -485,12 +554,45 @@ export default function AgendamentosTab() {
                     <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
-                  <Select value={editPayment} onValueChange={setEditPayment}>
-                    <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+                  <Checkbox id="edit-grat" checked={editGratuito} onCheckedChange={v => setEditGratuito(!!v)} />
+                  <Label htmlFor="edit-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — não gera receita)</Label>
                 </div>
+                {!editGratuito && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-muted-foreground text-xs">Pagamentos {editPagamentos.length > 1 && "(fracionados)"}</Label>
+                      <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-primary" onClick={() => setEditPagamentos([...editPagamentos, { metodo: "PIX", valor: 0 }])}>
+                        <Plus className="w-3 h-3 mr-0.5" /> Adicionar pagamento
+                      </Button>
+                    </div>
+                    {editPagamentos.length === 0 && (
+                      <div>
+                        <Select value={editPayment} onValueChange={setEditPayment}>
+                          <SelectTrigger className="bg-secondary border-border min-h-[44px]"><SelectValue placeholder="Forma de pagamento..." /></SelectTrigger>
+                          <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {editPagamentos.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Select value={p.metodo} onValueChange={v => { const next = [...editPagamentos]; next[i] = { ...next[i], metodo: v }; setEditPagamentos(next); }}>
+                          <SelectTrigger className="bg-secondary border-border min-h-[40px] flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Input type="number" step="0.01" min="0" value={p.valor || ""} placeholder="R$"
+                          onChange={e => { const next = [...editPagamentos]; next[i] = { ...next[i], valor: parseFloat(e.target.value) || 0 }; setEditPagamentos(next); }}
+                          className="bg-secondary border-border min-h-[40px] w-24" />
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setEditPagamentos(editPagamentos.filter((_, j) => j !== i))}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {editPagamentos.length > 0 && (
+                      <p className="text-xs text-muted-foreground text-right">Total: R$ {editPagamentos.reduce((s, p) => s + (Number(p.valor) || 0), 0).toFixed(2)}</p>
+                    )}
+                  </div>
+                )}
                 <div><Label className="text-muted-foreground text-xs">Observações</Label>
                   <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="bg-secondary border-border mt-1 min-h-[60px]" /></div>
                 {selectedAppt.comprovante_url && (
@@ -533,6 +635,62 @@ export default function AgendamentosTab() {
           <Button onClick={() => { const ds = dayModalDate; setDayModalDate(null); setNewForm(f => ({ ...f, data: ds || "" })); setNewOpen(true); }} className="w-full gradient-brand text-primary-foreground mt-2 min-h-[44px]">
             <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bloqueios de agenda */}
+      <Dialog open={bloqOpen} onOpenChange={setBloqOpen}>
+        <DialogContent className="max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-foreground">Fechar agenda</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Datas e horários bloqueados não aparecem no link da bio nem permitem agendamentos.</p>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="col-span-2">
+              <Label className="text-muted-foreground text-xs">Data</Label>
+              <Input type="date" value={bloqForm.data} onChange={e => setBloqForm({ ...bloqForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" />
+            </div>
+            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+              <Checkbox id="bloq-dia" checked={bloqForm.dia_todo} onCheckedChange={v => setBloqForm({ ...bloqForm, dia_todo: !!v })} />
+              <Label htmlFor="bloq-dia" className="text-xs text-foreground cursor-pointer">Dia inteiro</Label>
+            </div>
+            {!bloqForm.dia_todo && (
+              <>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Início</Label>
+                  <Input type="time" value={bloqForm.hora_inicio} onChange={e => setBloqForm({ ...bloqForm, hora_inicio: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Fim</Label>
+                  <Input type="time" value={bloqForm.hora_fim} onChange={e => setBloqForm({ ...bloqForm, hora_fim: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                </div>
+              </>
+            )}
+            <div className="col-span-2">
+              <Label className="text-muted-foreground text-xs">Motivo (opcional)</Label>
+              <Input value={bloqForm.motivo} onChange={e => setBloqForm({ ...bloqForm, motivo: e.target.value })} placeholder="Ex: feriado, folga..." className="bg-secondary border-border mt-1 min-h-[44px]" />
+            </div>
+          </div>
+          <Button onClick={saveBloqueio} className="w-full mt-2 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
+
+          <div className="mt-3 border-t border-border pt-3">
+            <p className="text-xs font-semibold text-foreground mb-2">Bloqueios ativos</p>
+            <div className="space-y-1.5 max-h-60 overflow-y-auto">
+              {bloqueios.length === 0 && <p className="text-xs text-muted-foreground">Nenhum bloqueio cadastrado.</p>}
+              {bloqueios.map(b => (
+                <div key={b.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/50 text-xs">
+                  <div className="min-w-0">
+                    <p className="text-foreground font-medium">{parseDateStr(b.data).toLocaleDateString("pt-BR")}</p>
+                    <p className="text-muted-foreground">
+                      {b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0, 5)} — ${b.hora_fim?.slice(0, 5)}`}
+                      {b.motivo ? ` · ${b.motivo}` : ""}
+                    </p>
+                  </div>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteBloqueio(b.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

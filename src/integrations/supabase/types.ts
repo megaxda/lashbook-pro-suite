@@ -21,10 +21,12 @@ export type Database = {
           created_at: string
           data: string
           forma_pagamento: string | null
+          gratuito: boolean
           horario: string
           id: string
           notas: string | null
           origem: string | null
+          pagamentos_detalhe: Json
           servico_id: string | null
           sinal_pago: boolean | null
           status: string | null
@@ -36,10 +38,12 @@ export type Database = {
           created_at?: string
           data: string
           forma_pagamento?: string | null
+          gratuito?: boolean
           horario: string
           id?: string
           notas?: string | null
           origem?: string | null
+          pagamentos_detalhe?: Json
           servico_id?: string | null
           sinal_pago?: boolean | null
           status?: string | null
@@ -51,10 +55,12 @@ export type Database = {
           created_at?: string
           data?: string
           forma_pagamento?: string | null
+          gratuito?: boolean
           horario?: string
           id?: string
           notas?: string | null
           origem?: string | null
+          pagamentos_detalhe?: Json
           servico_id?: string | null
           sinal_pago?: boolean | null
           status?: string | null
@@ -76,6 +82,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bloqueios_agenda: {
+        Row: {
+          created_at: string
+          data: string
+          dia_todo: boolean
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          motivo: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          dia_todo?: boolean
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          motivo?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          dia_todo?: boolean
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          motivo?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       clientes: {
         Row: {
@@ -461,6 +500,14 @@ export type Database = {
         Returns: string
       }
       current_user_is_admin: { Args: never; Returns: boolean }
+      get_blocked_slots_by_slug: {
+        Args: { _data: string; _slug: string }
+        Returns: {
+          dia_todo: boolean
+          hora_fim: string
+          hora_inicio: string
+        }[]
+      }
       get_public_profile_by_slug: {
         Args: { _slug: string }
         Returns: {
