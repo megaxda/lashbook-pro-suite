@@ -328,19 +328,27 @@ export default function DashboardTab() {
           <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
               <h3 className="text-sm font-semibold text-foreground">Agendamentos</h3>
-              <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5 self-start sm:self-auto">
-                {apptViews.map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setApptView(v)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                      apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {v}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                  {apptViews.map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setApptView(v)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                        apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
+                  Bloquear
+                </Button>
+                <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs min-h-[36px]" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Novo
+                </Button>
               </div>
             </div>
 
