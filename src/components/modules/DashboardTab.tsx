@@ -127,7 +127,7 @@ export default function DashboardTab() {
     const cutoff = localDateStr(addDays(new Date(), -followDays));
 
     const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes] = await Promise.all([
-      supabase.from("agendamentos").select("id, data, horario, status, cliente_id, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).order("data").order("horario"),
+      supabase.from("agendamentos").select("id, data, horario, status, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
       supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", start).lte("data", end),
       supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
       supabase.from("clientes").select("id, nome").eq("user_id", user.id),
