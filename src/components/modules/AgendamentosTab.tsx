@@ -148,6 +148,18 @@ export default function AgendamentosTab() {
     // eslint-disable-next-line
   }, [appointments, searchParams]);
 
+  // Auto-open block dialog from ?bloquear=YYYY-MM-DD
+  useEffect(() => {
+    const d = searchParams.get("bloquear");
+    if (!d) return;
+    setBloqForm({ data: d, dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    setBloqOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("bloquear");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line
+  }, [searchParams]);
+
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const navigate = (dir: number) => {
