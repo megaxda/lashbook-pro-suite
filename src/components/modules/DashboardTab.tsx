@@ -451,9 +451,14 @@ export default function DashboardTab() {
               </div>
             ))}
           </div>
-          <Button onClick={() => { setSelectedDayAppts(null); setNewForm(f => ({ ...f, data: selectedDayStr })); setNewOpen(true); }} className="w-full gradient-brand text-primary-foreground mt-2 min-h-[44px]">
-            <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+            <Button onClick={() => { setSelectedDayAppts(null); setNewForm(f => ({ ...f, data: selectedDayStr })); setNewOpen(true); }} className="flex-1 gradient-brand text-primary-foreground min-h-[44px]">
+              <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
+            </Button>
+            <Button variant="outline" onClick={() => { setSelectedDayAppts(null); navigate(`/home_profissional?tab=Agendamentos&bloquear=${selectedDayStr}`); }} className="flex-1 border-border min-h-[44px]">
+              Bloquear
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
