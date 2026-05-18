@@ -56,7 +56,7 @@ function getWeekDates(date: Date) {
 const apptViews = ["Diário", "Semanal", "Mensal"] as const;
 type ApptView = typeof apptViews[number];
 
-interface Appt { id: string; data: string; horario: string; status: string | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null; }
+interface Appt { id: string; data: string; horario: string; status: string | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null; }
 interface LowStock { id: string; nome: string; quantidade: number | null; quantidade_minima: number | null; }
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
@@ -127,7 +127,7 @@ export default function DashboardTab() {
     const cutoff = localDateStr(addDays(new Date(), -followDays));
 
     const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes] = await Promise.all([
-      supabase.from("agendamentos").select("id, data, horario, status, cliente_id, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).order("data").order("horario"),
+      supabase.from("agendamentos").select("id, data, horario, status, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
       supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", start).lte("data", end),
       supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
       supabase.from("clientes").select("id, nome").eq("user_id", user.id),
@@ -371,53 +371,127 @@ export default function DashboardTab() {
               </div>
             )}
 
-            {apptView === "Semanal" && (
-              <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-                {weekDays7.map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-                {weekDates.map((date, i) => {
-                  const ds = localDateStr(date);
-                  const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-                  const isToday = ds === todayDateStr;
-                  return (
-                    <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50", isToday && "border-primary/50 bg-primary/5")}>
-                      <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
-                      {appts.slice(0, 3).map(a => (
-                        <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
-                          {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
-                        </div>
-                      ))}
-                      {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
+            {apptView === "Semanal" && (() => {
+              const startHour = 7;
+              const endHour = 22;
+              const hourHeight = 48; // px per hour
+              const totalHeight = (endHour - startHour) * hourHeight;
+              const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+              const toMin = (h: string) => {
+                const [hh, mm] = (h || "00:00").split(":").map(Number);
+                return hh * 60 + (mm || 0);
+              };
+              return (
+                <div className="overflow-x-auto">
+                  <div className="min-w-[640px]">
+                    {/* Header */}
+                    <div className="grid grid-cols-[48px_repeat(7,minmax(0,1fr))] border-b border-border">
+                      <div />
+                      {weekDates.map((date, i) => {
+                        const isToday = localDateStr(date) === todayDateStr;
+                        return (
+                          <div key={i} className="text-center py-2 border-l border-border">
+                            <p className="text-[10px] uppercase text-muted-foreground font-semibold">{weekDays7[i]}</p>
+                            <p className={cn("text-sm font-semibold mt-0.5 inline-flex items-center justify-center w-7 h-7 rounded-full",
+                              isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>{date.getDate()}</p>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    {/* Body */}
+                    <div className="grid grid-cols-[48px_repeat(7,minmax(0,1fr))]" style={{ height: totalHeight }}>
+                      {/* Time column */}
+                      <div className="relative">
+                        {hours.map(h => (
+                          <div key={h} style={{ height: hourHeight }} className="text-[10px] text-muted-foreground text-right pr-1 -mt-1.5">
+                            {String(h).padStart(2, "0")}:00
+                          </div>
+                        ))}
+                      </div>
+                      {/* Day columns */}
+                      {weekDates.map((date, i) => {
+                        const ds = localDateStr(date);
+                        const dayAppts = appointments.filter(a => a.data === ds);
+                        return (
+                          <div
+                            key={i}
+                            onClick={() => openDayModal(date)}
+                            className="relative border-l border-border cursor-pointer hover:bg-secondary/20"
+                            style={{ height: totalHeight }}
+                          >
+                            {hours.map(h => (
+                              <div key={h} style={{ height: hourHeight }} className="border-b border-border/50" />
+                            ))}
+                            {dayAppts.map(a => {
+                              const startMin = toMin(a.horario);
+                              const dur = a.servicos?.duracao || 60;
+                              const top = ((startMin - startHour * 60) / 60) * hourHeight;
+                              const height = Math.max(18, (dur / 60) * hourHeight - 2);
+                              if (top < 0 || top > totalHeight) return null;
+                              const color = statusDotColor[a.status || "pendente"];
+                              return (
+                                <button
+                                  key={a.id}
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/home_profissional?tab=Agendamentos&open=${a.id}`); }}
+                                  className="absolute left-1 right-1 rounded px-1 py-0.5 text-left overflow-hidden hover:opacity-90 transition"
+                                  style={{ top, height, background: `${color}33`, borderLeft: `3px solid ${color}` }}
+                                  title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""} — ${a.servicos?.nome || ""}`}
+                                >
+                                  <p className="text-[10px] font-semibold text-foreground leading-tight truncate">
+                                    {a.clientes?.nome || a.servicos?.nome || "Agendamento"}
+                                  </p>
+                                  <p className="text-[9px] text-muted-foreground leading-tight truncate">
+                                    {a.horario?.slice(0,5)}
+                                    {a.servicos?.duracao ? ` – ${String(Math.floor((startMin+dur)/60)).padStart(2,"0")}:${String((startMin+dur)%60).padStart(2,"0")}` : ""}
+                                  </p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {apptView === "Mensal" && (
               <div className="grid grid-cols-7 gap-0.5">
                 {monthShort.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
                 {monthDays.map((date, i) => {
-                  if (!date) return <div key={i} />;
+                  if (!date) return <div key={i} className="min-h-[90px] rounded-md bg-secondary/20" />;
                   const ds = localDateStr(date);
-                  const appts = appointments.filter(a => a.data === ds);
+                  const appts = appointments.filter(a => a.data === ds).sort((a,b) => (a.horario||"").localeCompare(b.horario||""));
                   const isToday = ds === todayDateStr;
-                  const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
                   return (
                     <button
                       key={i}
                       onClick={() => openDayModal(date)}
                       className={cn(
-                        "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors",
-                        isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
-                        appts.length > 0 && !isToday && "text-foreground"
+                        "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col",
+                        isToday ? "border-primary/50 bg-primary/5" : "hover:bg-secondary/50"
                       )}
                     >
-                      {date.getDate()}
-                      {appts.length > 0 && (
-                        <div className="flex gap-0.5 mt-0.5">
-                          {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
-                        </div>
-                      )}
+                      <span className={cn(
+                        "text-xs font-semibold mb-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full self-start",
+                        isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                      )}>{date.getDate()}</span>
+                      <div className="flex-1 space-y-0.5 overflow-hidden">
+                        {appts.slice(0, 3).map(a => {
+                          const color = statusDotColor[a.status || "pendente"];
+                          return (
+                            <div
+                              key={a.id}
+                              className="text-[9px] px-1 py-0.5 rounded truncate leading-tight"
+                              style={{ background: `${color}33`, borderLeft: `2px solid ${color}`, color: "hsl(var(--foreground))" }}
+                            >
+                              {a.horario?.slice(0,5)} {a.clientes?.nome?.split(" ")[0] || a.servicos?.nome || ""}
+                            </div>
+                          );
+                        })}
+                        {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3} mais</p>}
+                      </div>
                     </button>
                   );
                 })}
