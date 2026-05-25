@@ -571,9 +571,26 @@ export default function AgendamentosTab() {
                 <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
               <Checkbox id="new-grat" checked={newForm.gratuito} onCheckedChange={v => setNewForm({ ...newForm, gratuito: !!v })} />
-              <Label htmlFor="new-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — sem cobrança)</Label>
+              <Label htmlFor="new-grat" className="text-xs text-foreground cursor-pointer">Cortesia / retorno sem custo (valor R$ 0,00)</Label>
+            </div>
+            <div className="col-span-2 rounded-md border border-border p-2 space-y-2">
+              <Label className="text-muted-foreground text-xs">Recorrência (cliente fixa)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={newForm.recorrencia} onValueChange={(v: RecorrenciaTipo) => setNewForm({ ...newForm, recorrencia: v })}>
+                  <SelectTrigger className="bg-secondary border-border min-h-[40px]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="unica">Sem recorrência</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+                {newForm.recorrencia !== "unica" && (
+                  <Input type="date" value={newForm.repetir_ate} min={newForm.data} onChange={e => setNewForm({ ...newForm, repetir_ate: e.target.value })} placeholder="Repetir até" className="bg-secondary border-border min-h-[40px]" />
+                )}
+              </div>
             </div>
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
