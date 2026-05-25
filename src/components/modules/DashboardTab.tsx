@@ -128,8 +128,8 @@ export default function DashboardTab() {
     const followDays = profile?.follow_up_days || 30;
     const cutoff = localDateStr(addDays(new Date(), -followDays));
 
-    const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes] = await Promise.all([
-      supabase.from("agendamentos").select("id, data, horario, status, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
+    const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes, bRes] = await Promise.all([
+      supabase.from("agendamentos").select("id, data, horario, status, gratuito, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
       supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", start).lte("data", end),
       supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
       supabase.from("clientes").select("id, nome").eq("user_id", user.id),
@@ -137,7 +137,10 @@ export default function DashboardTab() {
       supabase.from("financeiro").select("data, valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", weekStart),
       supabase.from("agendamentos").select("cliente_id, data").eq("user_id", user.id).eq("status", "concluido"),
       supabase.from("agendamentos").select("cliente_id").eq("user_id", user.id).gte("data", todayDateStr).neq("status", "cancelado"),
+      supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id),
     ]);
+
+    setBloqueios((bRes.data as Bloqueio[]) || []);
 
     setAppointments((aRes.data as Appt[]) || []);
     setMonthRevenue((fRes.data || []).reduce((s: number, t: any) => s + (Number(t.valor) || 0), 0));
