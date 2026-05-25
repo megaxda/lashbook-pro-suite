@@ -303,25 +303,39 @@ export default function AgendamentosTab() {
     if (!bloqForm.dia_todo && (!bloqForm.hora_inicio || !bloqForm.hora_fim)) {
       toast.error("Informe o horário de início e fim"); return;
     }
+    if (bloqForm.recorrencia !== "unica" && !bloqForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (demoBlock()) { setBloqOpen(false); return; }
     if (!user) return;
-    const { error } = await supabase.from("bloqueios_agenda").insert({
+    const dates = expandRecurrence(bloqForm.data, bloqForm.recorrencia, bloqForm.repetir_ate);
+    const recId = bloqForm.recorrencia !== "unica" ? crypto.randomUUID() : null;
+    const rows = dates.map(d => ({
       user_id: user.id,
-      data: bloqForm.data,
+      data: d,
       dia_todo: bloqForm.dia_todo,
       hora_inicio: bloqForm.dia_todo ? null : bloqForm.hora_inicio,
       hora_fim: bloqForm.dia_todo ? null : bloqForm.hora_fim,
       motivo: bloqForm.motivo || null,
-    });
+      recorrencia_id: recId,
+    }));
+    const { error } = await supabase.from("bloqueios_agenda").insert(rows as any);
     if (error) { toast.error("Erro ao criar bloqueio"); return; }
-    toast.success("Bloqueio criado!");
-    setBloqForm({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    toast.success(rows.length > 1 ? `${rows.length} bloqueios criados!` : "Bloqueio criado!");
+    setBloqForm({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica", repetir_ate: "" });
     fetchAll();
   };
 
-  const deleteBloqueio = async (id: string) => {
+  const deleteBloqueio = async (b: Bloqueio) => {
     if (demoBlock()) return;
-    const { error } = await supabase.from("bloqueios_agenda").delete().eq("id", id);
+    let deleteAll = false;
+    if (b.recorrencia_id) {
+      deleteAll = confirm("Este bloqueio faz parte de uma série. OK = excluir TODA a série. Cancelar = excluir apenas este.");
+    } else {
+      if (!confirm("Excluir este bloqueio?")) return;
+    }
+    const q = supabase.from("bloqueios_agenda").delete();
+    const { error } = deleteAll && b.recorrencia_id
+      ? await q.eq("recorrencia_id", b.recorrencia_id)
+      : await q.eq("id", b.id);
     if (error) { toast.error("Erro ao remover"); return; }
     toast.success("Bloqueio removido");
     fetchAll();
