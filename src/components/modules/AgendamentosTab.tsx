@@ -133,7 +133,7 @@ export default function AgendamentosTab() {
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
@@ -141,7 +141,8 @@ export default function AgendamentosTab() {
   // Bloqueios
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [bloqOpen, setBloqOpen] = useState(false);
-  const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+  const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
+  const [selectedBloq, setSelectedBloq] = useState<Bloqueio | null>(null);
 
   const fetchAll = async () => {
     if (isDemo) {
