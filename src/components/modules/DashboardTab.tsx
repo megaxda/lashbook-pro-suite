@@ -511,6 +511,9 @@ export default function DashboardTab() {
                             🚫 {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
                           </div>
                         ))}
+                        {appts.slice(0, 3).map(a => {
+                          const color = statusDotColor[a.status || "pendente"];
+                          return (
                           const color = statusDotColor[a.status || "pendente"];
                           return (
                             <div
