@@ -363,18 +363,27 @@ export default function DashboardTab() {
               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
             </div>
 
-            {apptView === "Diário" && (
-              <div className="space-y-1.5">
-                {diarioAppts.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento neste dia.</p>
-                    <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
-                    </Button>
-                  </div>
-                ) : diarioAppts.map(renderApptRow)}
-              </div>
-            )}
+            {apptView === "Diário" && (() => {
+              const dayBloqs = bloqueios.filter(b => b.data === cursorStr);
+              return (
+                <div className="space-y-1.5">
+                  {dayBloqs.map(b => (
+                    <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/40 text-xs" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                      <span className="font-medium text-foreground">🚫 Bloqueio</span>
+                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}{b.motivo ? ` · ${b.motivo}` : ""}</span>
+                    </div>
+                  ))}
+                  {diarioAppts.length === 0 && dayBloqs.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento neste dia.</p>
+                      <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
+                      </Button>
+                    </div>
+                  ) : diarioAppts.map(renderApptRow)}
+                </div>
+              );
+            })()}
 
             {apptView === "Semanal" && (() => {
               const startHour = 7;
