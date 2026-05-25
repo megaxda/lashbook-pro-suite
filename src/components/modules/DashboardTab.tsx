@@ -426,6 +426,7 @@ export default function DashboardTab() {
                       {weekDates.map((date, i) => {
                         const ds = localDateStr(date);
                         const dayAppts = appointments.filter(a => a.data === ds);
+                        const dayBloqs = bloqueios.filter(b => b.data === ds);
                         return (
                           <div
                             key={i}
