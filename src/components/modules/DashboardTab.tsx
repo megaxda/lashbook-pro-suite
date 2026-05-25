@@ -69,6 +69,7 @@ export default function DashboardTab() {
   const { user, profile, isDemo } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appt[]>([]);
+  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [monthRevenue, setMonthRevenue] = useState(0);
   const [lowStock, setLowStock] = useState<LowStock[]>([]);
   const [recentReceitas, setRecentReceitas] = useState<Receita[]>([]);
