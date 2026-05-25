@@ -437,6 +437,17 @@ export default function DashboardTab() {
                             {hours.map(h => (
                               <div key={h} style={{ height: hourHeight }} className="border-b border-border/50" />
                             ))}
+                            {dayBloqs.map(b => {
+                              if (b.dia_todo) {
+                                return <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                              }
+                              if (!b.hora_inicio || !b.hora_fim) return null;
+                              const si = toMin(b.hora_inicio.slice(0,5));
+                              const sf = toMin(b.hora_fim.slice(0,5));
+                              const top = ((si - startHour * 60) / 60) * hourHeight;
+                              const height = Math.max(8, ((sf - si) / 60) * hourHeight);
+                              return <div key={b.id} className="absolute left-0 right-0 pointer-events-none" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                            })}
                             {dayAppts.map(a => {
                               const startMin = toMin(a.horario);
                               const dur = a.servicos?.duracao || 60;
