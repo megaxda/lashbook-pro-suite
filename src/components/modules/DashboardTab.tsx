@@ -56,7 +56,8 @@ function getWeekDates(date: Date) {
 const apptViews = ["Diário", "Semanal", "Mensal"] as const;
 type ApptView = typeof apptViews[number];
 
-interface Appt { id: string; data: string; horario: string; status: string | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null; }
+interface Appt { id: string; data: string; horario: string; status: string | null; gratuito?: boolean | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null; }
+interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; }
 interface LowStock { id: string; nome: string; quantidade: number | null; quantidade_minima: number | null; }
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
@@ -68,6 +69,7 @@ export default function DashboardTab() {
   const { user, profile, isDemo } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appt[]>([]);
+  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [monthRevenue, setMonthRevenue] = useState(0);
   const [lowStock, setLowStock] = useState<LowStock[]>([]);
   const [recentReceitas, setRecentReceitas] = useState<Receita[]>([]);
@@ -126,8 +128,8 @@ export default function DashboardTab() {
     const followDays = profile?.follow_up_days || 30;
     const cutoff = localDateStr(addDays(new Date(), -followDays));
 
-    const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes] = await Promise.all([
-      supabase.from("agendamentos").select("id, data, horario, status, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
+    const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes, bRes] = await Promise.all([
+      supabase.from("agendamentos").select("id, data, horario, status, gratuito, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
       supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", start).lte("data", end),
       supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
       supabase.from("clientes").select("id, nome").eq("user_id", user.id),
@@ -135,7 +137,10 @@ export default function DashboardTab() {
       supabase.from("financeiro").select("data, valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", weekStart),
       supabase.from("agendamentos").select("cliente_id, data").eq("user_id", user.id).eq("status", "concluido"),
       supabase.from("agendamentos").select("cliente_id").eq("user_id", user.id).gte("data", todayDateStr).neq("status", "cancelado"),
+      supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id),
     ]);
+
+    setBloqueios((bRes.data as Bloqueio[]) || []);
 
     setAppointments((aRes.data as Appt[]) || []);
     setMonthRevenue((fRes.data || []).reduce((s: number, t: any) => s + (Number(t.valor) || 0), 0));
@@ -358,18 +363,27 @@ export default function DashboardTab() {
               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
             </div>
 
-            {apptView === "Diário" && (
-              <div className="space-y-1.5">
-                {diarioAppts.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento neste dia.</p>
-                    <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
-                    </Button>
-                  </div>
-                ) : diarioAppts.map(renderApptRow)}
-              </div>
-            )}
+            {apptView === "Diário" && (() => {
+              const dayBloqs = bloqueios.filter(b => b.data === cursorStr);
+              return (
+                <div className="space-y-1.5">
+                  {dayBloqs.map(b => (
+                    <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/40 text-xs" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                      <span className="font-medium text-foreground">🚫 Bloqueio</span>
+                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}{b.motivo ? ` · ${b.motivo}` : ""}</span>
+                    </div>
+                  ))}
+                  {diarioAppts.length === 0 && dayBloqs.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento neste dia.</p>
+                      <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
+                      </Button>
+                    </div>
+                  ) : diarioAppts.map(renderApptRow)}
+                </div>
+              );
+            })()}
 
             {apptView === "Semanal" && (() => {
               const startHour = 7;
@@ -412,6 +426,7 @@ export default function DashboardTab() {
                       {weekDates.map((date, i) => {
                         const ds = localDateStr(date);
                         const dayAppts = appointments.filter(a => a.data === ds);
+                        const dayBloqs = bloqueios.filter(b => b.data === ds);
                         return (
                           <div
                             key={i}
@@ -422,6 +437,17 @@ export default function DashboardTab() {
                             {hours.map(h => (
                               <div key={h} style={{ height: hourHeight }} className="border-b border-border/50" />
                             ))}
+                            {dayBloqs.map(b => {
+                              if (b.dia_todo) {
+                                return <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                              }
+                              if (!b.hora_inicio || !b.hora_fim) return null;
+                              const si = toMin(b.hora_inicio.slice(0,5));
+                              const sf = toMin(b.hora_fim.slice(0,5));
+                              const top = ((si - startHour * 60) / 60) * hourHeight;
+                              const height = Math.max(8, ((sf - si) / 60) * hourHeight);
+                              return <div key={b.id} className="absolute left-0 right-0 pointer-events-none" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                            })}
                             {dayAppts.map(a => {
                               const startMin = toMin(a.horario);
                               const dur = a.servicos?.duracao || 60;
@@ -463,21 +489,28 @@ export default function DashboardTab() {
                   if (!date) return <div key={i} className="min-h-[90px] rounded-md bg-secondary/20" />;
                   const ds = localDateStr(date);
                   const appts = appointments.filter(a => a.data === ds).sort((a,b) => (a.horario||"").localeCompare(b.horario||""));
+                  const dayBloqs = bloqueios.filter(b => b.data === ds);
                   const isToday = ds === todayDateStr;
                   return (
                     <button
                       key={i}
                       onClick={() => openDayModal(date)}
                       className={cn(
-                        "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col",
+                        "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col relative",
                         isToday ? "border-primary/50 bg-primary/5" : "hover:bg-secondary/50"
                       )}
+                      style={dayBloqs.some(b => b.dia_todo) ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.1) 6px 12px)" } : undefined}
                     >
                       <span className={cn(
                         "text-xs font-semibold mb-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full self-start",
                         isToday ? "bg-primary text-primary-foreground" : "text-foreground"
                       )}>{date.getDate()}</span>
                       <div className="flex-1 space-y-0.5 overflow-hidden">
+                        {dayBloqs.map(b => (
+                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40">
+                            🚫 {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                          </div>
+                        ))}
                         {appts.slice(0, 3).map(a => {
                           const color = statusDotColor[a.status || "pendente"];
                           return (
@@ -525,10 +558,19 @@ export default function DashboardTab() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 mt-2">
-            {selectedDayAppts?.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento neste dia.</p>}
+            {bloqueios.filter(b => b.data === selectedDayStr).map(b => (
+              <div key={b.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                <span className="text-sm">🚫</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
+                  {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+                </div>
+              </div>
+            ))}
+            {selectedDayAppts?.length === 0 && bloqueios.filter(b => b.data === selectedDayStr).length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento neste dia.</p>}
             {selectedDayAppts?.map(a => (
               <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 min-h-[56px]">
-                <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p></div>
+                <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}</p></div>
                 <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
               </div>
             ))}

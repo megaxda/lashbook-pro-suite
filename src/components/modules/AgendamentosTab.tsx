@@ -26,7 +26,43 @@ interface Agendamento {
   pagamentos_detalhe?: PagamentoItem[] | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
-interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; }
+interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; recorrencia_id?: string | null; }
+
+type RecorrenciaTipo = "unica" | "semanal" | "quinzenal" | "mensal";
+
+function expandRecurrence(start: string, type: RecorrenciaTipo, until: string): string[] {
+  if (type === "unica" || !until) return [start];
+  const startD = parseDateStr(start);
+  const endD = parseDateStr(until);
+  if (endD < startD) return [start];
+  const out: string[] = [];
+  if (type === "mensal") {
+    const day = startD.getDate();
+    let cursor = new Date(startD);
+    let guard = 0;
+    while (cursor <= endD && guard++ < 200) {
+      out.push(localDateStr(cursor));
+      let y = cursor.getFullYear();
+      let m = cursor.getMonth() + 1;
+      if (m > 11) { y += 1; m = 0; }
+      let daysInMonth = new Date(y, m + 1, 0).getDate();
+      while (day > daysInMonth) {
+        m += 1; if (m > 11) { y += 1; m = 0; }
+        daysInMonth = new Date(y, m + 1, 0).getDate();
+      }
+      cursor = new Date(y, m, day, 12, 0, 0);
+    }
+  } else {
+    const step = type === "semanal" ? 7 : 14;
+    let cursor = new Date(startD);
+    let guard = 0;
+    while (cursor <= endD && guard++ < 500) {
+      out.push(localDateStr(cursor));
+      cursor = addDays(cursor, step);
+    }
+  }
+  return out;
+}
 
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
@@ -97,7 +133,7 @@ export default function AgendamentosTab() {
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
@@ -105,7 +141,8 @@ export default function AgendamentosTab() {
   // Bloqueios
   const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [bloqOpen, setBloqOpen] = useState(false);
-  const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+  const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
+  const [selectedBloq, setSelectedBloq] = useState<Bloqueio | null>(null);
 
   const fetchAll = async () => {
     if (isDemo) {
@@ -152,7 +189,7 @@ export default function AgendamentosTab() {
   useEffect(() => {
     const d = searchParams.get("bloquear");
     if (!d) return;
-    setBloqForm({ data: d, dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    setBloqForm({ data: d, dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica", repetir_ate: "" });
     setBloqOpen(true);
     const next = new URLSearchParams(searchParams);
     next.delete("bloquear");
@@ -202,23 +239,36 @@ export default function AgendamentosTab() {
     });
   };
 
+  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
+
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (newForm.recorrencia !== "unica" && !newForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
-    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false }); return; }
+    if (demoBlock()) { setNewOpen(false); resetNewForm(); return; }
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("agendamentos").insert({
-      user_id: user.id, data: newForm.data, horario: newForm.horario,
+    const dates = expandRecurrence(newForm.data, newForm.recorrencia, newForm.repetir_ate);
+    const recId = newForm.recorrencia !== "unica" ? crypto.randomUUID() : null;
+    const skipped: string[] = [];
+    const rows = dates.filter(d => {
+      if (isSlotBlocked(d, newForm.horario)) { skipped.push(d); return false; }
+      return true;
+    }).map(d => ({
+      user_id: user.id, data: d, horario: newForm.horario,
       cliente_id: newForm.cliente_id || null, servico_id: newForm.servico_id || null,
       notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
       gratuito: newForm.gratuito,
-    } as any);
+      recorrencia_id: recId,
+    }));
+    if (rows.length === 0) { setSaving(false); toast.error("Todas as datas conflitam com bloqueios."); return; }
+    const { error } = await supabase.from("agendamentos").insert(rows as any);
     setSaving(false);
     if (error) { toast.error("Erro ao criar agendamento"); return; }
-    toast.success("Agendamento criado!");
+    toast.success(rows.length > 1 ? `${rows.length} agendamentos criados!` : "Agendamento criado!");
+    if (skipped.length) toast.info(`${skipped.length} data(s) pulada(s) por bloqueio.`);
     setNewOpen(false);
-    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
+    resetNewForm();
     fetchAll();
   };
 
@@ -253,25 +303,39 @@ export default function AgendamentosTab() {
     if (!bloqForm.dia_todo && (!bloqForm.hora_inicio || !bloqForm.hora_fim)) {
       toast.error("Informe o horário de início e fim"); return;
     }
+    if (bloqForm.recorrencia !== "unica" && !bloqForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (demoBlock()) { setBloqOpen(false); return; }
     if (!user) return;
-    const { error } = await supabase.from("bloqueios_agenda").insert({
+    const dates = expandRecurrence(bloqForm.data, bloqForm.recorrencia, bloqForm.repetir_ate);
+    const recId = bloqForm.recorrencia !== "unica" ? crypto.randomUUID() : null;
+    const rows = dates.map(d => ({
       user_id: user.id,
-      data: bloqForm.data,
+      data: d,
       dia_todo: bloqForm.dia_todo,
       hora_inicio: bloqForm.dia_todo ? null : bloqForm.hora_inicio,
       hora_fim: bloqForm.dia_todo ? null : bloqForm.hora_fim,
       motivo: bloqForm.motivo || null,
-    });
+      recorrencia_id: recId,
+    }));
+    const { error } = await supabase.from("bloqueios_agenda").insert(rows as any);
     if (error) { toast.error("Erro ao criar bloqueio"); return; }
-    toast.success("Bloqueio criado!");
-    setBloqForm({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    toast.success(rows.length > 1 ? `${rows.length} bloqueios criados!` : "Bloqueio criado!");
+    setBloqForm({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica", repetir_ate: "" });
     fetchAll();
   };
 
-  const deleteBloqueio = async (id: string) => {
+  const deleteBloqueio = async (b: Bloqueio) => {
     if (demoBlock()) return;
-    const { error } = await supabase.from("bloqueios_agenda").delete().eq("id", id);
+    let deleteAll = false;
+    if (b.recorrencia_id) {
+      deleteAll = confirm("Este bloqueio faz parte de uma série. OK = excluir TODA a série. Cancelar = excluir apenas este.");
+    } else {
+      if (!confirm("Excluir este bloqueio?")) return;
+    }
+    const q = supabase.from("bloqueios_agenda").delete();
+    const { error } = deleteAll && b.recorrencia_id
+      ? await q.eq("recorrencia_id", b.recorrencia_id)
+      : await q.eq("id", b.id);
     if (error) { toast.error("Erro ao remover"); return; }
     toast.success("Bloqueio removido");
     fetchAll();
@@ -328,11 +392,14 @@ export default function AgendamentosTab() {
           </div>
           <div className="w-px h-10 bg-border" />
           <div className="min-w-0">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <p className="font-semibold text-foreground text-sm truncate">{a.clientes?.nome || "Sem cliente"}</p>
               {a.origem === "link_bio" && <Globe className="w-3 h-3 text-primary flex-shrink-0" />}
+              {a.gratuito && <Badge className="border-0 text-[9px] px-1 py-0 bg-emerald-500/15 text-emerald-600">Cortesia</Badge>}
             </div>
-            <p className="text-xs text-muted-foreground truncate">{a.servicos?.nome || "Sem serviço"} · R$ {a.servicos?.preco || 0}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {a.servicos?.nome || "Sem serviço"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}
+            </p>
           </div>
         </div>
         <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
@@ -340,14 +407,45 @@ export default function AgendamentosTab() {
     </div>
   );
 
+  const renderBloqueioCard = (b: Bloqueio) => (
+    <div
+      key={b.id}
+      onClick={() => { setBloqForm({ data: b.data, dia_todo: b.dia_todo, hora_inicio: b.hora_inicio?.slice(0,5) || "", hora_fim: b.hora_fim?.slice(0,5) || "", motivo: b.motivo || "", recorrencia: "unica", repetir_ate: "" }); setSelectedBloq(b); setBloqOpen(true); }}
+      className="rounded-xl p-3 sm:p-4 border border-border bg-muted/40 cursor-pointer min-h-[56px] flex items-center gap-3"
+      style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}
+    >
+      <Ban className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">
+          Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}
+        </p>
+        {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+      </div>
+      {b.recorrencia_id && <Badge className="border-0 text-[9px] px-1 py-0 bg-secondary text-muted-foreground">Série</Badge>}
+    </div>
+  );
+
   if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando agendamentos...</p></div>;
 
+  // Combined sorter for a single day: bloqueios go first (when dia_todo) and parciais by hora_inicio
+  const sortedDayItems = (ds: string) => {
+    const appts = appointments.filter(a => a.data === ds);
+    const bloqs = bloqueios.filter(b => b.data === ds);
+    type Item = { kind: "appt"; a: Agendamento; time: string } | { kind: "bloq"; b: Bloqueio; time: string };
+    const items: Item[] = [
+      ...bloqs.map<Item>(b => ({ kind: "bloq", b, time: b.dia_todo ? "00:00" : (b.hora_inicio || "00:00").slice(0,5) })),
+      ...appts.map<Item>(a => ({ kind: "appt", a, time: (a.horario || "00:00").slice(0,5) })),
+    ];
+    items.sort((x, y) => x.time.localeCompare(y.time));
+    return items;
+  };
+
   const renderDiario = () => {
-    const appts = appointments.filter(a => a.data === currentDateStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+    const items = sortedDayItems(currentDateStr);
     return (
       <div className="space-y-2">
-        {appts.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento neste dia.</p>}
-        {appts.map(renderCard)}
+        {items.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento neste dia.</p>}
+        {items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b))}
       </div>
     );
   };
@@ -361,10 +459,17 @@ export default function AgendamentosTab() {
         {weekDates.map((date, i) => {
           const ds = localDateStr(date);
           const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+          const bloqs = bloqueios.filter(b => b.data === ds);
           const isToday = ds === todayStr;
           return (
-            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50", isToday && "border-primary/50 bg-primary/5")}>
+            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50 relative overflow-hidden", isToday && "border-primary/50 bg-primary/5")}>
               <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
+              {bloqs.map(b => (
+                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }}>
+                  <Ban className="w-2.5 h-2.5" />
+                  {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                </div>
+              ))}
               {appts.slice(0, 3).map(a => (
                 <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
                   {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
@@ -388,6 +493,7 @@ export default function AgendamentosTab() {
           if (!date) return <div key={i} />;
           const ds = localDateStr(date);
           const appts = appointments.filter(a => a.data === ds);
+          const hasBloqueio = bloqueios.some(b => b.data === ds);
           const isToday = ds === todayStr;
           const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
           return (
@@ -395,12 +501,15 @@ export default function AgendamentosTab() {
               key={i}
               onClick={() => openDayModal(date)}
               className={cn(
-                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors",
+                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors relative",
                 isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
-                appts.length > 0 && !isToday && "text-foreground"
+                appts.length > 0 && !isToday && "text-foreground",
+                hasBloqueio && "ring-1 ring-inset ring-muted-foreground/30"
               )}
+              style={hasBloqueio ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.08) 4px 8px)" } : undefined}
             >
               {date.getDate()}
+              {hasBloqueio && <Ban className="w-2.5 h-2.5 absolute top-0.5 right-0.5 text-muted-foreground" />}
               {appts.length > 0 && (
                 <div className="flex gap-0.5 mt-0.5">
                   {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
@@ -459,7 +568,14 @@ export default function AgendamentosTab() {
 
       {view === "Lista" && (
         <div className="space-y-2">
-          {appointments.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : appointments.map(renderCard)}
+          {appointments.length === 0 && bloqueios.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : (() => {
+            type Item = { kind: "appt"; a: Agendamento; key: string } | { kind: "bloq"; b: Bloqueio; key: string };
+            const items: Item[] = [
+              ...appointments.map<Item>(a => ({ kind: "appt", a, key: `${a.data} ${(a.horario||"00:00").slice(0,5)}` })),
+              ...bloqueios.map<Item>(b => ({ kind: "bloq", b, key: `${b.data} ${b.dia_todo ? "00:00" : (b.hora_inicio||"00:00").slice(0,5)}` })),
+            ].sort((x, y) => x.key.localeCompare(y.key));
+            return items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b));
+          })()}
         </div>
       )}
       {view === "Diário" && renderDiario()}
@@ -507,9 +623,26 @@ export default function AgendamentosTab() {
                 <SelectContent className="bg-card border-border">{paymentMethods.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+            <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
               <Checkbox id="new-grat" checked={newForm.gratuito} onCheckedChange={v => setNewForm({ ...newForm, gratuito: !!v })} />
-              <Label htmlFor="new-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — sem cobrança)</Label>
+              <Label htmlFor="new-grat" className="text-xs text-foreground cursor-pointer">Cortesia / retorno sem custo (valor R$ 0,00)</Label>
+            </div>
+            <div className="col-span-2 rounded-md border border-border p-2 space-y-2">
+              <Label className="text-muted-foreground text-xs">Recorrência (cliente fixa)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={newForm.recorrencia} onValueChange={(v: RecorrenciaTipo) => setNewForm({ ...newForm, recorrencia: v })}>
+                  <SelectTrigger className="bg-secondary border-border min-h-[40px]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="unica">Sem recorrência</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+                {newForm.recorrencia !== "unica" && (
+                  <Input type="date" value={newForm.repetir_ate} min={newForm.data} onChange={e => setNewForm({ ...newForm, repetir_ate: e.target.value })} placeholder="Repetir até" className="bg-secondary border-border min-h-[40px]" />
+                )}
+              </div>
             </div>
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
@@ -566,9 +699,9 @@ export default function AgendamentosTab() {
                     <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+                <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
                   <Checkbox id="edit-grat" checked={editGratuito} onCheckedChange={v => setEditGratuito(!!v)} />
-                  <Label htmlFor="edit-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — não gera receita)</Label>
+                  <Label htmlFor="edit-grat" className="text-xs text-foreground cursor-pointer">Cortesia / retorno sem custo (não gera receita)</Label>
                 </div>
                 {!editGratuito && (
                   <div className="space-y-2">
@@ -636,22 +769,36 @@ export default function AgendamentosTab() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 mt-2">
-            {dayModalAppts.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento.</p>}
+            {dayModalDate && bloqueios.filter(b => b.data === dayModalDate).map(b => (
+              <div key={b.id} onClick={() => { setBloqForm({ data: b.data, dia_todo: b.dia_todo, hora_inicio: b.hora_inicio?.slice(0,5) || "", hora_fim: b.hora_fim?.slice(0,5) || "", motivo: b.motivo || "", recorrencia: "unica", repetir_ate: "" }); setSelectedBloq(b); setDayModalDate(null); setBloqOpen(true); }} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border cursor-pointer min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                <Ban className="w-4 h-4 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
+                  {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+                </div>
+              </div>
+            ))}
+            {dayModalAppts.length === 0 && bloqueios.filter(b => b.data === dayModalDate).length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento.</p>}
             {dayModalAppts.map(a => (
               <div key={a.id} onClick={() => { setDayModalDate(null); openAppt(a); }} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary min-h-[56px]">
-                <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p></div>
+                <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}</p></div>
                 <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
               </div>
             ))}
           </div>
-          <Button onClick={() => { const ds = dayModalDate; setDayModalDate(null); setNewForm(f => ({ ...f, data: ds || "" })); setNewOpen(true); }} className="w-full gradient-brand text-primary-foreground mt-2 min-h-[44px]">
-            <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+            <Button onClick={() => { const ds = dayModalDate; setDayModalDate(null); setNewForm(f => ({ ...f, data: ds || "" })); setNewOpen(true); }} className="flex-1 gradient-brand text-primary-foreground min-h-[44px]">
+              <Plus className="w-4 h-4 mr-1" /> Novo Agendamento
+            </Button>
+            <Button variant="outline" onClick={() => { const ds = dayModalDate; setDayModalDate(null); setBloqForm({ data: ds || "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica", repetir_ate: "" }); setSelectedBloq(null); setBloqOpen(true); }} className="flex-1 border-border min-h-[44px]">
+              <Ban className="w-4 h-4 mr-1" /> Bloquear
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Bloqueios de agenda */}
-      <Dialog open={bloqOpen} onOpenChange={setBloqOpen}>
+      <Dialog open={bloqOpen} onOpenChange={(o) => { setBloqOpen(o); if (!o) setSelectedBloq(null); }}>
         <DialogContent className="max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-foreground">Fechar agenda</DialogTitle></DialogHeader>
           <p className="text-xs text-muted-foreground">Datas e horários bloqueados não aparecem no link da bio nem permitem agendamentos.</p>
@@ -678,10 +825,37 @@ export default function AgendamentosTab() {
             )}
             <div className="col-span-2">
               <Label className="text-muted-foreground text-xs">Motivo (opcional)</Label>
-              <Input value={bloqForm.motivo} onChange={e => setBloqForm({ ...bloqForm, motivo: e.target.value })} placeholder="Ex: feriado, folga..." className="bg-secondary border-border mt-1 min-h-[44px]" />
+              <Input value={bloqForm.motivo} onChange={e => setBloqForm({ ...bloqForm, motivo: e.target.value })} placeholder="Ex: almoço, feriado, folga..." className="bg-secondary border-border mt-1 min-h-[44px]" />
+            </div>
+            <div className="col-span-2 rounded-md border border-border p-2 space-y-2">
+              <Label className="text-muted-foreground text-xs">Recorrência</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={bloqForm.recorrencia} onValueChange={(v: RecorrenciaTipo) => setBloqForm({ ...bloqForm, recorrencia: v })}>
+                  <SelectTrigger className="bg-secondary border-border min-h-[40px]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="unica">Única</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+                {bloqForm.recorrencia !== "unica" && (
+                  <Input type="date" value={bloqForm.repetir_ate} min={bloqForm.data} onChange={e => setBloqForm({ ...bloqForm, repetir_ate: e.target.value })} placeholder="Repetir até" className="bg-secondary border-border min-h-[40px]" />
+                )}
+              </div>
+              {bloqForm.recorrencia !== "unica" && (
+                <p className="text-[10px] text-muted-foreground">Ex: bloqueio de almoço replicado em todos os dias até a data limite.</p>
+              )}
             </div>
           </div>
-          <Button onClick={saveBloqueio} className="w-full mt-2 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
+          <div className="flex gap-2 mt-2">
+            <Button onClick={saveBloqueio} className="flex-1 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
+            {selectedBloq && (
+              <Button variant="outline" onClick={() => { const b = selectedBloq; setSelectedBloq(null); setBloqOpen(false); deleteBloqueio(b); }} className="border-destructive/40 text-destructive hover:bg-destructive/10 min-h-[44px]">
+                <Trash2 className="w-4 h-4 mr-1" /> Excluir
+              </Button>
+            )}
+          </div>
 
           <div className="mt-3 border-t border-border pt-3">
             <p className="text-xs font-semibold text-foreground mb-2">Bloqueios ativos</p>
@@ -696,7 +870,7 @@ export default function AgendamentosTab() {
                       {b.motivo ? ` · ${b.motivo}` : ""}
                     </p>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteBloqueio(b.id)}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteBloqueio(b)}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>

@@ -1,47 +1,71 @@
-## Cadastro com trial de 7 dias + controle no admin
+## Objetivo
 
-### Visão geral
-Adicionar aba "Criar conta" na tela de login. Quem se cadastrar por ali ganha 7 dias de acesso. Após esse período, a conta é bloqueada e o usuário não consegue mais entrar no app — somente o admin pode liberar (estender por X dias ou liberar para sempre) pelo painel.
+Tornar bloqueios visíveis em toda a agenda, suportar recorrência de bloqueios, criar agendamentos recorrentes para clientes fixas e deixar clara a opção de cortesia/retorno gratuito.
 
-### Mudanças no banco
-Adicionar à tabela `profiles`:
-- `access_expires_at timestamptz NULL` — data limite de acesso. `NULL` = acesso ilimitado (admins, contas liberadas para sempre, ou contas criadas internamente via `/creatifin`).
-- `signup_origin text DEFAULT 'internal'` — marca origem (`'public'` para cadastros pela tela de login, `'internal'` para os criados via `/creatifin`).
+## 1. Bloqueios visíveis em todos os lugares
 
-Atualizar a função `handle_new_user()` para ler `raw_user_meta_data->>'signup_origin'`:
-- Se for `'public'` → grava `signup_origin = 'public'` e `access_expires_at = now() + interval '7 days'`.
-- Caso contrário → mantém `access_expires_at = NULL` (acesso ilimitado, comportamento atual).
+**Aba Agendamentos**
+- Lista: incluir os bloqueios entre os agendamentos do dia, com badge "Bloqueio" cinza e o motivo. Clicar abre um pequeno diálogo para editar motivo/horário ou excluir.
+- Diário/Semanal: renderizar os bloqueios como faixas cinza listradas no grid de horários (full-day cobre o dia inteiro, parcial cobre só o intervalo).
+- Mensal: nas células do mês, mostrar um chip cinza "🚫 Bloqueado" (ou o motivo encurtado) junto dos agendamentos.
 
-Política RLS continua a mesma — o bloqueio é feito na camada de app (mais simples, permite mostrar tela explicativa ao usuário).
+**Dashboard (tela inicial)**
+- Diário: mostrar bloqueios do dia como cartões cinza listrados.
+- Semanal/Mensal: aplicar a mesma marcação visual cinza usada na aba Agendamentos (faixa no grid semanal, chip no mensal).
+- No modal do dia: listar bloqueios acima dos agendamentos.
 
-### Tela de login (`src/pages/Auth.tsx`)
-Adicionar tabs "Entrar" / "Criar conta". A aba de cadastro pede nome, email e senha e chama `signUp` passando `signup_origin: 'public'` no `data`. Mensagem de sucesso avisa: *"Conta criada! Você tem 7 dias de acesso gratuito."*
+**Link da Bio**
+- Já há `get_blocked_slots_by_slug`. Garantir que, quando `dia_todo` estiver ativo, o seletor de data trate a data como indisponível (mensagem "Agenda fechada nesta data" já aparece — desabilitar todos os slots fica reforçado). Sem alteração de schema, só ajuste visual no `LinkBioPage` para impedir o passo seguinte quando `allDayBlocked`.
 
-### Bloqueio de acesso
-No `AuthContext`, após carregar o `profile`, calcular `isBlocked = profile.access_expires_at && new Date(profile.access_expires_at) < new Date()` (admins nunca são bloqueados). Expor `isBlocked` no contexto.
+## 2. Recorrência de bloqueios
 
-Criar componente `AccountBlocked` (tela cheia) com mensagem: *"Seu período de teste de 7 dias terminou. Entre em contato com o administrador para liberar o acesso."* + botão "Sair".
+Acrescentar ao diálogo "Bloquear" (em Agendamentos e Dashboard) os campos:
 
-No `ProtectedRoute` (App.tsx), se `isBlocked` → renderiza `AccountBlocked` em vez do conteúdo. `AdminRoute` continua acessível para admins.
+- **Recorrência**: Única / Semanal / Quinzenal / Mensal
+- **Repetir até**: data limite (obrigatório quando recorrência ≠ Única)
 
-### Painel admin (`AdminPage.tsx` + `useAdminUsers.ts`)
-Na lista de usuários, mostrar uma coluna/badge de status:
-- "Ativo (ilimitado)" se `access_expires_at` é `NULL`
-- "Trial — expira em DD/MM" se futuro
-- "Bloqueado" se passado
+Comportamento:
+- Única: insere um único registro (igual a hoje).
+- Semanal: replica a cada 7 dias até a data limite.
+- Quinzenal: a cada 14 dias.
+- Mensal: mesmo dia do mês até o limite (pulando meses sem o dia equivalente).
 
-Adicionar ações por usuário:
-- **Estender prazo** → input de dias (ex: 7, 30, 90) → atualiza `access_expires_at = now() + dias`.
-- **Liberar para sempre** → seta `access_expires_at = NULL`.
-- **Bloquear agora** → seta `access_expires_at = now() - 1 minuto`.
+Todos os bloqueios gerados compartilham um `recorrencia_id` (uuid) para que possamos oferecer "Excluir só este" ou "Excluir toda a série" ao remover.
 
-### Detalhes técnicos
-- Migration nova: 2 colunas em `profiles` + `CREATE OR REPLACE FUNCTION public.handle_new_user()` atualizada.
-- `AuthContext` expõe `isBlocked: boolean`.
-- Refresh do profile em ações do admin via `queryClient.invalidateQueries(['admin-users'])` (já existente).
-- A função `is_admin`/`current_user_is_admin` existente continua sendo usada para distinguir admins (eles sempre têm `access_expires_at = NULL` por padrão e além disso ignoramos bloqueio se `role = 'admin'`).
+## 3. Agendamentos recorrentes (clientes fixas)
 
-### Arquivos
-- **Migration**: nova SQL com `ALTER TABLE profiles` + `handle_new_user` atualizada.
-- **Editar**: `src/pages/Auth.tsx`, `src/contexts/AuthContext.tsx`, `src/App.tsx`, `src/pages/AdminPage.tsx`, `src/hooks/useAdminUsers.ts`.
-- **Criar**: `src/components/AccountBlocked.tsx`.
+No diálogo "Novo Agendamento" adicionar uma seção opcional "Cliente fixa / recorrente":
+
+- **Recorrência**: Nenhuma / Semanal / Quinzenal / Mensal
+- **Repetir até**: data limite
+
+Ao salvar, cria N agendamentos com o mesmo cliente, serviço, horário e status pendente, marcados com um `recorrencia_id` compartilhado. Bloqueios são respeitados: datas conflitantes são puladas e listadas em um toast informativo ao final.
+
+Edição/exclusão segue a mesma lógica de série: ao excluir/editar, perguntar "Apenas este" ou "Toda a série".
+
+## 4. Cortesia / Retorno sem custo
+
+O campo `gratuito` já existe. Vamos torná-lo explícito:
+
+- No diálogo de Novo Agendamento e na edição, substituir o checkbox por um seletor de **Tipo de cobrança**:
+  - Pago (padrão, mostra formas de pagamento)
+  - Cortesia / Retorno sem custo (zera o valor, oculta formas de pagamento, não gera receita no financeiro)
+- Quando "Cortesia" estiver marcado, o card do agendamento mostra um badge verde-claro "Cortesia" e o valor aparece como "R$ 0,00".
+- A trigger `auto_create_receita_on_concluido` já ignora `gratuito = true`, então não há alteração no financeiro.
+
+## Detalhes técnicos
+
+**Migração de banco**
+- `ALTER TABLE bloqueios_agenda ADD COLUMN recorrencia_id uuid` (índice em `recorrencia_id`).
+- `ALTER TABLE agendamentos ADD COLUMN recorrencia_id uuid` (índice).
+- Sem alteração no `gratuito` (já existe).
+
+**Frontend (sem novas libs)**
+- `src/components/modules/AgendamentosTab.tsx`: estender `bloqForm` com `recorrencia` + `repetir_ate`; estender `newForm` idem; helper `expandRecorrencia(dataInicial, tipo, ate)` que devolve lista de datas; loop de inserts; render dos bloqueios na Lista/Diário/Semanal/Mensal; diálogo de confirmação "Este ou toda a série".
+- `src/components/modules/DashboardTab.tsx`: buscar `bloqueios_agenda` junto com `agendamentos`; renderizar faixas cinza no Semanal/Mensal e no modal do dia.
+- `src/pages/LinkBioPage.tsx`: quando `allDayBlocked`, desabilitar botão "Continuar" e exibir a mensagem já existente em destaque.
+
+## Fora do escopo
+
+- Edição em lote de várias séries simultaneamente.
+- Notificação automática a clientes fixas (continua usando o WhatsApp manual).
