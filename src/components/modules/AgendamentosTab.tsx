@@ -239,23 +239,36 @@ export default function AgendamentosTab() {
     });
   };
 
+  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
+
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    if (newForm.recorrencia !== "unica" && !newForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
-    if (demoBlock()) { setNewOpen(false); setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false }); return; }
+    if (demoBlock()) { setNewOpen(false); resetNewForm(); return; }
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("agendamentos").insert({
-      user_id: user.id, data: newForm.data, horario: newForm.horario,
+    const dates = expandRecurrence(newForm.data, newForm.recorrencia, newForm.repetir_ate);
+    const recId = newForm.recorrencia !== "unica" ? crypto.randomUUID() : null;
+    const skipped: string[] = [];
+    const rows = dates.filter(d => {
+      if (isSlotBlocked(d, newForm.horario)) { skipped.push(d); return false; }
+      return true;
+    }).map(d => ({
+      user_id: user.id, data: d, horario: newForm.horario,
       cliente_id: newForm.cliente_id || null, servico_id: newForm.servico_id || null,
       notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
       gratuito: newForm.gratuito,
-    } as any);
+      recorrencia_id: recId,
+    }));
+    if (rows.length === 0) { setSaving(false); toast.error("Todas as datas conflitam com bloqueios."); return; }
+    const { error } = await supabase.from("agendamentos").insert(rows as any);
     setSaving(false);
     if (error) { toast.error("Erro ao criar agendamento"); return; }
-    toast.success("Agendamento criado!");
+    toast.success(rows.length > 1 ? `${rows.length} agendamentos criados!` : "Agendamento criado!");
+    if (skipped.length) toast.info(`${skipped.length} data(s) pulada(s) por bloqueio.`);
     setNewOpen(false);
-    setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false });
+    resetNewForm();
     fetchAll();
   };
 
