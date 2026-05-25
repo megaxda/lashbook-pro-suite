@@ -848,7 +848,14 @@ export default function AgendamentosTab() {
               )}
             </div>
           </div>
-          <Button onClick={saveBloqueio} className="w-full mt-2 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
+          <div className="flex gap-2 mt-2">
+            <Button onClick={saveBloqueio} className="flex-1 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
+            {selectedBloq && (
+              <Button variant="outline" onClick={() => { const b = selectedBloq; setSelectedBloq(null); setBloqOpen(false); deleteBloqueio(b); }} className="border-destructive/40 text-destructive hover:bg-destructive/10 min-h-[44px]">
+                <Trash2 className="w-4 h-4 mr-1" /> Excluir
+              </Button>
+            )}
+          </div>
 
           <div className="mt-3 border-t border-border pt-3">
             <p className="text-xs font-semibold text-foreground mb-2">Bloqueios ativos</p>
