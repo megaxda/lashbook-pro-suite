@@ -568,7 +568,14 @@ export default function AgendamentosTab() {
 
       {view === "Lista" && (
         <div className="space-y-2">
-          {appointments.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : appointments.map(renderCard)}
+          {appointments.length === 0 && bloqueios.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : (() => {
+            type Item = { kind: "appt"; a: Agendamento; key: string } | { kind: "bloq"; b: Bloqueio; key: string };
+            const items: Item[] = [
+              ...appointments.map<Item>(a => ({ kind: "appt", a, key: `${a.data} ${(a.horario||"00:00").slice(0,5)}` })),
+              ...bloqueios.map<Item>(b => ({ kind: "bloq", b, key: `${b.data} ${b.dia_todo ? "00:00" : (b.hora_inicio||"00:00").slice(0,5)}` })),
+            ].sort((x, y) => x.key.localeCompare(y.key));
+            return items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b));
+          })()}
         </div>
       )}
       {view === "Diário" && renderDiario()}
