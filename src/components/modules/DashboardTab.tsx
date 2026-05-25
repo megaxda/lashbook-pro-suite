@@ -558,10 +558,19 @@ export default function DashboardTab() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 mt-2">
-            {selectedDayAppts?.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento neste dia.</p>}
+            {bloqueios.filter(b => b.data === selectedDayStr).map(b => (
+              <div key={b.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                <span className="text-sm">🚫</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
+                  {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+                </div>
+              </div>
+            ))}
+            {selectedDayAppts?.length === 0 && bloqueios.filter(b => b.data === selectedDayStr).length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum agendamento neste dia.</p>}
             {selectedDayAppts?.map(a => (
               <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 min-h-[56px]">
-                <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p></div>
+                <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}</p></div>
                 <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
               </div>
             ))}
