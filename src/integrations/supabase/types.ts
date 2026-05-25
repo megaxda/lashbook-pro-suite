@@ -27,6 +27,7 @@ export type Database = {
           notas: string | null
           origem: string | null
           pagamentos_detalhe: Json
+          recorrencia_id: string | null
           servico_id: string | null
           sinal_pago: boolean | null
           status: string | null
@@ -44,6 +45,7 @@ export type Database = {
           notas?: string | null
           origem?: string | null
           pagamentos_detalhe?: Json
+          recorrencia_id?: string | null
           servico_id?: string | null
           sinal_pago?: boolean | null
           status?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           notas?: string | null
           origem?: string | null
           pagamentos_detalhe?: Json
+          recorrencia_id?: string | null
           servico_id?: string | null
           sinal_pago?: boolean | null
           status?: string | null
@@ -92,6 +95,7 @@ export type Database = {
           hora_inicio: string | null
           id: string
           motivo: string | null
+          recorrencia_id: string | null
           user_id: string
         }
         Insert: {
@@ -102,6 +106,7 @@ export type Database = {
           hora_inicio?: string | null
           id?: string
           motivo?: string | null
+          recorrencia_id?: string | null
           user_id: string
         }
         Update: {
@@ -112,6 +117,7 @@ export type Database = {
           hora_inicio?: string | null
           id?: string
           motivo?: string | null
+          recorrencia_id?: string | null
           user_id?: string
         }
         Relationships: []
