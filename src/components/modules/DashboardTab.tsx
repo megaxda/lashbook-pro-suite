@@ -56,7 +56,8 @@ function getWeekDates(date: Date) {
 const apptViews = ["Diário", "Semanal", "Mensal"] as const;
 type ApptView = typeof apptViews[number];
 
-interface Appt { id: string; data: string; horario: string; status: string | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null; }
+interface Appt { id: string; data: string; horario: string; status: string | null; gratuito?: boolean | null; clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null; }
+interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; }
 interface LowStock { id: string; nome: string; quantidade: number | null; quantidade_minima: number | null; }
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
