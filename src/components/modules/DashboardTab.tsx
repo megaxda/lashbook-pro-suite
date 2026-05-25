@@ -514,8 +514,6 @@ export default function DashboardTab() {
                         {appts.slice(0, 3).map(a => {
                           const color = statusDotColor[a.status || "pendente"];
                           return (
-                          const color = statusDotColor[a.status || "pendente"];
-                          return (
                             <div
                               key={a.id}
                               className="text-[9px] px-1 py-0.5 rounded truncate leading-tight"
