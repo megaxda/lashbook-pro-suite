@@ -759,7 +759,27 @@ export default function AgendamentosTab() {
             )}
             <div className="col-span-2">
               <Label className="text-muted-foreground text-xs">Motivo (opcional)</Label>
-              <Input value={bloqForm.motivo} onChange={e => setBloqForm({ ...bloqForm, motivo: e.target.value })} placeholder="Ex: feriado, folga..." className="bg-secondary border-border mt-1 min-h-[44px]" />
+              <Input value={bloqForm.motivo} onChange={e => setBloqForm({ ...bloqForm, motivo: e.target.value })} placeholder="Ex: almoço, feriado, folga..." className="bg-secondary border-border mt-1 min-h-[44px]" />
+            </div>
+            <div className="col-span-2 rounded-md border border-border p-2 space-y-2">
+              <Label className="text-muted-foreground text-xs">Recorrência</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={bloqForm.recorrencia} onValueChange={(v: RecorrenciaTipo) => setBloqForm({ ...bloqForm, recorrencia: v })}>
+                  <SelectTrigger className="bg-secondary border-border min-h-[40px]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="unica">Única</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+                {bloqForm.recorrencia !== "unica" && (
+                  <Input type="date" value={bloqForm.repetir_ate} min={bloqForm.data} onChange={e => setBloqForm({ ...bloqForm, repetir_ate: e.target.value })} placeholder="Repetir até" className="bg-secondary border-border min-h-[40px]" />
+                )}
+              </div>
+              {bloqForm.recorrencia !== "unica" && (
+                <p className="text-[10px] text-muted-foreground">Ex: bloqueio de almoço replicado em todos os dias até a data limite.</p>
+              )}
             </div>
           </div>
           <Button onClick={saveBloqueio} className="w-full mt-2 gradient-brand text-primary-foreground min-h-[44px]">Adicionar bloqueio</Button>
