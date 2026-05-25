@@ -489,22 +489,28 @@ export default function DashboardTab() {
                   if (!date) return <div key={i} className="min-h-[90px] rounded-md bg-secondary/20" />;
                   const ds = localDateStr(date);
                   const appts = appointments.filter(a => a.data === ds).sort((a,b) => (a.horario||"").localeCompare(b.horario||""));
+                  const dayBloqs = bloqueios.filter(b => b.data === ds);
                   const isToday = ds === todayDateStr;
                   return (
                     <button
                       key={i}
                       onClick={() => openDayModal(date)}
                       className={cn(
-                        "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col",
+                        "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col relative",
                         isToday ? "border-primary/50 bg-primary/5" : "hover:bg-secondary/50"
                       )}
+                      style={dayBloqs.some(b => b.dia_todo) ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.1) 6px 12px)" } : undefined}
                     >
                       <span className={cn(
                         "text-xs font-semibold mb-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full self-start",
                         isToday ? "bg-primary text-primary-foreground" : "text-foreground"
                       )}>{date.getDate()}</span>
                       <div className="flex-1 space-y-0.5 overflow-hidden">
-                        {appts.slice(0, 3).map(a => {
+                        {dayBloqs.map(b => (
+                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40">
+                            🚫 {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                          </div>
+                        ))}
                           const color = statusDotColor[a.status || "pendente"];
                           return (
                             <div
