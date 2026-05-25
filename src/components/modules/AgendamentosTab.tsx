@@ -392,11 +392,14 @@ export default function AgendamentosTab() {
           </div>
           <div className="w-px h-10 bg-border" />
           <div className="min-w-0">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <p className="font-semibold text-foreground text-sm truncate">{a.clientes?.nome || "Sem cliente"}</p>
               {a.origem === "link_bio" && <Globe className="w-3 h-3 text-primary flex-shrink-0" />}
+              {a.gratuito && <Badge className="border-0 text-[9px] px-1 py-0 bg-emerald-500/15 text-emerald-600">Cortesia</Badge>}
             </div>
-            <p className="text-xs text-muted-foreground truncate">{a.servicos?.nome || "Sem serviço"} · R$ {a.servicos?.preco || 0}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {a.servicos?.nome || "Sem serviço"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}
+            </p>
           </div>
         </div>
         <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
@@ -404,14 +407,45 @@ export default function AgendamentosTab() {
     </div>
   );
 
+  const renderBloqueioCard = (b: Bloqueio) => (
+    <div
+      key={b.id}
+      onClick={() => { setBloqForm({ data: b.data, dia_todo: b.dia_todo, hora_inicio: b.hora_inicio?.slice(0,5) || "", hora_fim: b.hora_fim?.slice(0,5) || "", motivo: b.motivo || "", recorrencia: "unica", repetir_ate: "" }); setSelectedBloq(b); setBloqOpen(true); }}
+      className="rounded-xl p-3 sm:p-4 border border-border bg-muted/40 cursor-pointer min-h-[56px] flex items-center gap-3"
+      style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}
+    >
+      <Ban className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">
+          Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}
+        </p>
+        {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+      </div>
+      {b.recorrencia_id && <Badge className="border-0 text-[9px] px-1 py-0 bg-secondary text-muted-foreground">Série</Badge>}
+    </div>
+  );
+
   if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando agendamentos...</p></div>;
 
+  // Combined sorter for a single day: bloqueios go first (when dia_todo) and parciais by hora_inicio
+  const sortedDayItems = (ds: string) => {
+    const appts = appointments.filter(a => a.data === ds);
+    const bloqs = bloqueios.filter(b => b.data === ds);
+    type Item = { kind: "appt"; a: Agendamento; time: string } | { kind: "bloq"; b: Bloqueio; time: string };
+    const items: Item[] = [
+      ...bloqs.map<Item>(b => ({ kind: "bloq", b, time: b.dia_todo ? "00:00" : (b.hora_inicio || "00:00").slice(0,5) })),
+      ...appts.map<Item>(a => ({ kind: "appt", a, time: (a.horario || "00:00").slice(0,5) })),
+    ];
+    items.sort((x, y) => x.time.localeCompare(y.time));
+    return items;
+  };
+
   const renderDiario = () => {
-    const appts = appointments.filter(a => a.data === currentDateStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+    const items = sortedDayItems(currentDateStr);
     return (
       <div className="space-y-2">
-        {appts.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento neste dia.</p>}
-        {appts.map(renderCard)}
+        {items.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento neste dia.</p>}
+        {items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b))}
       </div>
     );
   };
@@ -425,10 +459,17 @@ export default function AgendamentosTab() {
         {weekDates.map((date, i) => {
           const ds = localDateStr(date);
           const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+          const bloqs = bloqueios.filter(b => b.data === ds);
           const isToday = ds === todayStr;
           return (
-            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50", isToday && "border-primary/50 bg-primary/5")}>
+            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50 relative overflow-hidden", isToday && "border-primary/50 bg-primary/5")}>
               <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
+              {bloqs.map(b => (
+                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }}>
+                  <Ban className="w-2.5 h-2.5" />
+                  {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                </div>
+              ))}
               {appts.slice(0, 3).map(a => (
                 <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
                   {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
@@ -452,6 +493,7 @@ export default function AgendamentosTab() {
           if (!date) return <div key={i} />;
           const ds = localDateStr(date);
           const appts = appointments.filter(a => a.data === ds);
+          const hasBloqueio = bloqueios.some(b => b.data === ds);
           const isToday = ds === todayStr;
           const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
           return (
@@ -459,12 +501,15 @@ export default function AgendamentosTab() {
               key={i}
               onClick={() => openDayModal(date)}
               className={cn(
-                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors",
+                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors relative",
                 isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
-                appts.length > 0 && !isToday && "text-foreground"
+                appts.length > 0 && !isToday && "text-foreground",
+                hasBloqueio && "ring-1 ring-inset ring-muted-foreground/30"
               )}
+              style={hasBloqueio ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.08) 4px 8px)" } : undefined}
             >
               {date.getDate()}
+              {hasBloqueio && <Ban className="w-2.5 h-2.5 absolute top-0.5 right-0.5 text-muted-foreground" />}
               {appts.length > 0 && (
                 <div className="flex gap-0.5 mt-0.5">
                   {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
