@@ -798,7 +798,7 @@ export default function AgendamentosTab() {
       </Dialog>
 
       {/* Bloqueios de agenda */}
-      <Dialog open={bloqOpen} onOpenChange={setBloqOpen}>
+      <Dialog open={bloqOpen} onOpenChange={(o) => { setBloqOpen(o); if (!o) setSelectedBloq(null); }}>
         <DialogContent className="max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-foreground">Fechar agenda</DialogTitle></DialogHeader>
           <p className="text-xs text-muted-foreground">Datas e horários bloqueados não aparecem no link da bio nem permitem agendamentos.</p>
