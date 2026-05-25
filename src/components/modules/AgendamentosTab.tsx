@@ -647,9 +647,9 @@ export default function AgendamentosTab() {
                     <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/50">
+                <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
                   <Checkbox id="edit-grat" checked={editGratuito} onCheckedChange={v => setEditGratuito(!!v)} />
-                  <Label htmlFor="edit-grat" className="text-xs text-foreground cursor-pointer">Atendimento gratuito (retrabalho — não gera receita)</Label>
+                  <Label htmlFor="edit-grat" className="text-xs text-foreground cursor-pointer">Cortesia / retorno sem custo (não gera receita)</Label>
                 </div>
                 {!editGratuito && (
                   <div className="space-y-2">
