@@ -266,10 +266,10 @@ export default function LinkBioPage() {
           </div>
           <Button
             onClick={() => setStep("form")}
-            disabled={!date || !time}
+            disabled={!date || !time || allDayBlocked}
             className="w-full gradient-brand text-primary-foreground"
           >
-            Continuar
+            {allDayBlocked ? "Agenda fechada nesta data" : "Continuar"}
           </Button>
         </div>
       </PublicShell>
