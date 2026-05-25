@@ -189,7 +189,7 @@ export default function AgendamentosTab() {
   useEffect(() => {
     const d = searchParams.get("bloquear");
     if (!d) return;
-    setBloqForm({ data: d, dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "" });
+    setBloqForm({ data: d, dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica", repetir_ate: "" });
     setBloqOpen(true);
     const next = new URLSearchParams(searchParams);
     next.delete("bloquear");
