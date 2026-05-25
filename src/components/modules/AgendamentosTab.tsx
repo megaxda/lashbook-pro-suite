@@ -26,7 +26,43 @@ interface Agendamento {
   pagamentos_detalhe?: PagamentoItem[] | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
 }
-interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; }
+interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; recorrencia_id?: string | null; }
+
+type RecorrenciaTipo = "unica" | "semanal" | "quinzenal" | "mensal";
+
+function expandRecurrence(start: string, type: RecorrenciaTipo, until: string): string[] {
+  if (type === "unica" || !until) return [start];
+  const startD = parseDateStr(start);
+  const endD = parseDateStr(until);
+  if (endD < startD) return [start];
+  const out: string[] = [];
+  if (type === "mensal") {
+    const day = startD.getDate();
+    let cursor = new Date(startD);
+    let guard = 0;
+    while (cursor <= endD && guard++ < 200) {
+      out.push(localDateStr(cursor));
+      let y = cursor.getFullYear();
+      let m = cursor.getMonth() + 1;
+      if (m > 11) { y += 1; m = 0; }
+      let daysInMonth = new Date(y, m + 1, 0).getDate();
+      while (day > daysInMonth) {
+        m += 1; if (m > 11) { y += 1; m = 0; }
+        daysInMonth = new Date(y, m + 1, 0).getDate();
+      }
+      cursor = new Date(y, m, day, 12, 0, 0);
+    }
+  } else {
+    const step = type === "semanal" ? 7 : 14;
+    let cursor = new Date(startD);
+    let guard = 0;
+    while (cursor <= endD && guard++ < 500) {
+      out.push(localDateStr(cursor));
+      cursor = addDays(cursor, step);
+    }
+  }
+  return out;
+}
 
 interface ClienteOption { id: string; nome: string; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
