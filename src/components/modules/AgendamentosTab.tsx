@@ -674,10 +674,9 @@ export default function AgendamentosTab() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="col-span-2">
                     <Label className="text-muted-foreground text-xs">Cliente</Label>
-                    <Select value={editClienteId} onValueChange={setEditClienteId}>
-                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <div className="mt-1">
+                      <ClientCombobox clients={clients} value={editClienteId} onChange={setEditClienteId} />
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Label className="text-muted-foreground text-xs">Serviço (valor)</Label>
