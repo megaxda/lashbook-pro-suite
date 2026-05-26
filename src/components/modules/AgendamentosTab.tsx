@@ -466,14 +466,14 @@ export default function AgendamentosTab() {
             <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50 relative overflow-hidden", isToday && "border-primary/50 bg-primary/5")}>
               <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
               {bloqs.map(b => (
-                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }}>
-                  <Ban className="w-2.5 h-2.5" />
-                  {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }} title={b.motivo || "Bloqueado"}>
+                  <Ban className="w-2.5 h-2.5 shrink-0" />
+                  <span className="truncate">{b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}</span>
                 </div>
               ))}
               {appts.slice(0, 3).map(a => (
-                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
-                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
+                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }} title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}>
+                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}{a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}
                 </div>
               ))}
               {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
