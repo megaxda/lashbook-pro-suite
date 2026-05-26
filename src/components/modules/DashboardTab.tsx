@@ -617,10 +617,9 @@ export default function DashboardTab() {
                   <Plus className="w-3 h-3 mr-0.5" /> Novo
                 </Button>
               </div>
-              <Select value={newForm.cliente_id} onValueChange={v => setNewForm({ ...newForm, cliente_id: v })}>
-                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="mt-1">
+                <ClientCombobox clients={clients} value={newForm.cliente_id} onChange={v => setNewForm({ ...newForm, cliente_id: v })} />
+              </div>
             </div>
             <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
             <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
