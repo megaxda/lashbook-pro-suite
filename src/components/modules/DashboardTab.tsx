@@ -442,15 +442,24 @@ export default function DashboardTab() {
                               <div key={h} style={{ height: hourHeight }} className="border-b border-border/50" />
                             ))}
                             {dayBloqs.map(b => {
+                              const label = b.motivo || "Bloqueado";
                               if (b.dia_todo) {
-                                return <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                                return (
+                                  <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none flex items-start justify-center pt-1" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={label}>
+                                    <span className="text-[9px] font-semibold text-muted-foreground bg-card/80 px-1 rounded truncate max-w-[90%]">{label}</span>
+                                  </div>
+                                );
                               }
                               if (!b.hora_inicio || !b.hora_fim) return null;
                               const si = toMin(b.hora_inicio.slice(0,5));
                               const sf = toMin(b.hora_fim.slice(0,5));
                               const top = ((si - startHour * 60) / 60) * hourHeight;
                               const height = Math.max(8, ((sf - si) / 60) * hourHeight);
-                              return <div key={b.id} className="absolute left-0 right-0 pointer-events-none" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                              return (
+                                <div key={b.id} className="absolute left-0 right-0 pointer-events-none px-1 py-0.5 overflow-hidden" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={label}>
+                                  <span className="text-[9px] font-semibold text-muted-foreground leading-tight truncate block">{label}</span>
+                                </div>
+                              );
                             })}
                             {dayAppts.map(a => {
                               const startMin = toMin(a.horario);
@@ -459,21 +468,24 @@ export default function DashboardTab() {
                               const height = Math.max(18, (dur / 60) * hourHeight - 2);
                               if (top < 0 || top > totalHeight) return null;
                               const color = statusDotColor[a.status || "pendente"];
+                              const endStr = `${String(Math.floor((startMin+dur)/60)).padStart(2,"0")}:${String((startMin+dur)%60).padStart(2,"0")}`;
                               return (
                                 <button
                                   key={a.id}
                                   onClick={(e) => { e.stopPropagation(); navigate(`/home_profissional?tab=Agendamentos&open=${a.id}`); }}
                                   className="absolute left-1 right-1 rounded px-1 py-0.5 text-left overflow-hidden hover:opacity-90 transition"
                                   style={{ top, height, background: `${color}33`, borderLeft: `3px solid ${color}` }}
-                                  title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""} — ${a.servicos?.nome || ""}`}
+                                  title={`${a.horario?.slice(0,5)}–${endStr} · ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}
                                 >
                                   <p className="text-[10px] font-semibold text-foreground leading-tight truncate">
                                     {a.clientes?.nome || a.servicos?.nome || "Agendamento"}
                                   </p>
                                   <p className="text-[9px] text-muted-foreground leading-tight truncate">
-                                    {a.horario?.slice(0,5)}
-                                    {a.servicos?.duracao ? ` – ${String(Math.floor((startMin+dur)/60)).padStart(2,"0")}:${String((startMin+dur)%60).padStart(2,"0")}` : ""}
+                                    {a.horario?.slice(0,5)}{a.servicos?.duracao ? `–${endStr}` : ""}
                                   </p>
+                                  {a.servicos?.nome && height >= 44 && (
+                                    <p className="text-[9px] text-foreground/70 leading-tight truncate italic">{a.servicos.nome}</p>
+                                  )}
                                 </button>
                               );
                             })}
