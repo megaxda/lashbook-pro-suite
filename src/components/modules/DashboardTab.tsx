@@ -415,9 +415,13 @@ export default function DashboardTab() {
                     {/* Body */}
                     <div className="grid grid-cols-[48px_repeat(7,minmax(0,1fr))]" style={{ height: totalHeight }}>
                       {/* Time column */}
-                      <div className="relative">
-                        {hours.map(h => (
-                          <div key={h} style={{ height: hourHeight }} className="text-[10px] text-muted-foreground text-right pr-1 -mt-1.5">
+                      <div className="relative" style={{ height: totalHeight }}>
+                        {hours.map((h, idx) => (
+                          <div
+                            key={h}
+                            className="absolute right-1 text-[10px] text-muted-foreground leading-none"
+                            style={{ top: idx * hourHeight, transform: idx === 0 ? "none" : "translateY(-50%)" }}
+                          >
                             {String(h).padStart(2, "0")}:00
                           </div>
                         ))}
