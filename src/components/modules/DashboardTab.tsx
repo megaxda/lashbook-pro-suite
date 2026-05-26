@@ -523,19 +523,22 @@ export default function DashboardTab() {
                       )}>{date.getDate()}</span>
                       <div className="flex-1 space-y-0.5 overflow-hidden">
                         {dayBloqs.map(b => (
-                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40">
-                            🚫 {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40" title={b.motivo || "Bloqueado"}>
+                            🚫 {b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}
                           </div>
                         ))}
                         {appts.slice(0, 3).map(a => {
                           const color = statusDotColor[a.status || "pendente"];
+                          const cliente = a.clientes?.nome?.split(" ")[0] || "";
+                          const serv = a.servicos?.nome || "";
                           return (
                             <div
                               key={a.id}
                               className="text-[9px] px-1 py-0.5 rounded truncate leading-tight"
                               style={{ background: `${color}33`, borderLeft: `2px solid ${color}`, color: "hsl(var(--foreground))" }}
+                              title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${serv ? ` · ${serv}` : ""}`}
                             >
-                              {a.horario?.slice(0,5)} {a.clientes?.nome?.split(" ")[0] || a.servicos?.nome || ""}
+                              {a.horario?.slice(0,5)} {cliente}{serv ? ` · ${serv}` : ""}
                             </div>
                           );
                         })}
