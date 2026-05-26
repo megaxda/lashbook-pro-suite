@@ -1,71 +1,41 @@
-## Objetivo
 
-Tornar bloqueios visíveis em toda a agenda, suportar recorrência de bloqueios, criar agendamentos recorrentes para clientes fixas e deixar clara a opção de cortesia/retorno gratuito.
+## Ajustes na Agenda
 
-## 1. Bloqueios visíveis em todos os lugares
+### 1. Alinhamento dos horários no grid Semanal
+**Problema:** As linhas das horas (07:00, 08:00...) estão desalinhadas com as células do grid porque o label da hora é renderizado no meio da linha enquanto a célula tem altura diferente.
 
-**Aba Agendamentos**
-- Lista: incluir os bloqueios entre os agendamentos do dia, com badge "Bloqueio" cinza e o motivo. Clicar abre um pequeno diálogo para editar motivo/horário ou excluir.
-- Diário/Semanal: renderizar os bloqueios como faixas cinza listradas no grid de horários (full-day cobre o dia inteiro, parcial cobre só o intervalo).
-- Mensal: nas células do mês, mostrar um chip cinza "🚫 Bloqueado" (ou o motivo encurtado) junto dos agendamentos.
+**Correção em `DashboardTab.tsx` e `AgendamentosTab.tsx` (vista Semanal):**
+- Padronizar altura de cada slot de hora (ex: 60px fixo).
+- Renderizar a coluna de horas com a mesma altura por linha que o grid (`grid-rows-[repeat(15,60px)]`) e alinhar o texto no **topo** de cada célula (não no meio), exatamente na linha divisória.
+- Garantir o mesmo `border-top` em ambos para evitar deslocamento de 1px acumulativo.
 
-**Dashboard (tela inicial)**
-- Diário: mostrar bloqueios do dia como cartões cinza listrados.
-- Semanal/Mensal: aplicar a mesma marcação visual cinza usada na aba Agendamentos (faixa no grid semanal, chip no mensal).
-- No modal do dia: listar bloqueios acima dos agendamentos.
+### 2. Mostrar motivo do bloqueio
+**Hoje:** Aparece só "🚫 Bloqueado" ou faixa listrada sem texto.
 
-**Link da Bio**
-- Já há `get_blocked_slots_by_slug`. Garantir que, quando `dia_todo` estiver ativo, o seletor de data trate a data como indisponível (mensagem "Agenda fechada nesta data" já aparece — desabilitar todos os slots fica reforçado). Sem alteração de schema, só ajuste visual no `LinkBioPage` para impedir o passo seguinte quando `allDayBlocked`.
+**Correção:**
+- Nos chips/faixas de bloqueio (Lista, Diário, Semanal, Mensal, modal do dia) exibir `motivo` quando existir (ex: "Almoço", "Folga"). Fallback: "Bloqueado".
+- Aplicar em `AgendamentosTab.tsx` e `DashboardTab.tsx`.
 
-## 2. Recorrência de bloqueios
+### 3. Mostrar nome do procedimento no card semanal/mensal
+**Hoje:** Só aparece nome da cliente + horário; o serviço só vê passando o mouse.
 
-Acrescentar ao diálogo "Bloquear" (em Agendamentos e Dashboard) os campos:
+**Correção:**
+- No bloco do agendamento (Semanal e Mensal) adicionar segunda linha com `servicos.nome` quando houver espaço (truncar com ellipsis). Em Mensal: chip mostra `HH:mm Cliente · Serviço` truncado.
+- Manter tooltip no hover com info completa.
 
-- **Recorrência**: Única / Semanal / Quinzenal / Mensal
-- **Repetir até**: data limite (obrigatório quando recorrência ≠ Única)
+### 4. Seletor de cliente com busca + ordem alfabética
+**Hoje:** `<Select>` simples com clientes na ordem do banco; sem busca eficaz.
 
-Comportamento:
-- Única: insere um único registro (igual a hoje).
-- Semanal: replica a cada 7 dias até a data limite.
-- Quinzenal: a cada 14 dias.
-- Mensal: mesmo dia do mês até o limite (pulando meses sem o dia equivalente).
+**Correção em `AgendamentosTab.tsx` (diálogo Novo Agendamento) e replicar no diálogo do `DashboardTab.tsx`:**
+- Substituir o `Select` de cliente por um **Combobox** com busca (usando `Command` + `Popover` do shadcn — já disponíveis).
+- Listar clientes em **ordem alfabética** (`localeCompare` pt-BR, case-insensitive, ignorando acentos com `normalize('NFD')`).
+- Busca por substring **em qualquer parte do nome** (ex: "paula" encontra "Ana Paula Duarte Gulias", "Ana Paula Silva", etc.), também ignorando acentos.
+- Mesma visualização nas abas **Início** e **Agendamentos**.
 
-Todos os bloqueios gerados compartilham um `recorrencia_id` (uuid) para que possamos oferecer "Excluir só este" ou "Excluir toda a série" ao remover.
-
-## 3. Agendamentos recorrentes (clientes fixas)
-
-No diálogo "Novo Agendamento" adicionar uma seção opcional "Cliente fixa / recorrente":
-
-- **Recorrência**: Nenhuma / Semanal / Quinzenal / Mensal
-- **Repetir até**: data limite
-
-Ao salvar, cria N agendamentos com o mesmo cliente, serviço, horário e status pendente, marcados com um `recorrencia_id` compartilhado. Bloqueios são respeitados: datas conflitantes são puladas e listadas em um toast informativo ao final.
-
-Edição/exclusão segue a mesma lógica de série: ao excluir/editar, perguntar "Apenas este" ou "Toda a série".
-
-## 4. Cortesia / Retorno sem custo
-
-O campo `gratuito` já existe. Vamos torná-lo explícito:
-
-- No diálogo de Novo Agendamento e na edição, substituir o checkbox por um seletor de **Tipo de cobrança**:
-  - Pago (padrão, mostra formas de pagamento)
-  - Cortesia / Retorno sem custo (zera o valor, oculta formas de pagamento, não gera receita no financeiro)
-- Quando "Cortesia" estiver marcado, o card do agendamento mostra um badge verde-claro "Cortesia" e o valor aparece como "R$ 0,00".
-- A trigger `auto_create_receita_on_concluido` já ignora `gratuito = true`, então não há alteração no financeiro.
-
-## Detalhes técnicos
-
-**Migração de banco**
-- `ALTER TABLE bloqueios_agenda ADD COLUMN recorrencia_id uuid` (índice em `recorrencia_id`).
-- `ALTER TABLE agendamentos ADD COLUMN recorrencia_id uuid` (índice).
-- Sem alteração no `gratuito` (já existe).
-
-**Frontend (sem novas libs)**
-- `src/components/modules/AgendamentosTab.tsx`: estender `bloqForm` com `recorrencia` + `repetir_ate`; estender `newForm` idem; helper `expandRecorrencia(dataInicial, tipo, ate)` que devolve lista de datas; loop de inserts; render dos bloqueios na Lista/Diário/Semanal/Mensal; diálogo de confirmação "Este ou toda a série".
-- `src/components/modules/DashboardTab.tsx`: buscar `bloqueios_agenda` junto com `agendamentos`; renderizar faixas cinza no Semanal/Mensal e no modal do dia.
-- `src/pages/LinkBioPage.tsx`: quando `allDayBlocked`, desabilitar botão "Continuar" e exibir a mensagem já existente em destaque.
+## Arquivos a alterar
+- `src/components/modules/AgendamentosTab.tsx`
+- `src/components/modules/DashboardTab.tsx`
 
 ## Fora do escopo
-
-- Edição em lote de várias séries simultaneamente.
-- Notificação automática a clientes fixas (continua usando o WhatsApp manual).
+- Mudanças no backend/schema.
+- Mudanças nas demais visualizações (Lista, Diário) além das pequenas tocadas em #2.

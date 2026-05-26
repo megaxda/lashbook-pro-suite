@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ClientCombobox } from "@/components/ui/ClientCombobox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -416,10 +417,12 @@ export default function AgendamentosTab() {
     >
       <Ban className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground">
-          Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}
+        <p className="text-sm font-semibold text-foreground truncate">
+          {b.motivo || "Bloqueio"}
         </p>
-        {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+        <p className="text-xs text-muted-foreground">
+          {b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}
+        </p>
       </div>
       {b.recorrencia_id && <Badge className="border-0 text-[9px] px-1 py-0 bg-secondary text-muted-foreground">Série</Badge>}
     </div>
@@ -465,14 +468,14 @@ export default function AgendamentosTab() {
             <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50 relative overflow-hidden", isToday && "border-primary/50 bg-primary/5")}>
               <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
               {bloqs.map(b => (
-                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }}>
-                  <Ban className="w-2.5 h-2.5" />
-                  {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }} title={b.motivo || "Bloqueado"}>
+                  <Ban className="w-2.5 h-2.5 shrink-0" />
+                  <span className="truncate">{b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}</span>
                 </div>
               ))}
               {appts.slice(0, 3).map(a => (
-                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }}>
-                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}
+                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }} title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}>
+                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}{a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}
                 </div>
               ))}
               {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
@@ -603,10 +606,9 @@ export default function AgendamentosTab() {
                   <Plus className="w-3 h-3 mr-0.5" /> Novo Cliente
                 </Button>
               </div>
-              <Select value={newForm.cliente_id} onValueChange={v => setNewForm({ ...newForm, cliente_id: v })}>
-                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="mt-1">
+                <ClientCombobox clients={clients} value={newForm.cliente_id} onChange={v => setNewForm({ ...newForm, cliente_id: v })} />
+              </div>
             </div>
             <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
             <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
@@ -672,10 +674,9 @@ export default function AgendamentosTab() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="col-span-2">
                     <Label className="text-muted-foreground text-xs">Cliente</Label>
-                    <Select value={editClienteId} onValueChange={setEditClienteId}>
-                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <div className="mt-1">
+                      <ClientCombobox clients={clients} value={editClienteId} onChange={setEditClienteId} />
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Label className="text-muted-foreground text-xs">Serviço (valor)</Label>
@@ -773,8 +774,8 @@ export default function AgendamentosTab() {
               <div key={b.id} onClick={() => { setBloqForm({ data: b.data, dia_todo: b.dia_todo, hora_inicio: b.hora_inicio?.slice(0,5) || "", hora_fim: b.hora_fim?.slice(0,5) || "", motivo: b.motivo || "", recorrencia: "unica", repetir_ate: "" }); setSelectedBloq(b); setDayModalDate(null); setBloqOpen(true); }} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border cursor-pointer min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
                 <Ban className="w-4 h-4 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
-                  {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+                  <p className="text-sm font-medium text-foreground truncate">{b.motivo || "Bloqueio"}</p>
+                  <p className="text-xs text-muted-foreground">{b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
                 </div>
               </div>
             ))}

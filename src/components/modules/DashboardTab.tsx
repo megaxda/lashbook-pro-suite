@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ClientCombobox } from "@/components/ui/ClientCombobox";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 
@@ -369,8 +370,8 @@ export default function DashboardTab() {
                 <div className="space-y-1.5">
                   {dayBloqs.map(b => (
                     <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/40 text-xs" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
-                      <span className="font-medium text-foreground">🚫 Bloqueio</span>
-                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}{b.motivo ? ` · ${b.motivo}` : ""}</span>
+                      <span className="font-medium text-foreground">🚫 {b.motivo || "Bloqueio"}</span>
+                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</span>
                     </div>
                   ))}
                   {diarioAppts.length === 0 && dayBloqs.length === 0 ? (
@@ -415,9 +416,13 @@ export default function DashboardTab() {
                     {/* Body */}
                     <div className="grid grid-cols-[48px_repeat(7,minmax(0,1fr))]" style={{ height: totalHeight }}>
                       {/* Time column */}
-                      <div className="relative">
-                        {hours.map(h => (
-                          <div key={h} style={{ height: hourHeight }} className="text-[10px] text-muted-foreground text-right pr-1 -mt-1.5">
+                      <div className="relative" style={{ height: totalHeight }}>
+                        {hours.map((h, idx) => (
+                          <div
+                            key={h}
+                            className="absolute right-1 text-[10px] text-muted-foreground leading-none"
+                            style={{ top: idx * hourHeight, transform: idx === 0 ? "none" : "translateY(-50%)" }}
+                          >
                             {String(h).padStart(2, "0")}:00
                           </div>
                         ))}
@@ -438,15 +443,24 @@ export default function DashboardTab() {
                               <div key={h} style={{ height: hourHeight }} className="border-b border-border/50" />
                             ))}
                             {dayBloqs.map(b => {
+                              const label = b.motivo || "Bloqueado";
                               if (b.dia_todo) {
-                                return <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                                return (
+                                  <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none flex items-start justify-center pt-1" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={label}>
+                                    <span className="text-[9px] font-semibold text-muted-foreground bg-card/80 px-1 rounded truncate max-w-[90%]">{label}</span>
+                                  </div>
+                                );
                               }
                               if (!b.hora_inicio || !b.hora_fim) return null;
                               const si = toMin(b.hora_inicio.slice(0,5));
                               const sf = toMin(b.hora_fim.slice(0,5));
                               const top = ((si - startHour * 60) / 60) * hourHeight;
                               const height = Math.max(8, ((sf - si) / 60) * hourHeight);
-                              return <div key={b.id} className="absolute left-0 right-0 pointer-events-none" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={b.motivo || "Bloqueado"} />;
+                              return (
+                                <div key={b.id} className="absolute left-0 right-0 pointer-events-none px-1 py-0.5 overflow-hidden" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={label}>
+                                  <span className="text-[9px] font-semibold text-muted-foreground leading-tight truncate block">{label}</span>
+                                </div>
+                              );
                             })}
                             {dayAppts.map(a => {
                               const startMin = toMin(a.horario);
@@ -455,21 +469,24 @@ export default function DashboardTab() {
                               const height = Math.max(18, (dur / 60) * hourHeight - 2);
                               if (top < 0 || top > totalHeight) return null;
                               const color = statusDotColor[a.status || "pendente"];
+                              const endStr = `${String(Math.floor((startMin+dur)/60)).padStart(2,"0")}:${String((startMin+dur)%60).padStart(2,"0")}`;
                               return (
                                 <button
                                   key={a.id}
                                   onClick={(e) => { e.stopPropagation(); navigate(`/home_profissional?tab=Agendamentos&open=${a.id}`); }}
                                   className="absolute left-1 right-1 rounded px-1 py-0.5 text-left overflow-hidden hover:opacity-90 transition"
                                   style={{ top, height, background: `${color}33`, borderLeft: `3px solid ${color}` }}
-                                  title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""} — ${a.servicos?.nome || ""}`}
+                                  title={`${a.horario?.slice(0,5)}–${endStr} · ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}
                                 >
                                   <p className="text-[10px] font-semibold text-foreground leading-tight truncate">
                                     {a.clientes?.nome || a.servicos?.nome || "Agendamento"}
                                   </p>
                                   <p className="text-[9px] text-muted-foreground leading-tight truncate">
-                                    {a.horario?.slice(0,5)}
-                                    {a.servicos?.duracao ? ` – ${String(Math.floor((startMin+dur)/60)).padStart(2,"0")}:${String((startMin+dur)%60).padStart(2,"0")}` : ""}
+                                    {a.horario?.slice(0,5)}{a.servicos?.duracao ? `–${endStr}` : ""}
                                   </p>
+                                  {a.servicos?.nome && height >= 44 && (
+                                    <p className="text-[9px] text-foreground/70 leading-tight truncate italic">{a.servicos.nome}</p>
+                                  )}
                                 </button>
                               );
                             })}
@@ -507,19 +524,22 @@ export default function DashboardTab() {
                       )}>{date.getDate()}</span>
                       <div className="flex-1 space-y-0.5 overflow-hidden">
                         {dayBloqs.map(b => (
-                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40">
-                            🚫 {b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`}
+                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40" title={b.motivo || "Bloqueado"}>
+                            🚫 {b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}
                           </div>
                         ))}
                         {appts.slice(0, 3).map(a => {
                           const color = statusDotColor[a.status || "pendente"];
+                          const cliente = a.clientes?.nome?.split(" ")[0] || "";
+                          const serv = a.servicos?.nome || "";
                           return (
                             <div
                               key={a.id}
                               className="text-[9px] px-1 py-0.5 rounded truncate leading-tight"
                               style={{ background: `${color}33`, borderLeft: `2px solid ${color}`, color: "hsl(var(--foreground))" }}
+                              title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${serv ? ` · ${serv}` : ""}`}
                             >
-                              {a.horario?.slice(0,5)} {a.clientes?.nome?.split(" ")[0] || a.servicos?.nome || ""}
+                              {a.horario?.slice(0,5)} {cliente}{serv ? ` · ${serv}` : ""}
                             </div>
                           );
                         })}
@@ -562,8 +582,8 @@ export default function DashboardTab() {
               <div key={b.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
                 <span className="text-sm">🚫</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
-                  {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+                  <p className="text-sm font-medium text-foreground truncate">{b.motivo || "Bloqueio"}</p>
+                  <p className="text-xs text-muted-foreground">{b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
                 </div>
               </div>
             ))}
@@ -598,10 +618,9 @@ export default function DashboardTab() {
                   <Plus className="w-3 h-3 mr-0.5" /> Novo
                 </Button>
               </div>
-              <Select value={newForm.cliente_id} onValueChange={v => setNewForm({ ...newForm, cliente_id: v })}>
-                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent className="bg-card border-border">{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="mt-1">
+                <ClientCombobox clients={clients} value={newForm.cliente_id} onChange={v => setNewForm({ ...newForm, cliente_id: v })} />
+              </div>
             </div>
             <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
             <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
