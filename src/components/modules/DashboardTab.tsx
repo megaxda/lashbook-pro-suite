@@ -369,8 +369,8 @@ export default function DashboardTab() {
                 <div className="space-y-1.5">
                   {dayBloqs.map(b => (
                     <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/40 text-xs" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
-                      <span className="font-medium text-foreground">🚫 Bloqueio</span>
-                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}{b.motivo ? ` · ${b.motivo}` : ""}</span>
+                      <span className="font-medium text-foreground">🚫 {b.motivo || "Bloqueio"}</span>
+                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</span>
                     </div>
                   ))}
                   {diarioAppts.length === 0 && dayBloqs.length === 0 ? (
