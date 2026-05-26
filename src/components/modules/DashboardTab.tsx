@@ -581,8 +581,8 @@ export default function DashboardTab() {
               <div key={b.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
                 <span className="text-sm">🚫</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
-                  {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+                  <p className="text-sm font-medium text-foreground truncate">{b.motivo || "Bloqueio"}</p>
+                  <p className="text-xs text-muted-foreground">{b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
                 </div>
               </div>
             ))}
