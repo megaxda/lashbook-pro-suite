@@ -41,7 +41,7 @@ export function ClientCombobox({ clients, value, onChange, placeholder = "Seleci
           )}
         >
           <span className="truncate text-left">{selected ? selected.nome : placeholder}</span>
-          <ChevronsUpDream className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-card border-border" align="start">
