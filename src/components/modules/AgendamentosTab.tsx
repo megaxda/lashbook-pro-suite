@@ -417,10 +417,12 @@ export default function AgendamentosTab() {
     >
       <Ban className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground">
-          Bloqueio · {b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}
+        <p className="text-sm font-semibold text-foreground truncate">
+          {b.motivo || "Bloqueio"}
         </p>
-        {b.motivo && <p className="text-xs text-muted-foreground truncate">{b.motivo}</p>}
+        <p className="text-xs text-muted-foreground">
+          {b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}
+        </p>
       </div>
       {b.recorrencia_id && <Badge className="border-0 text-[9px] px-1 py-0 bg-secondary text-muted-foreground">Série</Badge>}
     </div>
