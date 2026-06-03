@@ -392,7 +392,7 @@ export default function AgendamentosTab() {
             </p>
           </div>
         </div>
-        <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
+        <StatusBadge status={a.status} gratuito={a.gratuito} />
       </div>
     </div>
   );
