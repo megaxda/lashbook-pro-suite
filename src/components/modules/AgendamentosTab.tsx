@@ -73,23 +73,6 @@ const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
 const allStatuses = ["confirmado", "pendente", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
-function getWeekDates(date: Date) {
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(date); monday.setDate(diff);
-  return Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
-}
-
-function getDaysInMonth(date: Date) {
-  const year = date.getFullYear(); const month = date.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days: (Date | null)[] = [];
-  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-  for (let i = 0; i < startOffset; i++) days.push(null);
-  for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
-  return days;
-}
 
 export default function AgendamentosTab() {
   const { user, isDemo } = useAuth();
