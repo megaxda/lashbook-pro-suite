@@ -26,7 +26,7 @@ interface Agendamento {
   comprovante_url: string | null;
   gratuito?: boolean | null;
   pagamentos_detalhe?: PagamentoItem[] | null;
-  clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
+  clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null;
 }
 interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; recorrencia_id?: string | null; }
 
