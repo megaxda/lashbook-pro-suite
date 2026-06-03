@@ -432,6 +432,12 @@ export default function AgendamentosTab() {
     return items;
   };
 
+  const openBloqEdit = (b: Bloqueio) => {
+    setBloqForm({ data: b.data, dia_todo: b.dia_todo, hora_inicio: b.hora_inicio?.slice(0,5) || "", hora_fim: b.hora_fim?.slice(0,5) || "", motivo: b.motivo || "", recorrencia: "unica", repetir_ate: "" });
+    setSelectedBloq(b);
+    setBloqOpen(true);
+  };
+
   const renderDiario = () => {
     const items = sortedDayItems(currentDateStr);
     return (
@@ -442,86 +448,6 @@ export default function AgendamentosTab() {
     );
   };
 
-  const renderSemanal = () => {
-    const weekDates = getWeekDates(currentDate);
-    const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-    return (
-      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-        {weekDays.map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-        {weekDates.map((date, i) => {
-          const ds = localDateStr(date);
-          const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-          const bloqs = bloqueios.filter(b => b.data === ds);
-          const isToday = ds === todayStr;
-          return (
-            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50 relative overflow-hidden", isToday && "border-primary/50 bg-primary/5")}>
-              <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
-              {bloqs.map(b => (
-                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }} title={b.motivo || "Bloqueado"}>
-                  <Ban className="w-2.5 h-2.5 shrink-0" />
-                  <span className="truncate">{b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}</span>
-                </div>
-              ))}
-              {appts.slice(0, 3).map(a => (
-                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }} title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}>
-                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}{a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}
-                </div>
-              ))}
-              {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const renderMensal = () => {
-    const days = getDaysInMonth(currentDate);
-    const weekDays = ["S", "T", "Q", "Q", "S", "S", "D"];
-    return (
-      <div className="grid grid-cols-7 gap-0.5">
-        {weekDays.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-        {days.map((date, i) => {
-          if (!date) return <div key={i} />;
-          const ds = localDateStr(date);
-          const appts = appointments.filter(a => a.data === ds);
-          const hasBloqueio = bloqueios.some(b => b.data === ds);
-          const isToday = ds === todayStr;
-          const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
-          return (
-            <button
-              key={i}
-              onClick={() => openDayModal(date)}
-              className={cn(
-                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors relative",
-                isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
-                appts.length > 0 && !isToday && "text-foreground",
-                hasBloqueio && "ring-1 ring-inset ring-muted-foreground/30"
-              )}
-              style={hasBloqueio ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.08) 4px 8px)" } : undefined}
-            >
-              {date.getDate()}
-              {hasBloqueio && <Ban className="w-2.5 h-2.5 absolute top-0.5 right-0.5 text-muted-foreground" />}
-              {appts.length > 0 && (
-                <div className="flex gap-0.5 mt-0.5">
-                  {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Status legend
-  const legend = [
-    { label: "Confirmado", color: statusDotColor.confirmado },
-    { label: "Pendente", color: statusDotColor.pendente },
-    { label: "Em atend.", color: statusDotColor.em_atendimento },
-    { label: "Concluído", color: statusDotColor.concluido },
-    { label: "Cancelado", color: statusDotColor.cancelado },
-  ];
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in pb-24 lg:pb-0">
