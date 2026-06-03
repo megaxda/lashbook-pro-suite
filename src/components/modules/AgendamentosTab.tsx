@@ -66,28 +66,8 @@ function expandRecurrence(start: string, type: RecorrenciaTipo, until: string): 
   return out;
 }
 
-interface ClienteOption { id: string; nome: string; }
+interface ClienteOption { id: string; nome: string; telefone?: string | null; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
-
-const statusColorMap: Record<string, string> = {
-  confirmado: "bg-success/15 text-success",
-  pendente: "bg-warning/15 text-warning",
-  em_atendimento: "bg-info/15 text-info",
-  concluido: "bg-muted text-muted-foreground",
-  cancelado: "bg-destructive/15 text-destructive",
-  no_show: "bg-destructive/30 text-destructive",
-  bloqueio: "bg-secondary text-secondary-foreground",
-};
-
-const statusDotColor: Record<string, string> = {
-  confirmado: "hsl(145,63%,42%)",
-  pendente: "hsl(45,93%,47%)",
-  em_atendimento: "hsl(210,80%,55%)",
-  concluido: "hsl(0,0%,55%)",
-  cancelado: "hsl(0,62%,50%)",
-  no_show: "hsl(0,80%,30%)",
-  bloqueio: "hsl(0,0%,30%)",
-};
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
 const allStatuses = ["confirmado", "pendente", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
