@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import AgendaGrid, { StatusLegend, StatusBadge, type AgendaView } from "@/components/agenda/AgendaGrid";
 
 interface PagamentoItem { metodo: string; valor: number; }
 interface Agendamento {
@@ -25,7 +26,7 @@ interface Agendamento {
   comprovante_url: string | null;
   gratuito?: boolean | null;
   pagamentos_detalhe?: PagamentoItem[] | null;
-  clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null } | null;
+  clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null;
 }
 interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; recorrencia_id?: string | null; }
 
@@ -65,50 +66,13 @@ function expandRecurrence(start: string, type: RecorrenciaTipo, until: string): 
   return out;
 }
 
-interface ClienteOption { id: string; nome: string; }
+interface ClienteOption { id: string; nome: string; telefone?: string | null; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
-
-const statusColorMap: Record<string, string> = {
-  confirmado: "bg-success/15 text-success",
-  pendente: "bg-warning/15 text-warning",
-  em_atendimento: "bg-info/15 text-info",
-  concluido: "bg-muted text-muted-foreground",
-  cancelado: "bg-destructive/15 text-destructive",
-  no_show: "bg-destructive/30 text-destructive",
-  bloqueio: "bg-secondary text-secondary-foreground",
-};
-
-const statusDotColor: Record<string, string> = {
-  confirmado: "hsl(145,63%,42%)",
-  pendente: "hsl(45,93%,47%)",
-  em_atendimento: "hsl(210,80%,55%)",
-  concluido: "hsl(0,0%,55%)",
-  cancelado: "hsl(0,62%,50%)",
-  no_show: "hsl(0,80%,30%)",
-  bloqueio: "hsl(0,0%,30%)",
-};
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
 const allStatuses = ["confirmado", "pendente", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
-function getWeekDates(date: Date) {
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(date); monday.setDate(diff);
-  return Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
-}
-
-function getDaysInMonth(date: Date) {
-  const year = date.getFullYear(); const month = date.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days: (Date | null)[] = [];
-  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-  for (let i = 0; i < startOffset; i++) days.push(null);
-  for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
-  return days;
-}
 
 export default function AgendamentosTab() {
   const { user, isDemo } = useAuth();
@@ -118,7 +82,15 @@ export default function AgendamentosTab() {
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<typeof views[number]>("Lista");
+  const [view, setView] = useState<typeof views[number]>(() => {
+    if (typeof window === "undefined") return "Semanal";
+    const saved = window.localStorage.getItem("finbeauty.agenda.view");
+    return (saved === "Lista" || saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : "Semanal";
+  });
+  const persistView = (v: typeof views[number]) => {
+    setView(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.view", v);
+  };
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedAppt, setSelectedAppt] = useState<Agendamento | null>(null);
   const [editStatus, setEditStatus] = useState("");
@@ -157,8 +129,8 @@ export default function AgendamentosTab() {
     if (!user) return;
     setLoading(true);
     const [aRes, cRes, sRes, bRes] = await Promise.all([
-      supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
-      supabase.from("clientes").select("id, nome").eq("user_id", user.id),
+      supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
+      supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id),
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
       supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id).order("data", { ascending: true }),
     ]);
@@ -403,7 +375,7 @@ export default function AgendamentosTab() {
             </p>
           </div>
         </div>
-        <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
+        <StatusBadge status={a.status} gratuito={a.gratuito} />
       </div>
     </div>
   );
@@ -443,6 +415,12 @@ export default function AgendamentosTab() {
     return items;
   };
 
+  const openBloqEdit = (b: Bloqueio) => {
+    setBloqForm({ data: b.data, dia_todo: b.dia_todo, hora_inicio: b.hora_inicio?.slice(0,5) || "", hora_fim: b.hora_fim?.slice(0,5) || "", motivo: b.motivo || "", recorrencia: "unica", repetir_ate: "" });
+    setSelectedBloq(b);
+    setBloqOpen(true);
+  };
+
   const renderDiario = () => {
     const items = sortedDayItems(currentDateStr);
     return (
@@ -453,86 +431,6 @@ export default function AgendamentosTab() {
     );
   };
 
-  const renderSemanal = () => {
-    const weekDates = getWeekDates(currentDate);
-    const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-    return (
-      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-        {weekDays.map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-        {weekDates.map((date, i) => {
-          const ds = localDateStr(date);
-          const appts = appointments.filter(a => a.data === ds).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-          const bloqs = bloqueios.filter(b => b.data === ds);
-          const isToday = ds === todayStr;
-          return (
-            <div key={i} onClick={() => openDayModal(date)} className={cn("min-h-[100px] sm:min-h-[120px] rounded-lg border border-border p-1 cursor-pointer hover:bg-secondary/50 relative overflow-hidden", isToday && "border-primary/50 bg-primary/5")}>
-              <p className={cn("text-xs font-medium mb-0.5", isToday ? "text-primary" : "text-muted-foreground")}>{date.getDate()}</p>
-              {bloqs.map(b => (
-                <div key={b.id} className="text-[9px] p-1 rounded mb-0.5 truncate flex items-center gap-0.5 bg-muted/60 text-muted-foreground" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.12) 4px 8px)" }} title={b.motivo || "Bloqueado"}>
-                  <Ban className="w-2.5 h-2.5 shrink-0" />
-                  <span className="truncate">{b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}</span>
-                </div>
-              ))}
-              {appts.slice(0, 3).map(a => (
-                <div key={a.id} className="text-[9px] p-1 rounded mb-0.5 truncate" style={{ background: `${statusDotColor[a.status || "pendente"]}22`, color: "hsl(var(--foreground))" }} title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}>
-                  {a.horario?.slice(0, 5)} {a.clientes?.nome?.split(" ")[0] || ""}{a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}
-                </div>
-              ))}
-              {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3}</p>}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const renderMensal = () => {
-    const days = getDaysInMonth(currentDate);
-    const weekDays = ["S", "T", "Q", "Q", "S", "S", "D"];
-    return (
-      <div className="grid grid-cols-7 gap-0.5">
-        {weekDays.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-        {days.map((date, i) => {
-          if (!date) return <div key={i} />;
-          const ds = localDateStr(date);
-          const appts = appointments.filter(a => a.data === ds);
-          const hasBloqueio = bloqueios.some(b => b.data === ds);
-          const isToday = ds === todayStr;
-          const dotStatuses = Array.from(new Set(appts.map(a => a.status || "pendente"))).slice(0, 3);
-          return (
-            <button
-              key={i}
-              onClick={() => openDayModal(date)}
-              className={cn(
-                "min-h-[44px] sm:min-h-[56px] rounded-md text-xs font-medium flex flex-col items-center justify-start pt-1 transition-colors relative",
-                isToday ? "bg-primary/15 text-primary border border-primary/30" : "hover:bg-secondary text-muted-foreground",
-                appts.length > 0 && !isToday && "text-foreground",
-                hasBloqueio && "ring-1 ring-inset ring-muted-foreground/30"
-              )}
-              style={hasBloqueio ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 4px, hsl(var(--muted-foreground)/0.08) 4px 8px)" } : undefined}
-            >
-              {date.getDate()}
-              {hasBloqueio && <Ban className="w-2.5 h-2.5 absolute top-0.5 right-0.5 text-muted-foreground" />}
-              {appts.length > 0 && (
-                <div className="flex gap-0.5 mt-0.5">
-                  {dotStatuses.map((st, j) => <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: statusDotColor[st] }} />)}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Status legend
-  const legend = [
-    { label: "Confirmado", color: statusDotColor.confirmado },
-    { label: "Pendente", color: statusDotColor.pendente },
-    { label: "Em atend.", color: statusDotColor.em_atendimento },
-    { label: "Concluído", color: statusDotColor.concluido },
-    { label: "Cancelado", color: statusDotColor.cancelado },
-  ];
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in pb-24 lg:pb-0">
@@ -543,7 +441,7 @@ export default function AgendamentosTab() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex bg-secondary rounded-lg p-0.5 overflow-x-auto">
-            {views.map(v => <button key={v} onClick={() => setView(v)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
+            {views.map(v => <button key={v} onClick={() => persistView(v)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
           </div>
           <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
           {/* Hide desktop "Novo" — mobile uses FAB */}
@@ -560,14 +458,7 @@ export default function AgendamentosTab() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-        {legend.map(l => (
-          <div key={l.label} className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
-            {l.label}
-          </div>
-        ))}
-      </div>
+      <StatusLegend />
 
       {view === "Lista" && (
         <div className="space-y-2">
@@ -582,8 +473,18 @@ export default function AgendamentosTab() {
         </div>
       )}
       {view === "Diário" && renderDiario()}
-      {view === "Semanal" && renderSemanal()}
-      {view === "Mensal" && renderMensal()}
+      {(view === "Semanal" || view === "Mensal") && (
+        <AgendaGrid
+          view={view as AgendaView}
+          cursor={currentDate}
+          appointments={appointments as any}
+          bloqueios={bloqueios as any}
+          onSelectAppt={(a) => openAppt(appointments.find(x => x.id === a.id) as Agendamento)}
+          onSelectDay={openDayModal}
+          onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
+          onSelectBloqueio={(b) => openBloqEdit(bloqueios.find(x => x.id === b.id) as Bloqueio)}
+        />
+      )}
 
       {/* FAB - Mobile */}
       <button
@@ -783,7 +684,7 @@ export default function AgendamentosTab() {
             {dayModalAppts.map(a => (
               <div key={a.id} onClick={() => { setDayModalDate(null); openAppt(a); }} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary min-h-[56px]">
                 <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}</p></div>
-                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
+                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><StatusBadge status={a.status} gratuito={a.gratuito} /></div>
               </div>
             ))}
           </div>

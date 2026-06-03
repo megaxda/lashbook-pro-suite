@@ -55,6 +55,15 @@
     --warning-foreground: 0 0% 10%;
     --info: 210 80% 55%;
     --info-foreground: 0 0% 100%;
+
+    /* Agenda status / blocks (Google Calendar inspired) */
+    --block: 270 55% 55%;
+    --block-foreground: 0 0% 100%;
+    --status-confirmed: 210 80% 55%;
+    --status-pending: 36 95% 50%;
+    --status-inprogress: 195 80% 45%;
+    --status-done: 145 63% 42%;
+    --status-canceled: 0 62% 50%;
   }
 }
 
