@@ -110,7 +110,7 @@ export default function DashboardTab() {
       supabase.from("agendamentos").select("id, data, horario, status, gratuito, forma_pagamento, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
       supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", start).lte("data", end),
       supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
-      supabase.from("clientes").select("id, nome").eq("user_id", user.id),
+      supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id),
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
       supabase.from("financeiro").select("data, valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", weekStart),
       supabase.from("agendamentos").select("cliente_id, data").eq("user_id", user.id).eq("status", "concluido"),
