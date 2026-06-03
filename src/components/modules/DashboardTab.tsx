@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClientCombobox } from "@/components/ui/ClientCombobox";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
+import AgendaGrid, { StatusLegend, StatusBadge, type AgendaView, type AgendaAppt, type AgendaBloqueio } from "@/components/agenda/AgendaGrid";
 
 const statusColorMap: Record<string, string> = {
   confirmado: "bg-success/15 text-success",
