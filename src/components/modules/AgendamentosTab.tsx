@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import AgendaGrid, { StatusLegend, StatusBadge, type AgendaView } from "@/components/agenda/AgendaGrid";
 
 interface PagamentoItem { metodo: string; valor: number; }
 interface Agendamento {
