@@ -701,7 +701,7 @@ export default function AgendamentosTab() {
             {dayModalAppts.map(a => (
               <div key={a.id} onClick={() => { setDayModalDate(null); openAppt(a); }} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary min-h-[56px]">
                 <div className="min-w-0"><p className="text-sm font-medium text-foreground">{a.clientes?.nome || "—"}</p><p className="text-xs text-muted-foreground">{a.servicos?.nome || "—"} · {a.gratuito ? "R$ 0,00" : `R$ ${a.servicos?.preco || 0}`}</p></div>
-                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><Badge className={cn("border-0 text-xs", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge></div>
+                <div className="text-right flex-shrink-0 ml-2"><p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p><StatusBadge status={a.status} gratuito={a.gratuito} /></div>
               </div>
             ))}
           </div>
