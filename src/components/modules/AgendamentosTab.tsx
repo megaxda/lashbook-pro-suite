@@ -146,8 +146,8 @@ export default function AgendamentosTab() {
     if (!user) return;
     setLoading(true);
     const [aRes, cRes, sRes, bRes] = await Promise.all([
-      supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
-      supabase.from("clientes").select("id, nome").eq("user_id", user.id),
+      supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
+      supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id),
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
       supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id).order("data", { ascending: true }),
     ]);
