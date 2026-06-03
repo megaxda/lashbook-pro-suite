@@ -475,14 +475,7 @@ export default function AgendamentosTab() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-        {legend.map(l => (
-          <div key={l.label} className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
-            {l.label}
-          </div>
-        ))}
-      </div>
+      <StatusLegend />
 
       {view === "Lista" && (
         <div className="space-y-2">
@@ -497,8 +490,18 @@ export default function AgendamentosTab() {
         </div>
       )}
       {view === "Diário" && renderDiario()}
-      {view === "Semanal" && renderSemanal()}
-      {view === "Mensal" && renderMensal()}
+      {(view === "Semanal" || view === "Mensal") && (
+        <AgendaGrid
+          view={view as AgendaView}
+          cursor={currentDate}
+          appointments={appointments as any}
+          bloqueios={bloqueios as any}
+          onSelectAppt={(a) => openAppt(appointments.find(x => x.id === a.id) as Agendamento)}
+          onSelectDay={openDayModal}
+          onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
+          onSelectBloqueio={(b) => openBloqEdit(bloqueios.find(x => x.id === b.id) as Bloqueio)}
+        />
+      )}
 
       {/* FAB - Mobile */}
       <button
