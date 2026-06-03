@@ -99,7 +99,15 @@ export default function AgendamentosTab() {
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<typeof views[number]>("Lista");
+  const [view, setView] = useState<typeof views[number]>(() => {
+    if (typeof window === "undefined") return "Semanal";
+    const saved = window.localStorage.getItem("finbeauty.agenda.view");
+    return (saved === "Lista" || saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : "Semanal";
+  });
+  const persistView = (v: typeof views[number]) => {
+    setView(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.view", v);
+  };
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedAppt, setSelectedAppt] = useState<Agendamento | null>(null);
   const [editStatus, setEditStatus] = useState("");
