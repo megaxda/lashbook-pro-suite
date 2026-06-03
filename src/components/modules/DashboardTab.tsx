@@ -305,12 +305,6 @@ export default function DashboardTab() {
           ? apptCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
           : apptCursor.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
 
-        const diarioAppts = appointments.filter(a => a.data === cursorStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-        const weekDates = getWeekDates(apptCursor);
-        const weekDays7 = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-        const monthDays = getDaysInMonth(apptCursor);
-        const monthShort = ["S", "T", "Q", "Q", "S", "S", "D"];
-
         return (
           <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -320,7 +314,7 @@ export default function DashboardTab() {
                   {apptViews.map(v => (
                     <button
                       key={v}
-                      onClick={() => setApptView(v)}
+                      onClick={() => setView(v)}
                       className={cn(
                         "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                         apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
@@ -345,195 +339,21 @@ export default function DashboardTab() {
               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
             </div>
 
-            {apptView === "Diário" && (() => {
-              const dayBloqs = bloqueios.filter(b => b.data === cursorStr);
-              return (
-                <div className="space-y-1.5">
-                  {dayBloqs.map(b => (
-                    <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/40 text-xs" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
-                      <span className="font-medium text-foreground">🚫 {b.motivo || "Bloqueio"}</span>
-                      <span className="text-muted-foreground">{b.dia_todo ? "dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</span>
-                    </div>
-                  ))}
-                  {diarioAppts.length === 0 && dayBloqs.length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground text-sm mb-3">Nenhum agendamento neste dia.</p>
-                      <Button size="sm" className="gradient-brand text-primary-foreground text-xs h-9" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
-                        <Plus className="w-3.5 h-3.5 mr-1" /> Novo Agendamento
-                      </Button>
-                    </div>
-                  ) : diarioAppts.map(renderApptRow)}
-                </div>
-              );
-            })()}
+            <div className="mb-3"><StatusLegend /></div>
 
-            {apptView === "Semanal" && (() => {
-              const startHour = 7;
-              const endHour = 22;
-              const hourHeight = 48; // px per hour
-              const totalHeight = (endHour - startHour) * hourHeight;
-              const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
-              const toMin = (h: string) => {
-                const [hh, mm] = (h || "00:00").split(":").map(Number);
-                return hh * 60 + (mm || 0);
-              };
-              return (
-                <div className="overflow-x-auto">
-                  <div className="min-w-[640px]">
-                    {/* Header */}
-                    <div className="grid grid-cols-[48px_repeat(7,minmax(0,1fr))] border-b border-border">
-                      <div />
-                      {weekDates.map((date, i) => {
-                        const isToday = localDateStr(date) === todayDateStr;
-                        return (
-                          <div key={i} className="text-center py-2 border-l border-border">
-                            <p className="text-[10px] uppercase text-muted-foreground font-semibold">{weekDays7[i]}</p>
-                            <p className={cn("text-sm font-semibold mt-0.5 inline-flex items-center justify-center w-7 h-7 rounded-full",
-                              isToday ? "bg-primary text-primary-foreground" : "text-foreground")}>{date.getDate()}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* Body */}
-                    <div className="grid grid-cols-[48px_repeat(7,minmax(0,1fr))]" style={{ height: totalHeight }}>
-                      {/* Time column */}
-                      <div className="relative" style={{ height: totalHeight }}>
-                        {hours.map((h, idx) => (
-                          <div
-                            key={h}
-                            className="absolute right-1 text-[10px] text-muted-foreground leading-none"
-                            style={{ top: idx * hourHeight, transform: idx === 0 ? "none" : "translateY(-50%)" }}
-                          >
-                            {String(h).padStart(2, "0")}:00
-                          </div>
-                        ))}
-                      </div>
-                      {/* Day columns */}
-                      {weekDates.map((date, i) => {
-                        const ds = localDateStr(date);
-                        const dayAppts = appointments.filter(a => a.data === ds);
-                        const dayBloqs = bloqueios.filter(b => b.data === ds);
-                        return (
-                          <div
-                            key={i}
-                            onClick={() => openDayModal(date)}
-                            className="relative border-l border-border cursor-pointer hover:bg-secondary/20"
-                            style={{ height: totalHeight }}
-                          >
-                            {hours.map(h => (
-                              <div key={h} style={{ height: hourHeight }} className="border-b border-border/50" />
-                            ))}
-                            {dayBloqs.map(b => {
-                              const label = b.motivo || "Bloqueado";
-                              if (b.dia_todo) {
-                                return (
-                                  <div key={b.id} className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none flex items-start justify-center pt-1" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.18) 6px 12px)" }} title={label}>
-                                    <span className="text-[9px] font-semibold text-muted-foreground bg-card/80 px-1 rounded truncate max-w-[90%]">{label}</span>
-                                  </div>
-                                );
-                              }
-                              if (!b.hora_inicio || !b.hora_fim) return null;
-                              const si = toMin(b.hora_inicio.slice(0,5));
-                              const sf = toMin(b.hora_fim.slice(0,5));
-                              const top = ((si - startHour * 60) / 60) * hourHeight;
-                              const height = Math.max(8, ((sf - si) / 60) * hourHeight);
-                              return (
-                                <div key={b.id} className="absolute left-0 right-0 pointer-events-none px-1 py-0.5 overflow-hidden" style={{ top, height, backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.22) 6px 12px)" }} title={label}>
-                                  <span className="text-[9px] font-semibold text-muted-foreground leading-tight truncate block">{label}</span>
-                                </div>
-                              );
-                            })}
-                            {dayAppts.map(a => {
-                              const startMin = toMin(a.horario);
-                              const dur = a.servicos?.duracao || 60;
-                              const top = ((startMin - startHour * 60) / 60) * hourHeight;
-                              const height = Math.max(18, (dur / 60) * hourHeight - 2);
-                              if (top < 0 || top > totalHeight) return null;
-                              const color = statusDotColor[a.status || "pendente"];
-                              const endStr = `${String(Math.floor((startMin+dur)/60)).padStart(2,"0")}:${String((startMin+dur)%60).padStart(2,"0")}`;
-                              return (
-                                <button
-                                  key={a.id}
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/home_profissional?tab=Agendamentos&open=${a.id}`); }}
-                                  className="absolute left-1 right-1 rounded px-1 py-0.5 text-left overflow-hidden hover:opacity-90 transition"
-                                  style={{ top, height, background: `${color}33`, borderLeft: `3px solid ${color}` }}
-                                  title={`${a.horario?.slice(0,5)}–${endStr} · ${a.clientes?.nome || ""}${a.servicos?.nome ? ` · ${a.servicos.nome}` : ""}`}
-                                >
-                                  <p className="text-[10px] font-semibold text-foreground leading-tight truncate">
-                                    {a.clientes?.nome || a.servicos?.nome || "Agendamento"}
-                                  </p>
-                                  <p className="text-[9px] text-muted-foreground leading-tight truncate">
-                                    {a.horario?.slice(0,5)}{a.servicos?.duracao ? `–${endStr}` : ""}
-                                  </p>
-                                  {a.servicos?.nome && height >= 44 && (
-                                    <p className="text-[9px] text-foreground/70 leading-tight truncate italic">{a.servicos.nome}</p>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {apptView === "Mensal" && (
-              <div className="grid grid-cols-7 gap-0.5">
-                {monthShort.map((d, i) => <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-                {monthDays.map((date, i) => {
-                  if (!date) return <div key={i} className="min-h-[90px] rounded-md bg-secondary/20" />;
-                  const ds = localDateStr(date);
-                  const appts = appointments.filter(a => a.data === ds).sort((a,b) => (a.horario||"").localeCompare(b.horario||""));
-                  const dayBloqs = bloqueios.filter(b => b.data === ds);
-                  const isToday = ds === todayDateStr;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => openDayModal(date)}
-                      className={cn(
-                        "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col relative",
-                        isToday ? "border-primary/50 bg-primary/5" : "hover:bg-secondary/50"
-                      )}
-                      style={dayBloqs.some(b => b.dia_todo) ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.1) 6px 12px)" } : undefined}
-                    >
-                      <span className={cn(
-                        "text-xs font-semibold mb-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full self-start",
-                        isToday ? "bg-primary text-primary-foreground" : "text-foreground"
-                      )}>{date.getDate()}</span>
-                      <div className="flex-1 space-y-0.5 overflow-hidden">
-                        {dayBloqs.map(b => (
-                          <div key={b.id} className="text-[9px] px-1 py-0.5 rounded truncate leading-tight bg-muted/60 text-muted-foreground border-l-2 border-muted-foreground/40" title={b.motivo || "Bloqueado"}>
-                            🚫 {b.motivo || (b.dia_todo ? "Bloqueado" : `${b.hora_inicio?.slice(0,5)}–${b.hora_fim?.slice(0,5)}`)}
-                          </div>
-                        ))}
-                        {appts.slice(0, 3).map(a => {
-                          const color = statusDotColor[a.status || "pendente"];
-                          const cliente = a.clientes?.nome?.split(" ")[0] || "";
-                          const serv = a.servicos?.nome || "";
-                          return (
-                            <div
-                              key={a.id}
-                              className="text-[9px] px-1 py-0.5 rounded truncate leading-tight"
-                              style={{ background: `${color}33`, borderLeft: `2px solid ${color}`, color: "hsl(var(--foreground))" }}
-                              title={`${a.horario?.slice(0,5)} ${a.clientes?.nome || ""}${serv ? ` · ${serv}` : ""}`}
-                            >
-                              {a.horario?.slice(0,5)} {cliente}{serv ? ` · ${serv}` : ""}
-                            </div>
-                          );
-                        })}
-                        {appts.length > 3 && <p className="text-[9px] text-muted-foreground">+{appts.length - 3} mais</p>}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <AgendaGrid
+              view={apptView}
+              cursor={apptCursor}
+              appointments={appointments}
+              bloqueios={bloqueios}
+              onSelectAppt={(a) => navigate(`/home_profissional?tab=Agendamentos&open=${a.id}`)}
+              onSelectDay={openDayModal}
+              onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
+            />
           </div>
         );
       })()}
+
 
       {/* Alerts */}
       {lowStock.length > 0 && (
