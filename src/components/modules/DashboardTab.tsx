@@ -52,7 +52,11 @@ export default function DashboardTab() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayAppts, setSelectedDayAppts] = useState<Appt[] | null>(null);
   const [selectedDayStr, setSelectedDayStr] = useState("");
-  const [apptView, setApptView] = useState<ApptView>("Diário");
+  const [apptView, setApptView] = useState<AgendaView>(() => {
+    if (typeof window === "undefined") return "Semanal";
+    const saved = window.localStorage.getItem("finbeauty.dashboard.view");
+    return (saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : "Semanal";
+  });
   const [apptCursor, setApptCursor] = useState(new Date());
 
   const [newOpen, setNewOpen] = useState(false);
