@@ -216,7 +216,6 @@ export default function DashboardTab() {
       className="w-full text-left flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors min-h-[56px]"
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusDotColor[a.status || "pendente"] }} />
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{a.clientes?.nome || "Sem cliente"}</p>
           <p className="text-xs text-muted-foreground truncate">{a.servicos?.nome || "—"} · R$ {a.servicos?.preco || 0}</p>
@@ -224,10 +223,15 @@ export default function DashboardTab() {
       </div>
       <div className="text-right flex-shrink-0 ml-2">
         <p className="text-sm font-semibold text-foreground">{a.horario?.slice(0, 5)}</p>
-        <Badge className={cn("border-0 text-xs px-1.5 py-0", statusColorMap[a.status || "pendente"])}>{a.status || "pendente"}</Badge>
+        <StatusBadge status={a.status} gratuito={a.gratuito} />
       </div>
     </button>
   );
+
+  const setView = (v: AgendaView) => {
+    setApptView(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.dashboard.view", v);
+  };
 
   if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
 
