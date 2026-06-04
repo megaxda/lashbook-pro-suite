@@ -170,6 +170,19 @@ export default function AgendamentosTab() {
     // eslint-disable-next-line
   }, [searchParams]);
 
+  // Auto-open "Novo agendamento" with pre-selected client from ?novo=1&cliente=ID
+  useEffect(() => {
+    if (searchParams.get("novo") !== "1") return;
+    const cid = searchParams.get("cliente") || "";
+    setNewForm(f => ({ ...f, cliente_id: cid, data: localDateStr(new Date()) }));
+    setNewOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("novo");
+    next.delete("cliente");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line
+  }, [searchParams]);
+
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
   const navigate = (dir: number) => {
