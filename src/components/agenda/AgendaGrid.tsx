@@ -478,23 +478,73 @@ function WeeklyGrid({
                     </div>
                   );
                 })}
-                {/* Appointments */}
-                {dayAppts.map((a) => {
-                  const startMin = toMin(a.horario);
-                  const dur = a.servicos?.duracao || 60;
-                  const top = ((startMin - startHour * 60) / 60) * hourHeight;
-                  const height = Math.max(22, (dur / 60) * hourHeight - 2);
-                  if (top + height < 0 || top > totalHeight) return null;
-                  return (
-                    <div
-                      key={a.id}
-                      className="absolute left-0.5 right-0.5"
-                      style={{ top, height }}
-                    >
-                      <ApptCard a={a} onClick={() => onSelectAppt(a)} height={height} />
-                    </div>
+                {/* Appointments with collision detection: lay out overlapping items side-by-side */}
+                {(() => {
+                  const sorted = [...dayAppts].sort(
+                    (x, y) => (x.horario || "").localeCompare(y.horario || "")
                   );
-                })}
+                  type Laid = { a: AgendaAppt; top: number; height: number; col: number; cols: number };
+                  const laid: Laid[] = [];
+                  // Group overlapping appointments into clusters
+                  const clusters: AgendaAppt[][] = [];
+                  for (const a of sorted) {
+                    const s = toMin(a.horario);
+                    const e = s + (a.servicos?.duracao || 60);
+                    const last = clusters[clusters.length - 1];
+                    if (last) {
+                      const overlapsLast = last.some((x) => {
+                        const xs = toMin(x.horario);
+                        const xe = xs + (x.servicos?.duracao || 60);
+                        return s < xe && e > xs;
+                      });
+                      if (overlapsLast) { last.push(a); continue; }
+                    }
+                    clusters.push([a]);
+                  }
+                  for (const cluster of clusters) {
+                    // Greedy column assignment
+                    const cols: { end: number }[] = [];
+                    const assigned: { a: AgendaAppt; col: number }[] = [];
+                    for (const a of cluster) {
+                      const s = toMin(a.horario);
+                      const e = s + (a.servicos?.duracao || 60);
+                      let placed = -1;
+                      for (let i = 0; i < cols.length; i++) {
+                        if (cols[i].end <= s) { cols[i] = { end: e }; placed = i; break; }
+                      }
+                      if (placed === -1) { cols.push({ end: e }); placed = cols.length - 1; }
+                      assigned.push({ a, col: placed });
+                    }
+                    const total = cols.length;
+                    for (const { a, col } of assigned) {
+                      const startMin = toMin(a.horario);
+                      const dur = a.servicos?.duracao || 60;
+                      const top = ((startMin - startHour * 60) / 60) * hourHeight;
+                      const height = Math.max(22, (dur / 60) * hourHeight - 2);
+                      laid.push({ a, top, height, col, cols: total });
+                    }
+                  }
+                  return laid.map(({ a, top, height, col, cols }) => {
+                    if (top + height < 0 || top > totalHeight) return null;
+                    const widthPct = 100 / cols;
+                    const leftPct = col * widthPct;
+                    return (
+                      <div
+                        key={a.id}
+                        className="absolute z-10"
+                        style={{
+                          top,
+                          height,
+                          left: `calc(${leftPct}% + 2px)`,
+                          width: `calc(${widthPct}% - 4px)`,
+                        }}
+                      >
+                        <ApptCard a={a} onClick={() => onSelectAppt(a)} height={height} />
+                      </div>
+                    );
+                  });
+                })()}
+
               </div>
             );
           })}
