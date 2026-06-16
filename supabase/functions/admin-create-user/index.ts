@@ -1,9 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const BodySchema = z.object({
+  email: z.string().trim().email().max(255),
+  password: z.string().min(6).max(72),
+  nome: z.string().trim().min(2).max(100).optional().nullable(),
+  telefone: z.string().trim().max(30).optional().nullable(),
+  plano: z.enum(["basico", "premium", "pro"]).optional().nullable(),
+  role: z.enum(["admin", "user"]).optional().nullable(),
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -37,12 +47,12 @@ Deno.serve(async (req) => {
 
     if (prof?.role !== "admin") return json({ error: "Forbidden" }, 403);
 
-    const body = await req.json();
-    const { email, password, nome, telefone, plano, role } = body || {};
-
-    if (!email || !password || password.length < 6) {
-      return json({ error: "Email e senha (mín. 6 caracteres) são obrigatórios" }, 400);
+    const rawBody = await req.json().catch(() => null);
+    const parsed = BodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return json({ error: "Dados inválidos", details: parsed.error.flatten().fieldErrors }, 400);
     }
+    const { email, password, nome, telefone, plano, role } = parsed.data;
 
     const { data: created, error: cuErr } = await admin.auth.admin.createUser({
       email,
@@ -64,7 +74,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", userId);
 
-    return json({ ok: true, user_id: userId, email, password });
+    return json({ ok: true, user_id: userId, email });
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
