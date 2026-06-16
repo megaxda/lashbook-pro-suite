@@ -147,19 +147,19 @@ export default function LinkBioPage() {
         comprovanteUrl = path;
       }
 
-
       const { error } = await supabase.rpc("create_public_booking", {
         _slug: slug,
         _servico_id: serviceId,
         _data: date,
         _horario: time,
-        _nome: name,
-        _telefone: phone,
-        _email: email,
-        _notas: notes,
+        _nome: clean.name,
+        _telefone: clean.phone,
+        _email: clean.email || "",
+        _notas: clean.notes || "",
         _comprovante_url: comprovanteUrl,
       });
       if (error) throw error;
+
       toast.success("Agendamento marcado com sucesso!");
       setStep("done");
     } catch (e: any) {
