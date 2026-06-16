@@ -125,10 +125,11 @@ export default function LinkBioPage() {
       return;
     }
     const fileCheck = validateReceiptFile(receiptFile);
-    if (!fileCheck.ok) {
+    if (fileCheck.ok === false) {
       toast.error(fileCheck.error);
       return;
     }
+
     const clean = parsed.data;
     setSubmitting(true);
     try {

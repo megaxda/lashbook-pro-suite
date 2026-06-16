@@ -84,7 +84,9 @@ export const financeiroSchema = z.object({
 });
 
 // ---- Helpers ----
-export function firstError<T>(result: z.SafeParseError<T>): string {
-  const issues = result.error.issues;
+export function firstError(result: { success: false; error: z.ZodError } | z.SafeParseReturnType<any, any>): string {
+  if ((result as any).success) return "Dados inválidos";
+  const issues = (result as any).error?.issues || [];
   return issues[0]?.message || "Dados inválidos";
 }
+
