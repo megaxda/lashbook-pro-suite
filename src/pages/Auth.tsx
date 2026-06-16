@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { signInSchema, signUpSchema, firstError } from '@/lib/validation';
 
 export default function Auth() {
   const { user, signIn, loading, enableDemo } = useAuth();
@@ -26,9 +27,11 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = signInSchema.safeParse({ email, password });
+    if (!parsed.success) { toast.error(firstError(parsed)); return; }
     setIsSubmitting(true);
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(parsed.data.email, parsed.data.password);
       if (error) toast.error(error.message);
       else toast.success('Bem-vinda de volta!');
     } finally {
