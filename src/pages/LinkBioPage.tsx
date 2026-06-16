@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { publicBookingSchema, validateReceiptFile, firstError } from "@/lib/validation";
 
 type PublicProfile = {
   id: string;
@@ -113,10 +114,23 @@ export default function LinkBioPage() {
   const today = new Date().toISOString().split("T")[0];
 
   const submitBooking = async () => {
-    if (!slug || !serviceId || !date || !time || !name || !phone) {
+    if (!slug || !serviceId || !date || !time) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
+    // Client-side validation (server also re-validates via create_public_booking)
+    const parsed = publicBookingSchema.safeParse({ name, phone, email, notes });
+    if (!parsed.success) {
+      toast.error(firstError(parsed));
+      return;
+    }
+    const fileCheck = validateReceiptFile(receiptFile);
+    if (fileCheck.ok === false) {
+      toast.error(fileCheck.error);
+      return;
+    }
+
+    const clean = parsed.data;
     setSubmitting(true);
     try {
       let comprovanteUrl: string | null = null;
@@ -138,13 +152,14 @@ export default function LinkBioPage() {
         _servico_id: serviceId,
         _data: date,
         _horario: time,
-        _nome: name,
-        _telefone: phone,
-        _email: email,
-        _notas: notes,
+        _nome: clean.name,
+        _telefone: clean.phone,
+        _email: clean.email || "",
+        _notas: clean.notes || "",
         _comprovante_url: comprovanteUrl,
       });
       if (error) throw error;
+
       toast.success("Agendamento marcado com sucesso!");
       setStep("done");
     } catch (e: any) {
