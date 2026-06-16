@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { z } from "https://esm.sh/zod@3.23.8";
 import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
@@ -40,9 +41,19 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden" }, 403);
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { title, body: text, url, target, user_id } = body || {};
-    if (!title || !text) return json({ error: "title e body são obrigatórios" }, 400);
+    const PushSchema = z.object({
+      title: z.string().trim().min(1).max(120),
+      body: z.string().trim().min(1).max(500),
+      url: z.string().trim().max(500).optional().nullable(),
+      target: z.enum(["all", "user"]).optional().nullable(),
+      user_id: z.string().uuid().optional().nullable(),
+    });
+    const rawBody = await req.json().catch(() => null);
+    const parsed = PushSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return json({ error: "Dados inválidos", details: parsed.error.flatten().fieldErrors }, 400);
+    }
+    const { title, body: text, url, target, user_id } = parsed.data;
 
     let query = admin.from("push_subscriptions").select("id, endpoint, p256dh, auth, user_id");
     if (target === "user" && user_id) {
@@ -50,6 +61,7 @@ Deno.serve(async (req) => {
     }
     const { data: subs, error: subsErr } = await query;
     if (subsErr) return json({ error: subsErr.message }, 500);
+
 
     const payload = JSON.stringify({ title, body: text, url: url || "/" });
     let sent = 0;
