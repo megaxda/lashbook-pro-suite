@@ -78,6 +78,12 @@
 }
 
 @layer utilities {
+  .pb-safe {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 1024px) {
+    .pb-safe { padding-bottom: 2rem; }
+  }
   .gradient-brand {
     background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 55%));
   }
