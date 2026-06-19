@@ -490,6 +490,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_is_active: { Args: never; Returns: boolean }
       check_slug_available: { Args: { _slug: string }; Returns: boolean }
       create_public_booking: {
         Args: {
