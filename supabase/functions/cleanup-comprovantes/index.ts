@@ -9,6 +9,16 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Require shared secret to prevent unauthenticated destructive calls
+  const expected = Deno.env.get("CLEANUP_SECRET");
+  const provided = req.headers.get("x-cleanup-secret");
+  if (!expected || provided !== expected) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
