@@ -128,3 +128,7 @@
   .t-aux          { @apply text-[13px] sm:text-sm text-muted-foreground; }
   .t-meta         { @apply text-xs; }
 }
+
+#lovable-badge {
+  display: none !important;
+}
