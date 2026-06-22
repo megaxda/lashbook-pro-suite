@@ -165,6 +165,14 @@ export default function AgendamentosTab() {
 
   useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
+  // Auto-select sole active profissional in new-form
+  useEffect(() => {
+    const active = profissionais.filter(p => p.ativo);
+    if (active.length === 1 && !newForm.profissional_id) {
+      setNewForm(f => ({ ...f, profissional_id: active[0].id }));
+    }
+  }, [profissionais, newForm.profissional_id]);
+
   // Auto-open appointment from ?open=ID (e.g., when navigating from dashboard)
   useEffect(() => {
     const openId = searchParams.get("open");
