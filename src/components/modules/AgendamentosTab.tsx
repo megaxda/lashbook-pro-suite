@@ -118,12 +118,13 @@ export default function AgendamentosTab() {
   const [editClienteId, setEditClienteId] = useState("");
   const [editServicoId, setEditServicoId] = useState("");
   const [editGratuito, setEditGratuito] = useState(false);
+  const [editProfissionalId, setEditProfissionalId] = useState("");
   const [editPagamentos, setEditPagamentos] = useState<PagamentoItem[]>([]);
   const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
