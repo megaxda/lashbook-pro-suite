@@ -227,9 +227,43 @@ export default function FinanceiroTab() {
     return out;
   }, [transactions]);
 
+  const apptMap = useMemo(() => {
+    const m = new Map<string, AgRow>();
+    appts.forEach(a => m.set(a.id, a));
+    return m;
+  }, [appts]);
+  const profMap = useMemo(() => {
+    const m = new Map<string, string>();
+    profissionais.forEach(p => m.set(p.id, p.nome));
+    return m;
+  }, [profissionais]);
+
+  /** Returns the meta (cliente/servico/profissional/descrição) for a transaction row */
+  const enrich = (t: Transacao) => {
+    const ag = t.agendamento_id ? apptMap.get(t.agendamento_id) : undefined;
+    const cliente = ag?.clientes?.nome || "";
+    const servico = ag?.servicos?.nome || "";
+    const profId = t.profissional_id || ag?.profissional_id || null;
+    const profissional = profId ? (profMap.get(profId) || "") : "";
+    // Fallback: if no agendamento, descricao often contains "Serviço — Cliente" — keep raw descricao for manual entries.
+    return { cliente, servico, profissional, descricao: t.descricao || "" };
+  };
+
   const exportCSV = () => {
-    const rows = [["Data", "Tipo", "Descrição", "Categoria", "Valor"]];
-    tableData.forEach(t => rows.push([t.data, t.tipo, t.descricao || "", t.categoria || "", String(t.valor).replace(".", ",")]));
+    const rows = [["Data", "Tipo", "Serviço/Procedimento", "Cliente", "Profissional", "Categoria", "Descrição", "Valor"]];
+    tableData.forEach(t => {
+      const m = enrich(t);
+      rows.push([
+        t.data,
+        t.tipo,
+        m.servico,
+        m.cliente,
+        m.profissional,
+        t.categoria || "",
+        m.descricao,
+        String(t.valor).replace(".", ","),
+      ]);
+    });
     const csv = rows.map(r => r.map(c => `"${(c || "").toString().replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
