@@ -596,6 +596,7 @@ export function StatusLegend() {
     { label: "Em atend.", v: "--status-inprogress" },
     { label: "Concluído", v: "--status-done" },
     { label: "Cancelado", v: "--status-canceled" },
+    { label: "A confirmar", v: "--status-confirmar" },
     { label: "Bloqueio", v: "--block" },
   ];
   return (
