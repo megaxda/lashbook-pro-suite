@@ -1,7 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoAgendamentos, demoClientes, demoServicos } from "@/data/demoData";
+import {
+  useAgendamentos as useAgendamentosQ,
+  useClientes as useClientesQ,
+  useServicos as useServicosQ,
+  useProfissionais as useProfissionaisQ,
+  useBloqueios as useBloqueiosQ,
+  useInvalidate,
+} from "@/hooks/queries";
 import { Plus, ChevronLeft, ChevronRight, Globe, Ban, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -369,7 +376,7 @@ export default function AgendamentosTab() {
     const { data, error } = await supabase.from("clientes").insert({ nome: newClientName, telefone: newClientPhone || null, user_id: user.id }).select("id, nome").single();
     if (error) { toast.error("Erro ao criar cliente"); return; }
     toast.success("Cliente criado!");
-    setClients(prev => [...prev, data]);
+    invalidate(["clientes"]);
     setNewForm(f => ({ ...f, cliente_id: data.id }));
     setNewClientOpen(false);
     setNewClientName(""); setNewClientPhone("");
