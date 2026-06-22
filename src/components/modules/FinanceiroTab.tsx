@@ -110,16 +110,18 @@ export default function FinanceiroTab() {
   const [deleting, setDeleting] = useState<Transacao | null>(null);
 
   const fetchAll = async () => {
-    if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setAppts([]); setLoading(false); return; }
+    if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setAppts([]); setProfissionais([]); setLoading(false); return; }
     if (!user) return;
     setLoading(true);
-    const [tRes, aRes] = await Promise.all([
+    const [tRes, aRes, pRes] = await Promise.all([
       supabase.from("financeiro").select("*").eq("user_id", user.id).order("data", { ascending: false }),
-      supabase.from("agendamentos").select("id, data, status").eq("user_id", user.id),
+      supabase.from("agendamentos").select("id, data, status, cliente_id, servico_id, profissional_id, clientes(nome), servicos(nome)").eq("user_id", user.id),
+      (supabase as any).from("profissionais").select("id, nome").eq("user_id", user.id),
     ]);
     if (tRes.error) toast.error("Erro ao carregar financeiro");
-    else setTransactions(tRes.data || []);
+    else setTransactions((tRes.data as any[]) || []);
     setAppts(((aRes.data as any[]) || []) as AgRow[]);
+    setProfissionais(((pRes?.data as any[]) || []) as ProfRef[]);
     setLoading(false);
   };
   useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
