@@ -221,6 +221,7 @@ export default function AccountPage() {
             <div className="min-w-0"><Label className="text-muted-foreground text-xs">Dias sem retorno para alerta</Label><Input type="number" value={followUpDays} onChange={e => setFollowUpDays(Number(e.target.value))} className="bg-secondary border-border mt-1 w-24 h-9" /></div>
           </div>
           <Button onClick={saveStudio} disabled={saving} className="gradient-brand text-primary-foreground w-full sm:w-auto">{saving ? "Salvando..." : "Salvar Configurações"}</Button>
+          <EquipeManager />
         </TabsContent>
 
         <TabsContent value="linkbio" className="mt-4 sm:mt-6 space-y-4">
