@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoClientes, demoFichas } from "@/data/demoData";
+import { useClientes, useFichas, useInvalidate } from "@/hooks/queries";
 import { Plus, FileText, MessageCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,32 +34,16 @@ interface ClienteOption { id: string; nome: string; telefone: string | null; }
 
 export default function FichasTab() {
   const { user, isDemo } = useAuth();
-  const [fichas, setFichas] = useState<Ficha[]>([]);
-  const [clients, setClients] = useState<ClienteOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
+  const { data: fichas = [], isLoading: lF } = useFichas() as { data: Ficha[]; isLoading: boolean };
+  const { data: clientsRaw = [], isLoading: lC } = useClientes();
+  const clients = clientsRaw as ClienteOption[];
+  const loading = lF || lC;
   const [selectedFicha, setSelectedFicha] = useState<Ficha | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const fetchFichas = async () => {
-    if (isDemo) {
-      setFichas(demoFichas as Ficha[]);
-      setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome, telefone: c.telefone })));
-      setLoading(false);
-      return;
-    }
-    if (!user) return;
-    setLoading(true);
-    const [fRes, cRes] = await Promise.all([
-      supabase.from("fichas").select("*, clientes(nome, telefone)").eq("user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id).order("nome"),
-    ]);
-    if (fRes.error) toast.error("Erro ao carregar fichas");
-    setFichas((fRes.data as Ficha[]) || []);
-    setClients(cRes.data || []);
-    setLoading(false);
-  };
+  const fetchFichas = () => invalidate(["fichas"]);
 
-  useEffect(() => { fetchFichas(); }, [user, isDemo]);
 
   const sendFichaWhatsApp = (ficha: Ficha) => {
     const phone = (ficha.clientes?.telefone || "").replace(/\D/g, "");
