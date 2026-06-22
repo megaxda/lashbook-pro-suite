@@ -26,9 +26,11 @@ interface Agendamento {
   comprovante_url: string | null;
   gratuito?: boolean | null;
   pagamentos_detalhe?: PagamentoItem[] | null;
+  profissional_id?: string | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null;
 }
 interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; recorrencia_id?: string | null; }
+interface ProfOption { id: string; nome: string; cor: string | null; ativo: boolean; }
 
 type RecorrenciaTipo = "unica" | "semanal" | "quinzenal" | "mensal";
 
@@ -70,7 +72,13 @@ interface ClienteOption { id: string; nome: string; telefone?: string | null; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
-const allStatuses = ["confirmado", "pendente", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
+const allStatuses = ["confirmado", "pendente", "procedimento_a_confirmar", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
+const statusLabels: Record<string, string> = {
+  confirmado: "Confirmado", pendente: "Pendente",
+  procedimento_a_confirmar: "Procedimento a confirmar",
+  em_atendimento: "Em atendimento", concluido: "Concluído",
+  cancelado: "Cancelado", no_show: "Não veio", bloqueio: "Bloqueio",
+};
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
 
@@ -81,6 +89,15 @@ export default function AgendamentosTab() {
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfOption[]>([]);
+  const [profFilter, setProfFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "todas";
+    return window.localStorage.getItem("finbeauty.agenda.profFilter") || "todas";
+  });
+  const setPersistProfFilter = (v: string) => {
+    setProfFilter(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.profFilter", v);
+  };
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<typeof views[number]>(() => {
     if (typeof window === "undefined") return "Semanal";
@@ -101,12 +118,13 @@ export default function AgendamentosTab() {
   const [editClienteId, setEditClienteId] = useState("");
   const [editServicoId, setEditServicoId] = useState("");
   const [editGratuito, setEditGratuito] = useState(false);
+  const [editProfissionalId, setEditProfissionalId] = useState("");
   const [editPagamentos, setEditPagamentos] = useState<PagamentoItem[]>([]);
   const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
+  const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
@@ -122,27 +140,38 @@ export default function AgendamentosTab() {
       setAppointments(demoAgendamentos as Agendamento[]);
       setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
       setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
+      setProfissionais([]);
       setBloqueios([]);
       setLoading(false);
       return;
     }
     if (!user) return;
     setLoading(true);
-    const [aRes, cRes, sRes, bRes] = await Promise.all([
+    const [aRes, cRes, sRes, bRes, pRes] = await Promise.all([
       supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
       supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id),
       supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
       supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id).order("data", { ascending: true }),
+      (supabase as any).from("profissionais").select("id, nome, cor, ativo").eq("user_id", user.id).order("nome"),
     ]);
     if (aRes.error) toast.error("Erro ao carregar agendamentos");
     setAppointments(((aRes.data as any[]) || []) as Agendamento[]);
     setClients(cRes.data || []);
     setServicos(sRes.data || []);
     setBloqueios(((bRes.data as any[]) || []) as Bloqueio[]);
+    setProfissionais(((pRes?.data as any[]) || []) as ProfOption[]);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
+
+  // Auto-select sole active profissional in new-form
+  useEffect(() => {
+    const active = profissionais.filter(p => p.ativo);
+    if (active.length === 1 && !newForm.profissional_id) {
+      setNewForm(f => ({ ...f, profissional_id: active[0].id }));
+    }
+  }, [profissionais, newForm.profissional_id]);
 
   // Auto-open appointment from ?open=ID (e.g., when navigating from dashboard)
   useEffect(() => {
@@ -204,6 +233,7 @@ export default function AgendamentosTab() {
     setEditClienteId(a.cliente_id || "");
     setEditServicoId(a.servico_id || "");
     setEditGratuito(!!a.gratuito);
+    setEditProfissionalId(a.profissional_id || "");
     setEditPagamentos(Array.isArray(a.pagamentos_detalhe) ? (a.pagamentos_detalhe as PagamentoItem[]) : []);
     setComprovanteUrl(null);
     if (a.comprovante_url && !isDemo) {
@@ -225,10 +255,15 @@ export default function AgendamentosTab() {
     });
   };
 
-  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
+  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
 
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    const activeProfs = profissionais.filter(p => p.ativo);
+    if (activeProfs.length > 0 && !newForm.profissional_id) {
+      toast.error("Selecione a profissional");
+      return;
+    }
     if (newForm.recorrencia !== "unica" && !newForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
     if (demoBlock()) { setNewOpen(false); resetNewForm(); return; }
@@ -246,6 +281,7 @@ export default function AgendamentosTab() {
       notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
       gratuito: newForm.gratuito,
       recorrencia_id: recId,
+      profissional_id: newForm.profissional_id || null,
     }));
     if (rows.length === 0) { setSaving(false); toast.error("Todas as datas conflitam com bloqueios."); return; }
     const { error } = await supabase.from("agendamentos").insert(rows as any);
@@ -276,6 +312,7 @@ export default function AgendamentosTab() {
       servico_id: editServicoId || null,
       gratuito: editGratuito,
       pagamentos_detalhe: cleanPag as any,
+      profissional_id: editProfissionalId || null,
     } as any).eq("id", selectedAppt.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
@@ -470,34 +507,67 @@ export default function AgendamentosTab() {
         <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(1)}><ChevronRight className="w-4 h-4" /></Button>
       </div>
 
+      {/* Filtro por profissional */}
+      {profissionais.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Profissional:</span>
+          <button
+            onClick={() => setPersistProfFilter("todas")}
+            className={cn("text-xs px-2.5 py-1 rounded-full border transition-colors",
+              profFilter === "todas" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground")}
+          >
+            Todas
+          </button>
+          {profissionais.filter(p => p.ativo).map(p => (
+            <button
+              key={p.id}
+              onClick={() => setPersistProfFilter(p.id)}
+              className={cn("text-xs px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5",
+                profFilter === p.id ? "border-primary text-foreground" : "border-border text-muted-foreground hover:text-foreground")}
+              style={profFilter === p.id ? { background: (p.cor || "#ec4899") + "33", borderColor: p.cor || undefined } : undefined}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ background: p.cor || "#999" }} />
+              {p.nome}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Legend */}
       <StatusLegend />
 
-      {view === "Lista" && (
-        <div className="space-y-2">
-          {appointments.length === 0 && bloqueios.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : (() => {
-            type Item = { kind: "appt"; a: Agendamento; key: string } | { kind: "bloq"; b: Bloqueio; key: string };
-            const items: Item[] = [
-              ...appointments.map<Item>(a => ({ kind: "appt", a, key: `${a.data} ${(a.horario||"00:00").slice(0,5)}` })),
-              ...bloqueios.map<Item>(b => ({ kind: "bloq", b, key: `${b.data} ${b.dia_todo ? "00:00" : (b.hora_inicio||"00:00").slice(0,5)}` })),
-            ].sort((x, y) => x.key.localeCompare(y.key));
-            return items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b));
-          })()}
-        </div>
-      )}
-      {view === "Diário" && renderDiario()}
-      {(view === "Semanal" || view === "Mensal") && (
-        <AgendaGrid
-          view={view as AgendaView}
-          cursor={currentDate}
-          appointments={appointments as any}
-          bloqueios={bloqueios as any}
-          onSelectAppt={(a) => openAppt(appointments.find(x => x.id === a.id) as Agendamento)}
-          onSelectDay={openDayModal}
-          onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
-          onSelectBloqueio={(b) => openBloqEdit(bloqueios.find(x => x.id === b.id) as Bloqueio)}
-        />
-      )}
+      {(() => {
+        const filteredAppts = profFilter === "todas" ? appointments : appointments.filter(a => a.profissional_id === profFilter);
+        return (
+          <>
+            {view === "Lista" && (
+              <div className="space-y-2">
+                {filteredAppts.length === 0 && bloqueios.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : (() => {
+                  type Item = { kind: "appt"; a: Agendamento; key: string } | { kind: "bloq"; b: Bloqueio; key: string };
+                  const items: Item[] = [
+                    ...filteredAppts.map<Item>(a => ({ kind: "appt", a, key: `${a.data} ${(a.horario||"00:00").slice(0,5)}` })),
+                    ...bloqueios.map<Item>(b => ({ kind: "bloq", b, key: `${b.data} ${b.dia_todo ? "00:00" : (b.hora_inicio||"00:00").slice(0,5)}` })),
+                  ].sort((x, y) => x.key.localeCompare(y.key));
+                  return items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b));
+                })()}
+              </div>
+            )}
+            {view === "Diário" && renderDiario()}
+            {(view === "Semanal" || view === "Mensal") && (
+              <AgendaGrid
+                view={view as AgendaView}
+                cursor={currentDate}
+                appointments={filteredAppts as any}
+                bloqueios={bloqueios as any}
+                onSelectAppt={(a) => openAppt(appointments.find(x => x.id === a.id) as Agendamento)}
+                onSelectDay={openDayModal}
+                onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
+                onSelectBloqueio={(b) => openBloqEdit(bloqueios.find(x => x.id === b.id) as Bloqueio)}
+              />
+            )}
+          </>
+        );
+      })()}
 
       {/* FAB - Mobile */}
       <button
@@ -533,6 +603,24 @@ export default function AgendamentosTab() {
                 <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} - R$ {s.preco || 0}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {profissionais.filter(p => p.ativo).length > 0 && (
+              <div className="col-span-2">
+                <Label className="text-muted-foreground text-xs">Profissional *</Label>
+                <Select value={newForm.profissional_id} onValueChange={v => setNewForm({ ...newForm, profissional_id: v })}>
+                  <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione a profissional..." /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {profissionais.filter(p => p.ativo).map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.cor || "#999" }} />
+                          {p.nome}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
               <Select value={newForm.forma_pagamento} onValueChange={v => setNewForm({ ...newForm, forma_pagamento: v })}>
                 <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -608,10 +696,28 @@ export default function AgendamentosTab() {
                     <Input type="time" value={editHorario} onChange={e => setEditHorario(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
                   </div>
                 </div>
+                {profissionais.filter(p => p.ativo).length > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Profissional</Label>
+                    <Select value={editProfissionalId} onValueChange={setEditProfissionalId}>
+                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {profissionais.filter(p => p.ativo).map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            <span className="inline-flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.cor || "#999" }} />
+                              {p.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
                     <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                    <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{statusLabels[s] || s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">

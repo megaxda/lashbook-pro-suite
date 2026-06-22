@@ -31,8 +31,19 @@ interface Transacao {
   categoria: string | null;
   user_id: string;
   agendamento_id?: string | null;
+  profissional_id?: string | null;
 }
-interface AgRow { id: string; data: string; status: string | null; }
+interface AgRow {
+  id: string;
+  data: string;
+  status: string | null;
+  cliente_id?: string | null;
+  servico_id?: string | null;
+  profissional_id?: string | null;
+  clientes?: { nome: string } | null;
+  servicos?: { nome: string } | null;
+}
+interface ProfRef { id: string; nome: string; }
 
 type PeriodKey = "hoje" | "7d" | "mes" | "mesAnterior" | "custom";
 
@@ -73,6 +84,7 @@ export default function FinanceiroTab() {
   const { user, isDemo } = useAuth();
   const [transactions, setTransactions] = useState<Transacao[]>([]);
   const [appts, setAppts] = useState<AgRow[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfRef[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [period, setPeriod] = useState<PeriodKey>("mes");
@@ -98,16 +110,18 @@ export default function FinanceiroTab() {
   const [deleting, setDeleting] = useState<Transacao | null>(null);
 
   const fetchAll = async () => {
-    if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setAppts([]); setLoading(false); return; }
+    if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setAppts([]); setProfissionais([]); setLoading(false); return; }
     if (!user) return;
     setLoading(true);
-    const [tRes, aRes] = await Promise.all([
+    const [tRes, aRes, pRes] = await Promise.all([
       supabase.from("financeiro").select("*").eq("user_id", user.id).order("data", { ascending: false }),
-      supabase.from("agendamentos").select("id, data, status").eq("user_id", user.id),
+      supabase.from("agendamentos").select("id, data, status, cliente_id, servico_id, profissional_id, clientes(nome), servicos(nome)").eq("user_id", user.id),
+      (supabase as any).from("profissionais").select("id, nome").eq("user_id", user.id),
     ]);
     if (tRes.error) toast.error("Erro ao carregar financeiro");
-    else setTransactions(tRes.data || []);
+    else setTransactions((tRes.data as any[]) || []);
     setAppts(((aRes.data as any[]) || []) as AgRow[]);
+    setProfissionais(((pRes?.data as any[]) || []) as ProfRef[]);
     setLoading(false);
   };
   useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
@@ -213,9 +227,43 @@ export default function FinanceiroTab() {
     return out;
   }, [transactions]);
 
+  const apptMap = useMemo(() => {
+    const m = new Map<string, AgRow>();
+    appts.forEach(a => m.set(a.id, a));
+    return m;
+  }, [appts]);
+  const profMap = useMemo(() => {
+    const m = new Map<string, string>();
+    profissionais.forEach(p => m.set(p.id, p.nome));
+    return m;
+  }, [profissionais]);
+
+  /** Returns the meta (cliente/servico/profissional/descrição) for a transaction row */
+  const enrich = (t: Transacao) => {
+    const ag = t.agendamento_id ? apptMap.get(t.agendamento_id) : undefined;
+    const cliente = ag?.clientes?.nome || "";
+    const servico = ag?.servicos?.nome || "";
+    const profId = t.profissional_id || ag?.profissional_id || null;
+    const profissional = profId ? (profMap.get(profId) || "") : "";
+    // Fallback: if no agendamento, descricao often contains "Serviço — Cliente" — keep raw descricao for manual entries.
+    return { cliente, servico, profissional, descricao: t.descricao || "" };
+  };
+
   const exportCSV = () => {
-    const rows = [["Data", "Tipo", "Descrição", "Categoria", "Valor"]];
-    tableData.forEach(t => rows.push([t.data, t.tipo, t.descricao || "", t.categoria || "", String(t.valor).replace(".", ",")]));
+    const rows = [["Data", "Tipo", "Serviço/Procedimento", "Cliente", "Profissional", "Categoria", "Descrição", "Valor"]];
+    tableData.forEach(t => {
+      const m = enrich(t);
+      rows.push([
+        t.data,
+        t.tipo,
+        m.servico,
+        m.cliente,
+        m.profissional,
+        t.categoria || "",
+        m.descricao,
+        String(t.valor).replace(".", ","),
+      ]);
+    });
     const csv = rows.map(r => r.map(c => `"${(c || "").toString().replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -449,31 +497,42 @@ export default function FinanceiroTab() {
           <table className="w-full text-sm">
             <thead><tr className="border-b border-border">
               <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Data</th>
-              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Descrição</th>
-              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Categoria</th>
-              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden md:table-cell">Origem</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Serviço / Descrição</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Cliente</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden lg:table-cell">Profissional</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden md:table-cell">Categoria</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden xl:table-cell">Origem</th>
               <th className="text-right p-2.5 text-muted-foreground font-medium text-xs">Valor</th>
               <th className="p-2.5 w-[88px]" />
             </tr></thead>
             <tbody>
-              {pageData.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground text-sm">Nenhum lançamento.</td></tr>}
-              {pageData.map(t => (
-                <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
-                  <td className="p-2.5 text-muted-foreground text-xs whitespace-nowrap">{formatBR(t.data)}</td>
-                  <td className="p-2.5 text-foreground text-sm">{t.descricao || "—"}</td>
-                  <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{t.categoria || "—"}</td>
-                  <td className="p-2.5 hidden md:table-cell">
-                    <Badge variant="outline" className="text-[10px] h-5">{t.agendamento_id ? "Agendamento" : "Manual"}</Badge>
-                  </td>
-                  <td className={cn("p-2.5 text-right font-semibold text-sm whitespace-nowrap", t.tipo === "receita" ? "text-success" : "text-destructive")}>
-                    {t.tipo === "receita" ? "+" : "-"}R$ {Number(t.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-1.5 text-right whitespace-nowrap">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" disabled={!!t.agendamento_id} title={t.agendamento_id ? "Edite pelo agendamento" : "Editar"} onClick={() => setEditing({ ...t })}><Pencil className="w-3.5 h-3.5" /></Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" disabled={!!t.agendamento_id} onClick={() => setDeleting(t)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </td>
-                </tr>
-              ))}
+              {pageData.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground text-sm">Nenhum lançamento.</td></tr>}
+              {pageData.map(t => {
+                const m = enrich(t);
+                const primaryLabel = m.servico || t.descricao || "—";
+                return (
+                  <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
+                    <td className="p-2.5 text-muted-foreground text-xs whitespace-nowrap">{formatBR(t.data)}</td>
+                    <td className="p-2.5 text-foreground text-sm">
+                      <div className="truncate max-w-[220px]">{primaryLabel}</div>
+                      {m.cliente && <div className="sm:hidden text-[11px] text-muted-foreground truncate">{m.cliente}</div>}
+                    </td>
+                    <td className="p-2.5 text-foreground text-sm hidden sm:table-cell">{m.cliente || "—"}</td>
+                    <td className="p-2.5 text-muted-foreground text-xs hidden lg:table-cell">{m.profissional || "—"}</td>
+                    <td className="p-2.5 text-muted-foreground text-xs hidden md:table-cell">{t.categoria || "—"}</td>
+                    <td className="p-2.5 hidden xl:table-cell">
+                      <Badge variant="outline" className="text-[10px] h-5">{t.agendamento_id ? "Agendamento" : "Manual"}</Badge>
+                    </td>
+                    <td className={cn("p-2.5 text-right font-semibold text-sm whitespace-nowrap", t.tipo === "receita" ? "text-success" : "text-destructive")}>
+                      {t.tipo === "receita" ? "+" : "-"}R$ {Number(t.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-1.5 text-right whitespace-nowrap">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" disabled={!!t.agendamento_id} title={t.agendamento_id ? "Edite pelo agendamento" : "Editar"} onClick={() => setEditing({ ...t })}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" disabled={!!t.agendamento_id} onClick={() => setDeleting(t)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

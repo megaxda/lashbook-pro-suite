@@ -27,7 +27,10 @@ export type Database = {
           notas: string | null
           origem: string | null
           pagamentos_detalhe: Json
+          profissional_id: string | null
+          recorrencia_fim: string | null
           recorrencia_id: string | null
+          recorrencia_intervalo_dias: number | null
           servico_id: string | null
           sinal_pago: boolean | null
           status: string | null
@@ -45,7 +48,10 @@ export type Database = {
           notas?: string | null
           origem?: string | null
           pagamentos_detalhe?: Json
+          profissional_id?: string | null
+          recorrencia_fim?: string | null
           recorrencia_id?: string | null
+          recorrencia_intervalo_dias?: number | null
           servico_id?: string | null
           sinal_pago?: boolean | null
           status?: string | null
@@ -63,7 +69,10 @@ export type Database = {
           notas?: string | null
           origem?: string | null
           pagamentos_detalhe?: Json
+          profissional_id?: string | null
+          recorrencia_fim?: string | null
           recorrencia_id?: string | null
+          recorrencia_intervalo_dias?: number | null
           servico_id?: string | null
           sinal_pago?: boolean | null
           status?: string | null
@@ -75,6 +84,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
             referencedColumns: ["id"]
           },
           {
@@ -267,6 +283,7 @@ export type Database = {
           data: string
           descricao: string | null
           id: string
+          profissional_id: string | null
           tipo: string
           user_id: string
           valor: number
@@ -278,6 +295,7 @@ export type Database = {
           data?: string
           descricao?: string | null
           id?: string
+          profissional_id?: string | null
           tipo: string
           user_id: string
           valor?: number
@@ -289,6 +307,7 @@ export type Database = {
           data?: string
           descricao?: string | null
           id?: string
+          profissional_id?: string | null
           tipo?: string
           user_id?: string
           valor?: number
@@ -299,6 +318,13 @@ export type Database = {
             columns: ["agendamento_id"]
             isOneToOne: false
             referencedRelation: "agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financeiro_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
             referencedColumns: ["id"]
           },
         ]
@@ -425,6 +451,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profissionais: {
+        Row: {
+          ativo: boolean
+          cor: string | null
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -492,20 +548,36 @@ export type Database = {
     Functions: {
       account_is_active: { Args: never; Returns: boolean }
       check_slug_available: { Args: { _slug: string }; Returns: boolean }
-      create_public_booking: {
-        Args: {
-          _comprovante_url: string
-          _data: string
-          _email: string
-          _horario: string
-          _nome: string
-          _notas: string
-          _servico_id: string
-          _slug: string
-          _telefone: string
-        }
-        Returns: string
-      }
+      create_public_booking:
+        | {
+            Args: {
+              _comprovante_url: string
+              _data: string
+              _email: string
+              _horario: string
+              _nome: string
+              _notas: string
+              _servico_id: string
+              _slug: string
+              _telefone: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _comprovante_url: string
+              _data: string
+              _email: string
+              _horario: string
+              _nome: string
+              _notas: string
+              _profissional_id?: string
+              _servico_id: string
+              _slug: string
+              _telefone: string
+            }
+            Returns: string
+          }
       current_user_is_admin: { Args: never; Returns: boolean }
       get_blocked_slots_by_slug: {
         Args: { _data: string; _slug: string }
@@ -533,6 +605,14 @@ export type Database = {
           studio_name: string
           valor_sinal: number
           whatsapp: string
+        }[]
+      }
+      get_public_profissionais_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          cor: string
+          id: string
+          nome: string
         }[]
       }
       get_public_services_by_slug: {

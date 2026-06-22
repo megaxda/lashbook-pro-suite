@@ -64,6 +64,7 @@
     --status-inprogress: 195 80% 45%;
     --status-done: 145 63% 42%;
     --status-canceled: 0 62% 50%;
+    --status-confirmar: 330 75% 62%;
   }
 }
 
