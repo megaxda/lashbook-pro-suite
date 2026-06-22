@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoFinanceiro } from "@/data/demoData";
+import { useFinanceiro, useAgendamentos, useProfissionais, useInvalidate } from "@/hooks/queries";
 import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus, Pencil, Trash2,
   Download, Search, ArrowUp, ArrowDown, Calendar as CalIcon, Receipt,
@@ -82,10 +82,17 @@ const CHART_COLORS = ["hsl(142,71%,45%)", "hsl(0,76%,52%)", "hsl(217,91%,60%)", 
 
 export default function FinanceiroTab() {
   const { user, isDemo } = useAuth();
-  const [transactions, setTransactions] = useState<Transacao[]>([]);
-  const [appts, setAppts] = useState<AgRow[]>([]);
-  const [profissionais, setProfissionais] = useState<ProfRef[]>([]);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
+
+  // Compartilhado via cache. Mesma queryKey usada pelo Dashboard.
+  const { data: txRaw = [], isLoading: lT } = useFinanceiro();
+  const { data: apptsRaw = [], isLoading: lA } = useAgendamentos();
+  const { data: profsRaw = [], isLoading: lP } = useProfissionais();
+  const transactions = txRaw as Transacao[];
+  const appts = apptsRaw as unknown as AgRow[];
+  const profissionais = profsRaw as ProfRef[];
+  const loading = lT || lA || lP;
+  const fetchAll = () => invalidate(["financeiro", "agendamentos", "profissionais"]);
 
   const [period, setPeriod] = useState<PeriodKey>("mes");
   const [custom, setCustom] = useState({ start: "", end: "" });
@@ -109,22 +116,6 @@ export default function FinanceiroTab() {
   const [editing, setEditing] = useState<Transacao | null>(null);
   const [deleting, setDeleting] = useState<Transacao | null>(null);
 
-  const fetchAll = async () => {
-    if (isDemo) { setTransactions(demoFinanceiro as Transacao[]); setAppts([]); setProfissionais([]); setLoading(false); return; }
-    if (!user) return;
-    setLoading(true);
-    const [tRes, aRes, pRes] = await Promise.all([
-      supabase.from("financeiro").select("*").eq("user_id", user.id).order("data", { ascending: false }),
-      supabase.from("agendamentos").select("id, data, status, cliente_id, servico_id, profissional_id, clientes(nome), servicos(nome)").eq("user_id", user.id),
-      (supabase as any).from("profissionais").select("id, nome").eq("user_id", user.id),
-    ]);
-    if (tRes.error) toast.error("Erro ao carregar financeiro");
-    else setTransactions((tRes.data as any[]) || []);
-    setAppts(((aRes.data as any[]) || []) as AgRow[]);
-    setProfissionais(((pRes?.data as any[]) || []) as ProfRef[]);
-    setLoading(false);
-  };
-  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
   const range = useMemo(() => periodRange(period, custom), [period, custom]);
   const prevRange = useMemo(() => previousRange(range.start, range.end), [range]);
