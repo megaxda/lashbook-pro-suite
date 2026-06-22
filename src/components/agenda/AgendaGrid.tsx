@@ -176,7 +176,7 @@ function ApptCard({
           isDone ? "text-white/90" : "text-muted-foreground"
         )}
       >
-        {a.horario?.slice(0, 5)}{a.servicos?.duracao ? `–${endStr}` : ""}
+        {a.horario?.slice(0, 5)}–{endStr}
       </p>
       {showService && serv && (
         <p
