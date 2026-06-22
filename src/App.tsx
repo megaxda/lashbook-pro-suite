@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,8 +14,7 @@ import Auth from "@/pages/Auth";
 import CreateFinPage from "@/pages/CreateFinPage";
 import TrustPage from "@/pages/TrustPage";
 import AccountBlocked from "@/components/AccountBlocked";
-
-const queryClient = new QueryClient();
+import { queryClient } from "@/lib/queryClient";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isBlocked } = useAuth();

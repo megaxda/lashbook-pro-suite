@@ -1,7 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoAgendamentos, demoClientes, demoServicos, demoEstoque, demoFinanceiro } from "@/data/demoData";
+import {
+  useAgendamentos,
+  useBloqueios,
+  useClientes,
+  useServicos,
+  useEstoque,
+  useFinanceiro,
+  useInvalidate,
+} from "@/hooks/queries";
 import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight, UserCheck, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -33,22 +41,60 @@ const apptViews: AgendaView[] = ["Diário", "Semanal", "Mensal"];
 interface Appt extends AgendaAppt {}
 interface Bloqueio extends AgendaBloqueio {}
 interface LowStock { id: string; nome: string; quantidade: number | null; quantidade_minima: number | null; }
-interface ClienteOption { id: string; nome: string; telefone?: string | null; }
-interface ServicoOption { id: string; nome: string; preco: number | null; }
-interface Receita { data: string; valor: number; }
 
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
 export default function DashboardTab() {
   const { user, profile, isDemo } = useAuth();
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<Appt[]>([]);
-  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
-  const [monthRevenue, setMonthRevenue] = useState(0);
-  const [lowStock, setLowStock] = useState<LowStock[]>([]);
-  const [recentReceitas, setRecentReceitas] = useState<Receita[]>([]);
-  const [followUpCount, setFollowUpCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
+
+  const todayDateStr = localDateStr();
+  const { start, end } = useMemo(() => monthBounds(), []);
+  const last7 = useMemo(() => getLast7Days(), []);
+  const weekStart = last7[0];
+
+  // Carregamentos compartilhados via cache (React Query).
+  // Trocar de aba e voltar não dispara novo fetch dentro do staleTime.
+  const { data: appointments = [], isLoading: lAppts } = useAgendamentos() as { data: Appt[]; isLoading: boolean };
+  const { data: bloqueios = [], isLoading: lBloq } = useBloqueios() as { data: Bloqueio[]; isLoading: boolean };
+  const { data: clients = [], isLoading: lClients } = useClientes();
+  const { data: servicos = [], isLoading: lSvc } = useServicos(true);
+  const { data: estoqueData = [], isLoading: lEst } = useEstoque();
+  const { data: receitasMes = [], isLoading: lFinMes } = useFinanceiro({ start, end });
+  const { data: receitasSemana = [], isLoading: lFinSem } = useFinanceiro({ start: weekStart });
+
+  const loading = lAppts || lBloq || lClients || lSvc || lEst || lFinMes || lFinSem;
+
+  const monthRevenue = useMemo(
+    () => (receitasMes as any[]).filter(t => t.tipo === "receita").reduce((s, t) => s + (Number(t.valor) || 0), 0),
+    [receitasMes]
+  );
+  const recentReceitas = useMemo(
+    () => (receitasSemana as any[]).filter(t => t.tipo === "receita").map(t => ({ data: t.data, valor: Number(t.valor) || 0 })),
+    [receitasSemana]
+  );
+  const lowStock = useMemo<LowStock[]>(
+    () => (estoqueData as any[]).filter(p => (p.quantidade || 0) < (p.quantidade_minima || 0)),
+    [estoqueData]
+  );
+
+  const followUpCount = useMemo(() => {
+    const followDays = profile?.follow_up_days || 30;
+    const cutoff = localDateStr(addDays(new Date(), -followDays));
+    const lastByClient = new Map<string, string>();
+    (appointments as any[]).filter(a => a.status === "concluido").forEach(a => {
+      const prev = lastByClient.get(a.cliente_id);
+      if (!prev || a.data > prev) lastByClient.set(a.cliente_id, a.data);
+    });
+    const futureSet = new Set(
+      (appointments as any[]).filter(a => a.data >= todayDateStr && a.status !== "cancelado").map(a => a.cliente_id)
+    );
+    let count = 0;
+    lastByClient.forEach((last, cid) => { if (last < cutoff && !futureSet.has(cid)) count++; });
+    return count;
+  }, [appointments, profile, todayDateStr]);
+
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayAppts, setSelectedDayAppts] = useState<Appt[] | null>(null);
   const [selectedDayStr, setSelectedDayStr] = useState("");
@@ -60,8 +106,6 @@ export default function DashboardTab() {
   const [apptCursor, setApptCursor] = useState(new Date());
 
   const [newOpen, setNewOpen] = useState(false);
-  const [clients, setClients] = useState<ClienteOption[]>([]);
-  const [servicos, setServicos] = useState<ServicoOption[]>([]);
   const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
   const [saving, setSaving] = useState(false);
 
@@ -69,88 +113,12 @@ export default function DashboardTab() {
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
 
-  const todayDateStr = localDateStr();
-
-  const fetchDashboard = async () => {
-    const { start, end } = monthBounds();
-    const last7 = getLast7Days();
-    const weekStart = last7[0];
-
-    if (isDemo) {
-      setAppointments(demoAgendamentos as Appt[]);
-      setMonthRevenue(demoFinanceiro.filter(t => t.tipo === "receita" && t.data >= start && t.data <= end).reduce((s, t) => s + t.valor, 0));
-      setLowStock(demoEstoque.filter(p => (p.quantidade || 0) < (p.quantidade_minima || 0)) as LowStock[]);
-      setRecentReceitas(demoFinanceiro.filter(t => t.tipo === "receita" && t.data >= weekStart).map(t => ({ data: t.data, valor: t.valor })));
-      // Follow-up: clientes ativos com último atendimento > follow_up_days
-      const followDays = profile?.follow_up_days || 30;
-      const cutoff = localDateStr(addDays(new Date(), -followDays));
-      const lastByClient = new Map<string, string>();
-      demoAgendamentos.filter(a => a.status === "concluido").forEach(a => {
-        const prev = lastByClient.get(a.cliente_id);
-        if (!prev || a.data > prev) lastByClient.set(a.cliente_id, a.data);
-      });
-      const futureByClient = new Set(demoAgendamentos.filter(a => a.data >= todayDateStr && a.status !== "cancelado").map(a => a.cliente_id));
-      let count = 0;
-      lastByClient.forEach((last, cid) => {
-        if (last < cutoff && !futureByClient.has(cid)) count++;
-      });
-      setFollowUpCount(count);
-      setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
-      setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
-      setLoading(false);
-      return;
-    }
-    if (!user) return;
-    setLoading(true);
-
-    const followDays = profile?.follow_up_days || 30;
-    const cutoff = localDateStr(addDays(new Date(), -followDays));
-
-    const [aRes, fRes, sRes, cRes, svRes, recRes, concluidosRes, futurosRes, bRes] = await Promise.all([
-      supabase.from("agendamentos").select("id, data, horario, status, gratuito, forma_pagamento, cliente_id, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data").order("horario"),
-      supabase.from("financeiro").select("valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", start).lte("data", end),
-      supabase.from("estoque").select("id, nome, quantidade, quantidade_minima").eq("user_id", user.id),
-      supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id),
-      supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
-      supabase.from("financeiro").select("data, valor").eq("user_id", user.id).eq("tipo", "receita").gte("data", weekStart),
-      supabase.from("agendamentos").select("cliente_id, data").eq("user_id", user.id).eq("status", "concluido"),
-      supabase.from("agendamentos").select("cliente_id").eq("user_id", user.id).gte("data", todayDateStr).neq("status", "cancelado"),
-      supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id),
-    ]);
-
-    setBloqueios((bRes.data as Bloqueio[]) || []);
-
-    setAppointments((aRes.data as Appt[]) || []);
-    setMonthRevenue((fRes.data || []).reduce((s: number, t: any) => s + (Number(t.valor) || 0), 0));
-    setLowStock((sRes.data || []).filter((p: any) => (p.quantidade || 0) < (p.quantidade_minima || 0)));
-    setClients(cRes.data || []);
-    setServicos(svRes.data || []);
-    setRecentReceitas((recRes.data || []).map((r: any) => ({ data: r.data, valor: Number(r.valor) || 0 })));
-
-    const lastByClient = new Map<string, string>();
-    (concluidosRes.data || []).forEach((a: any) => {
-      const prev = lastByClient.get(a.cliente_id);
-      if (!prev || a.data > prev) lastByClient.set(a.cliente_id, a.data);
-    });
-    const futureSet = new Set((futurosRes.data || []).map((a: any) => a.cliente_id));
-    let count = 0;
-    lastByClient.forEach((last, cid) => {
-      if (last < cutoff && !futureSet.has(cid)) count++;
-    });
-    setFollowUpCount(count);
-
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchDashboard(); /* eslint-disable-next-line */ }, [user, isDemo]);
-
   const todayAppts = useMemo(
     () => appointments.filter(a => a.data === todayDateStr).sort((a, b) => (a.horario || "").localeCompare(b.horario || "")),
     [appointments, todayDateStr]
   );
 
   const chart7d = useMemo(() => {
-    const last7 = getLast7Days();
     const totals = new Map(last7.map(d => [d, 0]));
     recentReceitas.forEach(r => {
       if (totals.has(r.data)) totals.set(r.data, (totals.get(r.data) || 0) + r.valor);
@@ -159,7 +127,7 @@ export default function DashboardTab() {
       dia: parseDateStr(d).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
       valor: totals.get(d) || 0,
     }));
-  }, [recentReceitas]);
+  }, [recentReceitas, last7]);
 
   const openDayModal = (date: Date) => {
     const ds = localDateStr(date);
@@ -182,7 +150,7 @@ export default function DashboardTab() {
     toast.success("Agendamento criado!");
     setNewOpen(false);
     setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "" });
-    fetchDashboard();
+    invalidate(["agendamentos", "financeiro"]);
   };
 
   const createQuickClient = async () => {
@@ -192,7 +160,7 @@ export default function DashboardTab() {
     const { data, error } = await supabase.from("clientes").insert({ nome: newClientName, telefone: newClientPhone || null, user_id: user.id }).select("id, nome").single();
     if (error) { toast.error("Erro ao criar cliente"); return; }
     toast.success("Cliente criado!");
-    setClients(prev => [...prev, data]);
+    invalidate(["clientes"]);
     setNewForm(f => ({ ...f, cliente_id: data.id }));
     setNewClientOpen(false);
     setNewClientName(""); setNewClientPhone("");
@@ -233,7 +201,7 @@ export default function DashboardTab() {
     if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.dashboard.view", v);
   };
 
-  if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
+  if (loading && appointments.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">

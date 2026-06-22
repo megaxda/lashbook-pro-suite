@@ -2,6 +2,36 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { demoProfile, DEMO_USER_ID } from '@/data/demoData';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+
+/**
+ * Prefetch leve dos recursos compartilhados logo após o login.
+ * Quando o usuário entra na primeira aba, os dados já estão no cache.
+ * Falhas são silenciosas — a aba refaz fetch normalmente se precisar.
+ */
+async function prefetchEssentials(userId: string) {
+  const prefetch = (key: readonly unknown[], fn: () => Promise<unknown>) =>
+    queryClient.prefetchQuery({ queryKey: key as any, queryFn: fn });
+
+  await Promise.allSettled([
+    prefetch(queryKeys.clientes(userId), async () => {
+      const { data } = await supabase.from('clientes').select('*').eq('user_id', userId).order('nome');
+      return data ?? [];
+    }),
+    prefetch(queryKeys.servicos(userId, false), async () => {
+      const { data } = await supabase.from('servicos').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      return data ?? [];
+    }),
+    prefetch(queryKeys.profissionais(userId), async () => {
+      const { data } = await supabase.from('profissionais').select('*').eq('user_id', userId).order('nome');
+      return data ?? [];
+    }),
+    prefetch(queryKeys.estoque(userId), async () => {
+      const { data } = await supabase.from('estoque').select('*').eq('user_id', userId).order('nome');
+      return data ?? [];
+    }),
+  ]);
+}
 
 interface Profile {
   id: string;
@@ -98,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
         tryAutoPushSubscribe(session.user.id);
+        prefetchEssentials(session.user.id);
       } else setProfile(null);
       setLoading(false);
     });
@@ -108,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
         tryAutoPushSubscribe(session.user.id);
+        prefetchEssentials(session.user.id);
       }
       setLoading(false);
     });
@@ -140,9 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsDemo(false);
       setUser(null);
       setProfile(null);
+      queryClient.clear();
       window.location.href = '/auth';
       return;
     }
+    queryClient.clear();
     await supabase.auth.signOut();
   };
 
