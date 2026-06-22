@@ -86,10 +86,26 @@ export default function AgendamentosTab() {
   const { user, isDemo } = useAuth();
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [appointments, setAppointments] = useState<Agendamento[]>([]);
-  const [clients, setClients] = useState<ClienteOption[]>([]);
-  const [servicos, setServicos] = useState<ServicoOption[]>([]);
-  const [profissionais, setProfissionais] = useState<ProfOption[]>([]);
+
+  // Dados compartilhados via cache. A mesma queryKey é usada pelo
+  // Dashboard, então alternar entre as duas telas não dispara fetch novo.
+  const { data: apptsRaw = [], isLoading: lA } = useAgendamentosQ();
+  const { data: clientsRaw = [], isLoading: lC } = useClientesQ();
+  const { data: servicosRaw = [], isLoading: lS } = useServicosQ(true);
+  const { data: profissionaisRaw = [], isLoading: lP } = useProfissionaisQ();
+  const { data: bloqueiosRaw = [], isLoading: lB } = useBloqueiosQ();
+  const invalidate = useInvalidate();
+
+  const appointments = apptsRaw as unknown as Agendamento[];
+  const clients = clientsRaw as ClienteOption[];
+  const servicos = servicosRaw as ServicoOption[];
+  const profissionais = profissionaisRaw as ProfOption[];
+  const bloqueios = bloqueiosRaw as unknown as Bloqueio[];
+  const loading = lA || lC || lS || lP || lB;
+
+  // Compat: refetch manual mantido como invalidação para não quebrar callers.
+  const fetchAll = () => invalidate(["agendamentos", "clientes", "servicos", "profissionais", "bloqueios"]);
+
   const [profFilter, setProfFilter] = useState<string>(() => {
     if (typeof window === "undefined") return "todas";
     return window.localStorage.getItem("finbeauty.agenda.profFilter") || "todas";
@@ -98,7 +114,6 @@ export default function AgendamentosTab() {
     setProfFilter(v);
     if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.profFilter", v);
   };
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<typeof views[number]>(() => {
     if (typeof window === "undefined") return "Semanal";
     const saved = window.localStorage.getItem("finbeauty.agenda.view");
@@ -130,40 +145,10 @@ export default function AgendamentosTab() {
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   // Bloqueios
-  const [bloqueios, setBloqueios] = useState<Bloqueio[]>([]);
   const [bloqOpen, setBloqOpen] = useState(false);
   const [bloqForm, setBloqForm] = useState({ data: "", dia_todo: true, hora_inicio: "", hora_fim: "", motivo: "", recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
   const [selectedBloq, setSelectedBloq] = useState<Bloqueio | null>(null);
 
-  const fetchAll = async () => {
-    if (isDemo) {
-      setAppointments(demoAgendamentos as Agendamento[]);
-      setClients(demoClientes.map(c => ({ id: c.id, nome: c.nome })));
-      setServicos(demoServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco })));
-      setProfissionais([]);
-      setBloqueios([]);
-      setLoading(false);
-      return;
-    }
-    if (!user) return;
-    setLoading(true);
-    const [aRes, cRes, sRes, bRes, pRes] = await Promise.all([
-      supabase.from("agendamentos").select("*, clientes(nome), servicos(nome, preco, duracao)").eq("user_id", user.id).order("data", { ascending: true }).order("horario", { ascending: true }),
-      supabase.from("clientes").select("id, nome, telefone").eq("user_id", user.id),
-      supabase.from("servicos").select("id, nome, preco").eq("user_id", user.id).eq("ativo", true),
-      supabase.from("bloqueios_agenda").select("*").eq("user_id", user.id).order("data", { ascending: true }),
-      (supabase as any).from("profissionais").select("id, nome, cor, ativo").eq("user_id", user.id).order("nome"),
-    ]);
-    if (aRes.error) toast.error("Erro ao carregar agendamentos");
-    setAppointments(((aRes.data as any[]) || []) as Agendamento[]);
-    setClients(cRes.data || []);
-    setServicos(sRes.data || []);
-    setBloqueios(((bRes.data as any[]) || []) as Bloqueio[]);
-    setProfissionais(((pRes?.data as any[]) || []) as ProfOption[]);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
   // Auto-select sole active profissional in new-form
   useEffect(() => {
