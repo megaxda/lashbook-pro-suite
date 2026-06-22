@@ -225,6 +225,7 @@ export default function AgendamentosTab() {
     setEditClienteId(a.cliente_id || "");
     setEditServicoId(a.servico_id || "");
     setEditGratuito(!!a.gratuito);
+    setEditProfissionalId(a.profissional_id || "");
     setEditPagamentos(Array.isArray(a.pagamentos_detalhe) ? (a.pagamentos_detalhe as PagamentoItem[]) : []);
     setComprovanteUrl(null);
     if (a.comprovante_url && !isDemo) {
