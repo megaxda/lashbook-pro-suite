@@ -89,6 +89,15 @@ export default function AgendamentosTab() {
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
   const [clients, setClients] = useState<ClienteOption[]>([]);
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfOption[]>([]);
+  const [profFilter, setProfFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "todas";
+    return window.localStorage.getItem("finbeauty.agenda.profFilter") || "todas";
+  });
+  const setPersistProfFilter = (v: string) => {
+    setProfFilter(v);
+    if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.profFilter", v);
+  };
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<typeof views[number]>(() => {
     if (typeof window === "undefined") return "Semanal";
