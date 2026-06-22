@@ -168,7 +168,7 @@ export default function ClientesTab() {
     toast.success("Cliente criado!");
     setNewOpen(false);
     setNewForm({ nome: "", telefone: "", email: "", notas: "", birthday: "" });
-    fetchAll();
+    invalidate(["clientes", "agendamentos"]);
   };
 
   const updateClient = async () => {
@@ -183,7 +183,7 @@ export default function ClientesTab() {
     if (error) { toast.error("Erro ao atualizar"); return; }
     toast.success("Cliente atualizado!");
     setEditing(null);
-    fetchAll();
+    invalidate(["clientes", "agendamentos"]);
   };
 
   const deleteClient = async (id: string) => {
@@ -192,7 +192,7 @@ export default function ClientesTab() {
     const { error } = await supabase.from("clientes").delete().eq("id", id);
     if (error) { toast.error("Erro ao excluir"); return; }
     toast.success("Cliente excluído!");
-    fetchAll();
+    invalidate(["clientes", "agendamentos"]);
   };
 
   const toggleStatus = async (c: Cliente) => {
@@ -200,7 +200,7 @@ export default function ClientesTab() {
     const newStatus = c.status === "ativa" ? "inativa" : "ativa";
     const { error } = await supabase.from("clientes").update({ status: newStatus }).eq("id", c.id);
     if (error) toast.error("Erro ao alterar status");
-    else fetchAll();
+    else invalidate(["clientes", "agendamentos"]);
   };
 
   const openWhatsApp = (client: Cliente, message: string) => {
