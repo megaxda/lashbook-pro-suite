@@ -49,6 +49,7 @@ const App = () => (
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
             </Route>
             <Route path="/u/:slug" element={<LinkBioPage />} />
+            <Route path="/trust" element={<TrustPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
