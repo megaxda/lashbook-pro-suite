@@ -31,8 +31,19 @@ interface Transacao {
   categoria: string | null;
   user_id: string;
   agendamento_id?: string | null;
+  profissional_id?: string | null;
 }
-interface AgRow { id: string; data: string; status: string | null; }
+interface AgRow {
+  id: string;
+  data: string;
+  status: string | null;
+  cliente_id?: string | null;
+  servico_id?: string | null;
+  profissional_id?: string | null;
+  clientes?: { nome: string } | null;
+  servicos?: { nome: string } | null;
+}
+interface ProfRef { id: string; nome: string; }
 
 type PeriodKey = "hoje" | "7d" | "mes" | "mesAnterior" | "custom";
 
