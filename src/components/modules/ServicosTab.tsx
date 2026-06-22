@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoServicos } from "@/data/demoData";
+import { useServicos, useInvalidate } from "@/hooks/queries";
 import { Plus, Scissors, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,24 +24,12 @@ interface Servico {
 
 export default function ServicosTab() {
   const { user, isDemo } = useAuth();
-  const [services, setServices] = useState<Servico[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: services = [], isLoading: loading } = useServicos(false) as { data: Servico[]; isLoading: boolean };
+  const invalidate = useInvalidate();
   const [editing, setEditing] = useState<Servico | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [form, setForm] = useState<Partial<Servico>>({});
   const [saving, setSaving] = useState(false);
-
-  const fetchServices = async () => {
-    if (isDemo) { setServices(demoServicos as Servico[]); setLoading(false); return; }
-    if (!user) return;
-    setLoading(true);
-    const { data, error } = await supabase.from("servicos").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
-    if (error) toast.error("Erro ao carregar serviços");
-    else setServices(data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchServices(); }, [user, isDemo]);
 
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
@@ -64,7 +52,7 @@ export default function ServicosTab() {
     }
     setSaving(false);
     setEditing(null); setIsNew(false); setForm({});
-    fetchServices();
+    invalidate(["servicos"]);
   };
 
   const remove = async (id: string) => {
@@ -72,10 +60,10 @@ export default function ServicosTab() {
     const { error } = await supabase.from("servicos").delete().eq("id", id);
     if (error) { toast.error("Erro ao excluir"); return; }
     toast.success("Serviço excluído!");
-    fetchServices();
+    invalidate(["servicos"]);
   };
 
-  if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando serviços...</p></div>;
+  if (loading && services.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando serviços...</p></div>;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">

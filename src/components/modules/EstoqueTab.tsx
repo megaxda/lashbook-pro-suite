@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoEstoque } from "@/data/demoData";
+import { useEstoque, useInvalidate } from "@/hooks/queries";
 import { Package, Plus, AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,24 +25,12 @@ interface Produto {
 
 export default function EstoqueTab() {
   const { user, isDemo } = useAuth();
-  const [products, setProducts] = useState<Produto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: products = [], isLoading: loading } = useEstoque() as { data: Produto[]; isLoading: boolean };
+  const invalidate = useInvalidate();
   const [editProduct, setEditProduct] = useState<Produto | null>(null);
   const [newProduct, setNewProduct] = useState(false);
   const [form, setForm] = useState<Partial<Produto>>({});
   const [saving, setSaving] = useState(false);
-
-  const fetchProducts = async () => {
-    if (isDemo) { setProducts(demoEstoque as Produto[]); setLoading(false); return; }
-    if (!user) return;
-    setLoading(true);
-    const { data, error } = await supabase.from("estoque").select("*").eq("user_id", user.id).order("nome");
-    if (error) toast.error("Erro ao carregar estoque");
-    else setProducts(data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchProducts(); }, [user, isDemo]);
 
   const demoBlock = () => { if (isDemo) { toast.info("Modo Demo: alterações não são salvas."); return true; } return false; };
 
@@ -70,14 +58,14 @@ export default function EstoqueTab() {
     }
     setSaving(false);
     setForm({});
-    fetchProducts();
+    invalidate(["estoque"]);
   };
 
   const deleteProduct = async (id: string) => {
     if (demoBlock()) return;
     const { error } = await supabase.from("estoque").delete().eq("id", id);
     if (error) toast.error("Erro ao excluir");
-    else { toast.success("Produto excluído!"); fetchProducts(); }
+    else { toast.success("Produto excluído!"); invalidate(["estoque"]); }
   };
 
   const restock = (f: Partial<Produto>) => {
@@ -86,7 +74,7 @@ export default function EstoqueTab() {
     return cur >= min ? 0 : min - cur;
   };
 
-  if (loading) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando estoque...</p></div>;
+  if (loading && products.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando estoque...</p></div>;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
