@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { demoClientes } from "@/data/demoData";
+import { useClientes, useAgendamentos, useInvalidate } from "@/hooks/queries";
 import {
   Search, Plus, Pencil, Trash2, MessageCircle, MoreHorizontal, Cake,
   CalendarPlus, Phone, Mail, History, DollarSign, StickyNote,
