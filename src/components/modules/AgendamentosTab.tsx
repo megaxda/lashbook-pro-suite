@@ -299,6 +299,7 @@ export default function AgendamentosTab() {
       servico_id: editServicoId || null,
       gratuito: editGratuito,
       pagamentos_detalhe: cleanPag as any,
+      profissional_id: editProfissionalId || null,
     } as any).eq("id", selectedAppt.id);
     setSaving(false);
     if (error) { toast.error("Erro ao atualizar"); return; }
