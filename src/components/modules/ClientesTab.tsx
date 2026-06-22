@@ -54,12 +54,16 @@ function birthdayDay(b: string | null) {
 }
 
 export default function ClientesTab() {
-  const { user, isDemo } = useAuth();
+  const { user, isDemo, profile } = useAuth();
   const nav = useNavigate();
-  const [clients, setClients] = useState<Cliente[]>([]);
-  const [appts, setAppts] = useState<AgRow[]>([]);
-  const [followUpDays, setFollowUpDays] = useState<number>(30);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
+
+  // Dados compartilhados via React Query — sem refetch ao reentrar na aba.
+  const { data: clients = [], isLoading: lClients } = useClientes() as { data: Cliente[]; isLoading: boolean };
+  const { data: agendamentosRaw = [], isLoading: lAppts } = useAgendamentos();
+  const appts = agendamentosRaw as unknown as AgRow[];
+  const followUpDays = profile?.follow_up_days ?? 30;
+  const loading = lClients || lAppts;
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("todas");
@@ -73,27 +77,6 @@ export default function ClientesTab() {
   const [newForm, setNewForm] = useState({ nome: "", telefone: "", email: "", notas: "", birthday: "" });
   const [saving, setSaving] = useState(false);
 
-  const fetchAll = async () => {
-    if (isDemo) {
-      setClients(demoClientes as Cliente[]);
-      setAppts([]);
-      setLoading(false);
-      return;
-    }
-    if (!user) return;
-    setLoading(true);
-    const [cRes, aRes, pRes] = await Promise.all([
-      supabase.from("clientes").select("*").eq("user_id", user.id),
-      supabase.from("agendamentos").select("id, cliente_id, data, horario, status, forma_pagamento, pagamentos_detalhe, servicos(nome, preco)").eq("user_id", user.id),
-      supabase.from("profiles").select("follow_up_days").eq("id", user.id).maybeSingle(),
-    ]);
-    if (cRes.error) toast.error("Erro ao carregar clientes");
-    setClients(cRes.data || []);
-    setAppts(((aRes.data as any[]) || []) as AgRow[]);
-    if (pRes.data?.follow_up_days) setFollowUpDays(pRes.data.follow_up_days);
-    setLoading(false);
-  };
-  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [user, isDemo]);
 
   const today = useMemo(() => new Date(), []);
   const todayStr = localDateStr(today);
