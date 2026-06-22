@@ -165,19 +165,29 @@ function ApptCard({
       <div className="flex items-center gap-1">
         {isDone && <Check className="w-2.5 h-2.5 shrink-0" style={{ color: "white" }} />}
         <p
-          className={cn("text-[10px] font-semibold truncate flex-1", isDone && "text-white")}
+          className={cn("text-[11px] font-semibold truncate flex-1", isDone && "text-white")}
         >
-          {cliente}{serv ? ` - ${serv}` : ""}
+          {cliente}
         </p>
       </div>
       <p
         className={cn(
-          "text-[10px] font-medium truncate",
-          isDone ? "text-white/90" : "text-foreground/80"
+          "text-[10px] truncate",
+          isDone ? "text-white/90" : "text-muted-foreground"
         )}
       >
-        {a.horario?.slice(0, 5)}{a.servicos?.duracao ? ` – ${endStr}` : ""}
+        {a.horario?.slice(0, 5)}{a.servicos?.duracao ? `–${endStr}` : ""}
       </p>
+      {showService && serv && (
+        <p
+          className={cn(
+            "text-[10px] truncate italic",
+            isDone ? "text-white/85" : "text-foreground/70"
+          )}
+        >
+          {serv}
+        </p>
+      )}
       {isDone && a.forma_pagamento && (
         <div className="flex items-center gap-0.5 mt-0.5">
           <CreditCard className="w-2.5 h-2.5 text-white/90" />
