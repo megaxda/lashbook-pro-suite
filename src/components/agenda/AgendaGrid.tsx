@@ -289,46 +289,78 @@ export default function AgendaGrid(props: Props) {
   // Mensal
   const monthDays = getDaysInMonth(cursor);
   return (
-    <div className="grid grid-cols-7 gap-0.5">
+    <div className="grid grid-cols-7 gap-1">
       {WEEK_LABELS_SHORT.map((d, i) => (
         <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">
           {d}
         </div>
       ))}
       {monthDays.map((date, i) => {
-        if (!date) return <div key={i} className="min-h-[90px] rounded-md bg-secondary/20" />;
+        if (!date) return <div key={i} className="min-h-[96px] rounded-md bg-secondary/20" />;
         const ds = localDateStr(date);
         const appts = appointments
           .filter((a) => a.data === ds)
           .sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
         const dayBloqs = bloqueios.filter((b) => b.data === ds);
         const isToday = ds === todayStr;
+        const maxVisible = 2;
+        const totalItems = dayBloqs.length + appts.length;
+        const extra = totalItems - maxVisible;
         return (
           <button
             key={i}
             onClick={() => onSelectDay(date)}
             className={cn(
-              "min-h-[90px] rounded-md border border-border p-1 text-left transition-colors flex flex-col relative",
+              "min-h-[96px] max-h-[120px] rounded-md border border-border p-1 text-left transition-colors flex flex-col relative overflow-hidden",
               isToday ? "border-primary/50 bg-primary/5" : "hover:bg-secondary/50"
             )}
           >
             <span
               className={cn(
-                "text-xs font-semibold mb-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full self-start",
+                "text-[11px] font-semibold mb-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full self-start shrink-0",
                 isToday ? "bg-primary text-primary-foreground" : "text-foreground"
               )}
             >
               {date.getDate()}
             </span>
-            <div className="flex-1 space-y-0.5 overflow-hidden">
-              {dayBloqs.slice(0, 2).map((b) => (
-                <BlockBar key={b.id} b={b} variant="chip" />
+            <div className="flex-1 flex flex-col gap-0.5 overflow-hidden min-h-0 w-full">
+              {dayBloqs.slice(0, maxVisible).map((b) => (
+                <div key={b.id} className="w-full overflow-hidden">
+                  <div
+                    className="w-full rounded px-1 py-0.5 text-[9px] font-semibold truncate"
+                    style={{
+                      background: "hsl(var(--block) / 0.25)",
+                      borderLeft: "2px solid hsl(var(--block))",
+                      color: "hsl(var(--block))",
+                    }}
+                  >
+                    {b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} ${b.motivo || "Bloq."}`}
+                  </div>
+                </div>
               ))}
-              {appts.slice(0, 3).map((a) => (
-                <ApptCard key={a.id} a={a} onClick={() => onSelectAppt(a)} compact />
-              ))}
-              {appts.length > 3 && (
-                <p className="text-[9px] text-muted-foreground">+{appts.length - 3} mais</p>
+              {appts.slice(0, Math.max(0, maxVisible - dayBloqs.slice(0, maxVisible).length)).map((a) => {
+                const tok = statusToken(a.status);
+                const color = `hsl(var(${tok.cssVar}))`;
+                const isDone = a.status === "concluido";
+                return (
+                  <div
+                    key={a.id}
+                    onClick={(e) => { e.stopPropagation(); onSelectAppt(a); }}
+                    className="w-full rounded px-1 py-0.5 text-[9px] truncate cursor-pointer hover:opacity-90"
+                    style={{
+                      background: isDone ? color : `${color}55`,
+                      borderLeft: `2px solid ${color}`,
+                      color: isDone ? "white" : "hsl(var(--foreground))",
+                    }}
+                    title={`${a.horario?.slice(0,5)} · ${a.clientes?.nome || ""}`}
+                  >
+                    <span className="font-semibold">{a.horario?.slice(0, 5)}</span>{" "}
+                    <span className="opacity-90">{a.clientes?.nome || "—"}</span>
+                  </div>
+                );
+              })}
+              {extra > 0 && (
+                <p className="text-[9px] text-muted-foreground px-1 shrink-0">+{extra} mais</p>
               )}
             </div>
           </button>
