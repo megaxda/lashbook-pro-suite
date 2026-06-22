@@ -251,6 +251,11 @@ export default function AgendamentosTab() {
 
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    const activeProfs = profissionais.filter(p => p.ativo);
+    if (activeProfs.length > 0 && !newForm.profissional_id) {
+      toast.error("Selecione a profissional");
+      return;
+    }
     if (newForm.recorrencia !== "unica" && !newForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
     if (demoBlock()) { setNewOpen(false); resetNewForm(); return; }
