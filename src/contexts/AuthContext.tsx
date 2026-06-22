@@ -172,9 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsDemo(false);
       setUser(null);
       setProfile(null);
+      queryClient.clear();
       window.location.href = '/auth';
       return;
     }
+    queryClient.clear();
     await supabase.auth.signOut();
   };
 
