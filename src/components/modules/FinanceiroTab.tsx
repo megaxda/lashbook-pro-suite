@@ -497,31 +497,42 @@ export default function FinanceiroTab() {
           <table className="w-full text-sm">
             <thead><tr className="border-b border-border">
               <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Data</th>
-              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Descrição</th>
-              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Categoria</th>
-              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden md:table-cell">Origem</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs">Serviço / Descrição</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden sm:table-cell">Cliente</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden lg:table-cell">Profissional</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden md:table-cell">Categoria</th>
+              <th className="text-left p-2.5 text-muted-foreground font-medium text-xs hidden xl:table-cell">Origem</th>
               <th className="text-right p-2.5 text-muted-foreground font-medium text-xs">Valor</th>
               <th className="p-2.5 w-[88px]" />
             </tr></thead>
             <tbody>
-              {pageData.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground text-sm">Nenhum lançamento.</td></tr>}
-              {pageData.map(t => (
-                <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
-                  <td className="p-2.5 text-muted-foreground text-xs whitespace-nowrap">{formatBR(t.data)}</td>
-                  <td className="p-2.5 text-foreground text-sm">{t.descricao || "—"}</td>
-                  <td className="p-2.5 text-muted-foreground text-xs hidden sm:table-cell">{t.categoria || "—"}</td>
-                  <td className="p-2.5 hidden md:table-cell">
-                    <Badge variant="outline" className="text-[10px] h-5">{t.agendamento_id ? "Agendamento" : "Manual"}</Badge>
-                  </td>
-                  <td className={cn("p-2.5 text-right font-semibold text-sm whitespace-nowrap", t.tipo === "receita" ? "text-success" : "text-destructive")}>
-                    {t.tipo === "receita" ? "+" : "-"}R$ {Number(t.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-1.5 text-right whitespace-nowrap">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" disabled={!!t.agendamento_id} title={t.agendamento_id ? "Edite pelo agendamento" : "Editar"} onClick={() => setEditing({ ...t })}><Pencil className="w-3.5 h-3.5" /></Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" disabled={!!t.agendamento_id} onClick={() => setDeleting(t)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </td>
-                </tr>
-              ))}
+              {pageData.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground text-sm">Nenhum lançamento.</td></tr>}
+              {pageData.map(t => {
+                const m = enrich(t);
+                const primaryLabel = m.servico || t.descricao || "—";
+                return (
+                  <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/50">
+                    <td className="p-2.5 text-muted-foreground text-xs whitespace-nowrap">{formatBR(t.data)}</td>
+                    <td className="p-2.5 text-foreground text-sm">
+                      <div className="truncate max-w-[220px]">{primaryLabel}</div>
+                      {m.cliente && <div className="sm:hidden text-[11px] text-muted-foreground truncate">{m.cliente}</div>}
+                    </td>
+                    <td className="p-2.5 text-foreground text-sm hidden sm:table-cell">{m.cliente || "—"}</td>
+                    <td className="p-2.5 text-muted-foreground text-xs hidden lg:table-cell">{m.profissional || "—"}</td>
+                    <td className="p-2.5 text-muted-foreground text-xs hidden md:table-cell">{t.categoria || "—"}</td>
+                    <td className="p-2.5 hidden xl:table-cell">
+                      <Badge variant="outline" className="text-[10px] h-5">{t.agendamento_id ? "Agendamento" : "Manual"}</Badge>
+                    </td>
+                    <td className={cn("p-2.5 text-right font-semibold text-sm whitespace-nowrap", t.tipo === "receita" ? "text-success" : "text-destructive")}>
+                      {t.tipo === "receita" ? "+" : "-"}R$ {Number(t.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-1.5 text-right whitespace-nowrap">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" disabled={!!t.agendamento_id} title={t.agendamento_id ? "Edite pelo agendamento" : "Editar"} onClick={() => setEditing({ ...t })}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" disabled={!!t.agendamento_id} onClick={() => setDeleting(t)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
