@@ -84,6 +84,7 @@ export default function FinanceiroTab() {
   const { user, isDemo } = useAuth();
   const [transactions, setTransactions] = useState<Transacao[]>([]);
   const [appts, setAppts] = useState<AgRow[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfRef[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [period, setPeriod] = useState<PeriodKey>("mes");
