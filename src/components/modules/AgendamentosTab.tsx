@@ -243,7 +243,7 @@ export default function AgendamentosTab() {
     });
   };
 
-  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
+  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
 
   const createAppt = async () => {
     if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
