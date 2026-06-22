@@ -12,6 +12,7 @@ import LinkBioPage from "@/pages/LinkBioPage";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import CreateFinPage from "@/pages/CreateFinPage";
+import TrustPage from "@/pages/TrustPage";
 import AccountBlocked from "@/components/AccountBlocked";
 
 const queryClient = new QueryClient();
