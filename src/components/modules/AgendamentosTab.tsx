@@ -72,7 +72,13 @@ interface ClienteOption { id: string; nome: string; telefone?: string | null; }
 interface ServicoOption { id: string; nome: string; preco: number | null; }
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
-const allStatuses = ["confirmado", "pendente", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
+const allStatuses = ["confirmado", "pendente", "procedimento_a_confirmar", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
+const statusLabels: Record<string, string> = {
+  confirmado: "Confirmado", pendente: "Pendente",
+  procedimento_a_confirmar: "Procedimento a confirmar",
+  em_atendimento: "Em atendimento", concluido: "Concluído",
+  cancelado: "Cancelado", no_show: "Não veio", bloqueio: "Bloqueio",
+};
 const paymentMethods = ["PIX", "Cartão Crédito", "Cartão Débito", "Dinheiro"];
 
 
