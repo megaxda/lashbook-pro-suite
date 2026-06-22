@@ -590,6 +590,24 @@ export default function AgendamentosTab() {
                 <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} - R$ {s.preco || 0}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {profissionais.filter(p => p.ativo).length > 0 && (
+              <div className="col-span-2">
+                <Label className="text-muted-foreground text-xs">Profissional *</Label>
+                <Select value={newForm.profissional_id} onValueChange={v => setNewForm({ ...newForm, profissional_id: v })}>
+                  <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione a profissional..." /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {profissionais.filter(p => p.ativo).map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.cor || "#999" }} />
+                          {p.nome}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
               <Select value={newForm.forma_pagamento} onValueChange={v => setNewForm({ ...newForm, forma_pagamento: v })}>
                 <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
