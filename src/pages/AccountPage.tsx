@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
+import EquipeManager from "@/components/equipe/EquipeManager";
 
 function sanitizeSlug(input: string) {
   return input
