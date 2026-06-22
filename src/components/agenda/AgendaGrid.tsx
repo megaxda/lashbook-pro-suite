@@ -150,12 +150,12 @@ function ApptCard({
         onClick();
       }}
       className={cn(
-        "w-full text-left rounded px-1.5 py-1 overflow-hidden hover:opacity-90 transition leading-tight",
+        "w-full h-full text-left rounded px-1.5 py-1 overflow-hidden hover:opacity-90 transition leading-tight",
         isCanceled && "line-through opacity-60"
       )}
       style={{
-        background: isDone ? color : `${color}26`,
-        borderLeft: `3px solid ${color}`,
+        background: isDone ? color : `${color}66`,
+        borderLeft: `4px solid ${color}`,
         color: isDone ? "hsl(var(--status-done-foreground, 0 0% 100%))" : "hsl(var(--foreground))",
       }}
       title={`${a.horario?.slice(0, 5)}–${endStr} · ${cliente}${serv ? ` · ${serv}` : ""}${
