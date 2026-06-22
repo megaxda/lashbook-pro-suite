@@ -494,34 +494,67 @@ export default function AgendamentosTab() {
         <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(1)}><ChevronRight className="w-4 h-4" /></Button>
       </div>
 
+      {/* Filtro por profissional */}
+      {profissionais.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Profissional:</span>
+          <button
+            onClick={() => setPersistProfFilter("todas")}
+            className={cn("text-xs px-2.5 py-1 rounded-full border transition-colors",
+              profFilter === "todas" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground")}
+          >
+            Todas
+          </button>
+          {profissionais.filter(p => p.ativo).map(p => (
+            <button
+              key={p.id}
+              onClick={() => setPersistProfFilter(p.id)}
+              className={cn("text-xs px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5",
+                profFilter === p.id ? "border-primary text-foreground" : "border-border text-muted-foreground hover:text-foreground")}
+              style={profFilter === p.id ? { background: (p.cor || "#ec4899") + "33", borderColor: p.cor || undefined } : undefined}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ background: p.cor || "#999" }} />
+              {p.nome}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Legend */}
       <StatusLegend />
 
-      {view === "Lista" && (
-        <div className="space-y-2">
-          {appointments.length === 0 && bloqueios.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : (() => {
-            type Item = { kind: "appt"; a: Agendamento; key: string } | { kind: "bloq"; b: Bloqueio; key: string };
-            const items: Item[] = [
-              ...appointments.map<Item>(a => ({ kind: "appt", a, key: `${a.data} ${(a.horario||"00:00").slice(0,5)}` })),
-              ...bloqueios.map<Item>(b => ({ kind: "bloq", b, key: `${b.data} ${b.dia_todo ? "00:00" : (b.hora_inicio||"00:00").slice(0,5)}` })),
-            ].sort((x, y) => x.key.localeCompare(y.key));
-            return items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b));
-          })()}
-        </div>
-      )}
-      {view === "Diário" && renderDiario()}
-      {(view === "Semanal" || view === "Mensal") && (
-        <AgendaGrid
-          view={view as AgendaView}
-          cursor={currentDate}
-          appointments={appointments as any}
-          bloqueios={bloqueios as any}
-          onSelectAppt={(a) => openAppt(appointments.find(x => x.id === a.id) as Agendamento)}
-          onSelectDay={openDayModal}
-          onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
-          onSelectBloqueio={(b) => openBloqEdit(bloqueios.find(x => x.id === b.id) as Bloqueio)}
-        />
-      )}
+      {(() => {
+        const filteredAppts = profFilter === "todas" ? appointments : appointments.filter(a => a.profissional_id === profFilter);
+        return (
+          <>
+            {view === "Lista" && (
+              <div className="space-y-2">
+                {filteredAppts.length === 0 && bloqueios.length === 0 ? <p className="text-muted-foreground text-sm text-center py-6">Nenhum agendamento.</p> : (() => {
+                  type Item = { kind: "appt"; a: Agendamento; key: string } | { kind: "bloq"; b: Bloqueio; key: string };
+                  const items: Item[] = [
+                    ...filteredAppts.map<Item>(a => ({ kind: "appt", a, key: `${a.data} ${(a.horario||"00:00").slice(0,5)}` })),
+                    ...bloqueios.map<Item>(b => ({ kind: "bloq", b, key: `${b.data} ${b.dia_todo ? "00:00" : (b.hora_inicio||"00:00").slice(0,5)}` })),
+                  ].sort((x, y) => x.key.localeCompare(y.key));
+                  return items.map(it => it.kind === "appt" ? renderCard(it.a) : renderBloqueioCard(it.b));
+                })()}
+              </div>
+            )}
+            {view === "Diário" && renderDiario()}
+            {(view === "Semanal" || view === "Mensal") && (
+              <AgendaGrid
+                view={view as AgendaView}
+                cursor={currentDate}
+                appointments={filteredAppts as any}
+                bloqueios={bloqueios as any}
+                onSelectAppt={(a) => openAppt(appointments.find(x => x.id === a.id) as Agendamento)}
+                onSelectDay={openDayModal}
+                onNewAtDate={(ds) => { setNewForm(f => ({ ...f, data: ds })); setNewOpen(true); }}
+                onSelectBloqueio={(b) => openBloqEdit(bloqueios.find(x => x.id === b.id) as Bloqueio)}
+              />
+            )}
+          </>
+        );
+      })()}
 
       {/* FAB - Mobile */}
       <button
