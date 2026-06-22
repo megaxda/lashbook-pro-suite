@@ -86,6 +86,8 @@ export function statusToken(status: string | null | undefined): {
       return { cssVar: "--status-canceled", label: "Cancelado" };
     case "no_show":
       return { cssVar: "--status-canceled", label: "Não veio" };
+    case "procedimento_a_confirmar":
+      return { cssVar: "--status-confirmar", label: "Proc. a confirmar" };
     default:
       return { cssVar: "--status-pending", label: status || "pendente" };
   }
