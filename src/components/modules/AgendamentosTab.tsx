@@ -696,10 +696,28 @@ export default function AgendamentosTab() {
                     <Input type="time" value={editHorario} onChange={e => setEditHorario(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
                   </div>
                 </div>
+                {profissionais.filter(p => p.ativo).length > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Profissional</Label>
+                    <Select value={editProfissionalId} onValueChange={setEditProfissionalId}>
+                      <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {profissionais.filter(p => p.ativo).map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            <span className="inline-flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.cor || "#999" }} />
+                              {p.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div><Label className="text-muted-foreground text-xs">Status</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
                     <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                    <SelectContent className="bg-card border-border">{allStatuses.map(s => <SelectItem key={s} value={s}>{statusLabels[s] || s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
