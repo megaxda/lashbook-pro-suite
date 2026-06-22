@@ -130,7 +130,7 @@ export function useAgendamentos(range?: { start?: string; end?: string }) {
       let q = supabase
         .from("agendamentos")
         .select(
-          "id, data, horario, status, gratuito, forma_pagamento, cliente_id, notas, comprovante_url, sinal_pago, origem, profissional_id, pagamentos_detalhe, clientes(nome), servicos(nome, preco, duracao)"
+          "id, data, horario, status, gratuito, forma_pagamento, cliente_id, servico_id, user_id, notas, comprovante_url, sinal_pago, origem, profissional_id, pagamentos_detalhe, clientes(nome), servicos(nome, preco, duracao)"
         )
         .eq("user_id", user!.id)
         .order("data")
