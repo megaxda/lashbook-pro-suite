@@ -268,6 +268,7 @@ export default function AgendamentosTab() {
       notas: newForm.notas || null, forma_pagamento: newForm.forma_pagamento || null,
       gratuito: newForm.gratuito,
       recorrencia_id: recId,
+      profissional_id: newForm.profissional_id || null,
     }));
     if (rows.length === 0) { setSaving(false); toast.error("Todas as datas conflitam com bloqueios."); return; }
     const { error } = await supabase.from("agendamentos").insert(rows as any);
