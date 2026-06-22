@@ -1,13 +1,15 @@
-## Exibir horário de início e fim nos agendamentos
+## Ajustar layout do bloco de agendamento (3 linhas)
 
-Atualmente os blocos de agendamento na agenda (diária/semanal) mostram o nome do cliente, hora de início e — em uma linha separada — o serviço. A referência enviada mostra um layout mais claro: **nome + serviço na primeira linha** e **HH:MM – HH:MM (início–fim) destacado logo abaixo**.
+A versão atual juntou cliente e serviço na mesma linha. A referência mostra **três linhas separadas**:
 
-### Mudanças
-Em `src/components/agenda/AgendaGrid.tsx`, no componente do card de agendamento (`ApptBlock`):
+1. **Linha 1** — Nome do cliente em negrito (ex.: `Ingrid Oliveira`).
+2. **Linha 2** — Intervalo de horário (ex.: `08:15–09:55`).
+3. **Linha 3** — Nome do serviço em itálico (ex.: `Aplicação do Volume Y`).
 
-1. **Linha 1** — Cliente, opcionalmente com o serviço ao lado (ex.: `Ingrid Oliveira - ext y`), com `truncate`.
-2. **Linha 2** — Intervalo de horário sempre visível e em destaque: `08:15 – 09:50`, calculado a partir de `a.horario` + `servicos.duracao` (já existe a variável `endStr`). Quando não houver duração cadastrada, mostrar apenas a hora de início.
-3. Remover a linha extra de serviço quando ele já couber junto ao nome, evitando duplicidade.
-4. Manter o comportamento de blocos altos vs. compactos: em blocos muito baixos, mostrar apenas a linha de horário (que é a informação principal pedida).
+### Mudança
+Em `src/components/agenda/AgendaGrid.tsx`, no componente `ApptBlock`:
+- Remover a concatenação `cliente - serviço` da linha 1.
+- Manter linha de horário como segunda linha.
+- Restaurar a terceira linha com o nome do serviço em itálico (quando houver e o bloco tiver altura suficiente).
 
-Sem alterações no banco de dados, em outros componentes ou no fluxo de criação/edição — somente apresentação visual do bloco.
+Sem outras alterações.
