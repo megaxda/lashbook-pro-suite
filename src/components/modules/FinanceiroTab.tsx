@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFinanceiro, useAgendamentos, useProfissionais, useInvalidate } from "@/hooks/queries";
+import { CurrencyInputBRL } from "@/components/ui/currency-input";
 import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus, Pencil, Trash2,
   Download, Search, ArrowUp, ArrowDown, Calendar as CalIcon, Receipt,
@@ -387,7 +388,7 @@ export default function FinanceiroTab() {
             <ArrowUpDown className="w-4 h-4 text-info" />
             <TrendChip curr={ticketMedio} prev={prevTicket} />
           </div>
-          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">R$ {ticketMedio.toFixed(0)}</p>
+          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">R$ {ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           <p className="text-[10px] text-muted-foreground">Ticket médio</p>
         </div>
         <div className="p-3 rounded-xl bg-card border border-border">
@@ -577,7 +578,13 @@ export default function FinanceiroTab() {
               </Select>
             </div>
             <div><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={newDesc} onChange={e => setNewDesc(e.target.value)} className="bg-secondary border-border mt-1" /></div>
-            <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label><Input type="number" value={newAmount} onChange={e => setNewAmount(e.target.value)} className="bg-secondary border-border mt-1" /></div>
+            <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label>
+              <CurrencyInputBRL
+                value={newAmount ? parseFloat(newAmount) : 0}
+                onValueChange={(v) => setNewAmount(String(v))}
+                className="mt-1"
+              />
+            </div>
             <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="bg-secondary border-border mt-1" /></div>
             <div><Label className="text-muted-foreground text-xs">Categoria</Label><Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Material, Fixas, Serviços" className="bg-secondary border-border mt-1" /></div>
             <Button onClick={addTransaction} disabled={saving} className="w-full gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar"}</Button>
@@ -597,7 +604,13 @@ export default function FinanceiroTab() {
                 </Select>
               </div>
               <div><Label className="text-muted-foreground text-xs">Descrição</Label><Input value={editing.descricao || ""} onChange={e => setEditing({ ...editing, descricao: e.target.value })} className="bg-secondary border-border mt-1" /></div>
-              <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label><Input type="number" value={editing.valor} onChange={e => setEditing({ ...editing, valor: parseFloat(e.target.value) || 0 })} className="bg-secondary border-border mt-1" /></div>
+              <div><Label className="text-muted-foreground text-xs">Valor (R$)</Label>
+                <CurrencyInputBRL
+                  value={Number(editing.valor) || 0}
+                  onValueChange={(v) => setEditing({ ...editing, valor: v })}
+                  className="mt-1"
+                />
+              </div>
               <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={editing.data} onChange={e => setEditing({ ...editing, data: e.target.value })} className="bg-secondary border-border mt-1" /></div>
               <div><Label className="text-muted-foreground text-xs">Categoria</Label><Input value={editing.categoria || ""} onChange={e => setEditing({ ...editing, categoria: e.target.value })} className="bg-secondary border-border mt-1" /></div>
               <Button onClick={saveEdit} disabled={saving} className="w-full gradient-brand text-primary-foreground">{saving ? "Salvando..." : "Salvar alterações"}</Button>

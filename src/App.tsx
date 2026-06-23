@@ -15,13 +15,14 @@ import CreateFinPage from "@/pages/CreateFinPage";
 import TrustPage from "@/pages/TrustPage";
 import AccountBlocked from "@/components/AccountBlocked";
 import { queryClient } from "@/lib/queryClient";
+import AppTour from "@/components/onboarding/AppTour";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isBlocked } = useAuth();
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-primary">Carregando...</div></div>;
   if (!user) return <Navigate to="/auth" replace />;
   if (isBlocked) return <AccountBlocked />;
-  return <>{children}</>;
+  return <>{children}<AppTour /></>;
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {

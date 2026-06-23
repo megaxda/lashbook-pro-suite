@@ -1,70 +1,47 @@
-# Carregamentos instantâneos com cache inteligente
+## Diagnóstico do bug financeiro
 
-## Diagnóstico atual
+O input `Valor (R$)` em `FinanceiroTab.tsx` (Nova Transação e Edição) é `type="number"`, que interpreta o ponto como separador decimal. Quando você digitou **11.237** pensando "onze mil duzentos e trinta e sete", o navegador entendeu **11,237** (onze inteiros, 237 milésimos). Por isso:
 
-Cada aba (Dashboard, Agendamentos, Clientes, Estoque, Fichas, Financeiro, Serviços) usa `useState` + `useEffect` e chama `supabase.from(...)` na montagem. Ao trocar de tela, tudo é refeito do zero — mesmo dado que já estava carregado segundos atrás. O React Query está instalado e provisionado em `App.tsx`, mas só `useAdminUsers` o utiliza. O Dashboard sozinho dispara 9 queries por entrada.
+- Receita salva: `11.237` → exibe `R$ 11,237`
+- Despesa salva: `2.567` → exibe `R$ 2,567`
+- Lucro: `11.237 − 2.567 = 8.67` → `R$ 8,67`
+- Ticket médio com `toFixed(0)` → `R$ 11`
 
-**Sintomas:** "piscadas" de loading ao alternar abas, agenda recarrega ao voltar do cliente, financeiro refaz somatórios já calculados, e tudo conversa direto com o banco a cada navegação.
+Tudo bate com o print. Não é o `toLocaleString` que está errado — é a **entrada** que precisa virar uma máscara de moeda BRL.
 
-## Estratégia escolhida: React Query (cache em memória) + invalidação dirigida
+## O que será feito
 
-Por que cache de cliente (React Query) e **não** cache local persistente (IndexedDB/localStorage):
-- Dados são por-usuário, mutáveis e sensíveis (financeiro, clientes) — persistir entre sessões adiciona risco e complexidade de sincronização.
-- React Query já está no projeto; resolve 90% do problema com staleTime + invalidação.
-- Mantém uma única fonte de verdade: o banco. Sem divergência entre cache antigo e dados novos.
+### 1. Máscara de moeda BRL nos inputs de valor
 
-Realtime do Supabase **não** será habilitado em todas as tabelas (custo + risco de loop de reconexão). Usamos invalidação manual após mutações — barato e determinístico.
+- Criar componente `CurrencyInputBRL` (`src/components/ui/currency-input.tsx`) que:
+  - Aceita digitação livre de dígitos e formata em tempo real como `1.234,56`.
+  - Trata o valor internamente como número (centavos → reais), sem perder precisão.
+  - Mostra prefixo `R$` opcional.
+  - `inputMode="decimal"` para teclado numérico no mobile.
+- Substituir os dois inputs `Valor (R$)` em `FinanceiroTab.tsx` (criar e editar transação) por esse componente.
+- Garantir formatação pt-BR consistente em todos os KPIs (já estão com `toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`); ajustar o "Ticket médio" para usar o mesmo formato (hoje usa `toFixed(0)`).
+- Ajustar a exportação CSV e a tabela para o mesmo padrão `R$ 1.234,56`.
 
-## Plano de implementação
+### 2. Tour guiado no primeiro acesso
 
-### 1. Configurar o `QueryClient` global (`src/App.tsx`)
-Trocar `new QueryClient()` por defaults conscientes:
-- `staleTime: 60_000` (1 min) — durante esse tempo, navegar entre abas não refaz fetch.
-- `gcTime: 5 * 60_000` (5 min) — dados ficam em memória mesmo se o componente desmontar.
-- `refetchOnWindowFocus: false` — evita refetch ao alternar aba do navegador.
-- `refetchOnMount: false` quando há dado fresco.
-- `retry: 1`.
+- Adicionar `react-joyride` como dependência.
+- Criar `src/components/onboarding/AppTour.tsx` com etapas em pt-BR cobrindo: Início (KPIs do dia), Agendamentos, Clientes, Financeiro, Estoque, Serviços, Link da Bio e botão de criar.
+- Disparar automaticamente após o login na primeira visita ao `/ln`, controlado por:
+  - `localStorage["finbeauty.tour.completed"]` (rápido, por dispositivo).
+  - Coluna `onboarding_completed boolean` em `profiles` (persiste entre dispositivos) via migration com GRANT já existente.
+- Botões no tour: **Próximo**, **Pular**, **Não mostrar novamente** (marca ambos os flags).
+- Item no menu da conta (`AccountPage`): **Refazer tour do app** — limpa os flags e reabre o tour.
 
-### 2. Criar hooks de dados em `src/hooks/queries/`
-Um hook por recurso, com chave estável `["recurso", userId, filtros]`:
-- `useAgendamentos(range)` — usado por Dashboard e Agendamentos (mesma key → 1 fetch só).
-- `useClientes()` — Dashboard, Clientes, modal "novo agendamento".
-- `useServicos()` — Dashboard, Agendamentos, Serviços, Link da Bio.
-- `useEstoque()` — Dashboard, Estoque.
-- `useFinanceiro(periodo)` — Dashboard, Financeiro.
-- `useBloqueios(range)` — Dashboard, Agendamentos.
-- `useProfissionais()` — múltiplas telas.
-- `useFichas()` — Fichas.
+### Detalhes técnicos
 
-Cada hook devolve `{ data, isLoading, error }` e respeita `enabled: !!user`.
+- O componente de moeda armazena `number | null` e expõe `onValueChange(value: number)`. Internamente usa string formatada `Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 })`.
+- Migration:
+  ```sql
+  ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed boolean NOT NULL DEFAULT false;
+  ```
+  (GRANTs já existem na tabela; sem alteração de RLS.)
+- `react-joyride` é client-side puro, sem impacto no SSR/preview.
 
-### 3. Hook utilitário `useInvalidate`
-Centraliza `queryClient.invalidateQueries({ queryKey: [...] })` para chamar após criar/editar/excluir. Mutações usam `useMutation` com `onSuccess` invalidando apenas as keys afetadas (ex.: criar agendamento → invalida `agendamentos` e `financeiro`, nada mais).
+### Fora do escopo
 
-### 4. Substituir fetches nos componentes
-Trocar `useState + useEffect + supabase.from` pelos novos hooks em:
-- `DashboardTab.tsx` (9 queries → composição de hooks compartilhados, a maioria já em cache).
-- `AgendamentosTab.tsx`, `ClientesTab.tsx`, `EstoqueTab.tsx`, `FichasTab.tsx`, `FinanceiroTab.tsx`, `ServicosTab.tsx`.
-- Modais e wizards que listam clientes/serviços (`NovaFichaWizard`, criação rápida no Dashboard).
-
-### 5. Prefetch ao logar
-No `AuthContext`, após `user` confirmado, chamar `queryClient.prefetchQuery` para `clientes`, `servicos`, `profissionais` e agendamentos da semana corrente. Quando o usuário entra na primeira aba, dados já estão prontos — sensação de instantâneo.
-
-### 6. Seleção fina de colunas
-Auditar `.select("*")` (aparece em `bloqueios_agenda` no Dashboard, e em outras tabs) e restringir às colunas usadas. Reduz payload e tempo de parse.
-
-### 7. Evitar refetch desnecessário em listas grandes
-Para Financeiro/Agendamentos com paginação por período, a chave inclui o range — mudar de mês cria nova entrada de cache; voltar ao mês anterior usa o cache existente sem ir ao banco.
-
-## Trade-offs e limites
-
-- Dados podem ficar "velhos" por até 1 min entre abas — aceitável para este app (não é trading). Mutações invalidam na hora, então quem editou vê fresco imediatamente.
-- Sem persistência entre reloads do navegador (F5 refaz fetch). Se quiser persistência depois, adicionamos `@tanstack/query-sync-storage-persister` em iteração futura.
-- Realtime fica fora deste escopo; pode ser ligado pontualmente (ex.: agenda compartilhada por equipe) em outro passo.
-
-## Resultado esperado
-
-- Trocar de aba após o primeiro carregamento: 0 requisições, render imediato.
-- Dashboard deixa de ser o gargalo: clientes/serviços/agendamentos vêm do cache compartilhado.
-- Mutações continuam consistentes via invalidação dirigida.
-- Carga no banco cai significativamente em sessões longas.
+- Não vou mexer em outros formulários monetários (Serviços, Estoque) nesta tarefa para manter o foco; se quiser, faço numa próxima rodada.

@@ -9,30 +9,30 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const navItems = [
-  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined },
-  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes" },
-  { label: "Agendamentos", icon: Calendar, path: "/home_profissional", tab: "Agendamentos" },
-  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro" },
-  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque" },
-  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos" },
-  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas" },
+  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined, tour: "nav-inicio" },
+  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes", tour: "nav-clientes" },
+  { label: "Agendamentos", icon: Calendar, path: "/home_profissional", tab: "Agendamentos", tour: "nav-agendamentos" },
+  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro", tour: "nav-financeiro" },
+  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque", tour: "nav-estoque" },
+  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos", tour: "nav-servicos" },
+  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas", tour: "nav-fichas" },
   { label: "Como Utilizar", icon: HelpCircle, path: "/home_profissional", tab: "ComoUtilizar" },
-  { label: "Minha Conta", icon: User, path: "/account" },
+  { label: "Minha Conta", icon: User, path: "/account", tour: "nav-conta" },
 ];
 
 // Bottom nav: 4 principais + "Mais" abre sheet com o restante
 const mobileBottomNav = [
-  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined },
-  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes" },
-  { label: "Agenda", icon: Calendar, path: "/home_profissional", tab: "Agendamentos" },
-  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro" },
+  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined, tour: "nav-inicio" },
+  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes", tour: "nav-clientes" },
+  { label: "Agenda", icon: Calendar, path: "/home_profissional", tab: "Agendamentos", tour: "nav-agendamentos" },
+  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro", tour: "nav-financeiro" },
 ];
 
 const mobileMoreItems = [
-  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque" },
-  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos" },
-  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas" },
-  { label: "Minha Conta", icon: User, path: "/account" },
+  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque", tour: "nav-estoque" },
+  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos", tour: "nav-servicos" },
+  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas", tour: "nav-fichas" },
+  { label: "Minha Conta", icon: User, path: "/account", tour: "nav-conta" },
   { label: "Como Utilizar", icon: HelpCircle, path: "/home_profissional", tab: "ComoUtilizar" },
 ];
 
@@ -93,10 +93,11 @@ export default function AppSidebar() {
       </div>
 
       <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto scrollbar-thin">
-        {allNavItems.map((item) => (
+        {allNavItems.map((item: any) => (
           <NavLink
             key={item.label}
             to={getLink(item)}
+            data-tour={item.tour}
             className={cn(
               "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
               collapsed && "justify-center px-2",
@@ -142,10 +143,11 @@ export default function AppSidebar() {
 
       {/* Mobile bottom nav (5 items: 4 principais + Mais) */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around items-stretch px-1 pb-[env(safe-area-inset-bottom)]">
-        {mobileBottomNav.map(item => (
+        {mobileBottomNav.map((item: any) => (
           <NavLink
             key={item.label}
             to={getLink(item)}
+            data-tour={item.tour}
             className={cn(
               "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition-colors",
               isActive(item) ? "text-primary" : "text-muted-foreground"
