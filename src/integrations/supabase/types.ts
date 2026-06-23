@@ -380,6 +380,7 @@ export type Database = {
           instagram: string | null
           last_login: string | null
           nome: string | null
+          onboarding_completed: boolean
           outros_links: Json | null
           pix_key: string | null
           pix_key_type: string | null
@@ -407,6 +408,7 @@ export type Database = {
           instagram?: string | null
           last_login?: string | null
           nome?: string | null
+          onboarding_completed?: boolean
           outros_links?: Json | null
           pix_key?: string | null
           pix_key_type?: string | null
@@ -434,6 +436,7 @@ export type Database = {
           instagram?: string | null
           last_login?: string | null
           nome?: string | null
+          onboarding_completed?: boolean
           outros_links?: Json | null
           pix_key?: string | null
           pix_key_type?: string | null
