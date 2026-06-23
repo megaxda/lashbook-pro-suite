@@ -9,15 +9,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const navItems = [
-  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined },
-  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes" },
-  { label: "Agendamentos", icon: Calendar, path: "/home_profissional", tab: "Agendamentos" },
-  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro" },
-  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque" },
-  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos" },
-  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas" },
+  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined, tour: "nav-inicio" },
+  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes", tour: "nav-clientes" },
+  { label: "Agendamentos", icon: Calendar, path: "/home_profissional", tab: "Agendamentos", tour: "nav-agendamentos" },
+  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro", tour: "nav-financeiro" },
+  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque", tour: "nav-estoque" },
+  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos", tour: "nav-servicos" },
+  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas", tour: "nav-fichas" },
   { label: "Como Utilizar", icon: HelpCircle, path: "/home_profissional", tab: "ComoUtilizar" },
-  { label: "Minha Conta", icon: User, path: "/account" },
+  { label: "Minha Conta", icon: User, path: "/account", tour: "nav-conta" },
 ];
 
 // Bottom nav: 4 principais + "Mais" abre sheet com o restante
@@ -93,10 +93,11 @@ export default function AppSidebar() {
       </div>
 
       <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto scrollbar-thin">
-        {allNavItems.map((item) => (
+        {allNavItems.map((item: any) => (
           <NavLink
             key={item.label}
             to={getLink(item)}
+            data-tour={item.tour}
             className={cn(
               "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
               collapsed && "justify-center px-2",
