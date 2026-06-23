@@ -143,10 +143,11 @@ export default function AppSidebar() {
 
       {/* Mobile bottom nav (5 items: 4 principais + Mais) */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around items-stretch px-1 pb-[env(safe-area-inset-bottom)]">
-        {mobileBottomNav.map(item => (
+        {mobileBottomNav.map((item: any) => (
           <NavLink
             key={item.label}
             to={getLink(item)}
+            data-tour={item.tour}
             className={cn(
               "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition-colors",
               isActive(item) ? "text-primary" : "text-muted-foreground"
