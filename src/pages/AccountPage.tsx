@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import EquipeManager from "@/components/equipe/EquipeManager";
+import { triggerRestartTour } from "@/components/onboarding/AppTour";
 
 function sanitizeSlug(input: string) {
   return input
@@ -208,6 +209,16 @@ export default function AccountPage() {
               <div className="col-span-full min-w-0"><Label className="text-muted-foreground text-xs">Bio</Label><Textarea value={bio} onChange={e => setBio(e.target.value)} className="bg-secondary border-border mt-1 min-h-[60px]" /></div>
             </div>
             <Button onClick={saveAccount} disabled={saving} className="gradient-brand text-primary-foreground w-full sm:w-auto">{saving ? "Salvando..." : "Salvar Alterações"}</Button>
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">Quer rever a apresentação inicial do app?</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { triggerRestartTour(); toast.success("Tour reiniciado!"); }}
+              >
+                Refazer tour do app
+              </Button>
+            </div>
           </div>
         </TabsContent>
 
