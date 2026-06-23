@@ -22,17 +22,17 @@ const navItems = [
 
 // Bottom nav: 4 principais + "Mais" abre sheet com o restante
 const mobileBottomNav = [
-  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined },
-  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes" },
-  { label: "Agenda", icon: Calendar, path: "/home_profissional", tab: "Agendamentos" },
-  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro" },
+  { label: "Início", icon: Home, path: "/home_profissional", tab: undefined, tour: "nav-inicio" },
+  { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes", tour: "nav-clientes" },
+  { label: "Agenda", icon: Calendar, path: "/home_profissional", tab: "Agendamentos", tour: "nav-agendamentos" },
+  { label: "Financeiro", icon: DollarSign, path: "/home_profissional", tab: "Financeiro", tour: "nav-financeiro" },
 ];
 
 const mobileMoreItems = [
-  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque" },
-  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos" },
-  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas" },
-  { label: "Minha Conta", icon: User, path: "/account" },
+  { label: "Estoque", icon: Package, path: "/home_profissional", tab: "Estoque", tour: "nav-estoque" },
+  { label: "Serviços", icon: Scissors, path: "/home_profissional", tab: "Servicos", tour: "nav-servicos" },
+  { label: "Fichas", icon: FileText, path: "/home_profissional", tab: "Fichas", tour: "nav-fichas" },
+  { label: "Minha Conta", icon: User, path: "/account", tour: "nav-conta" },
   { label: "Como Utilizar", icon: HelpCircle, path: "/home_profissional", tab: "ComoUtilizar" },
 ];
 
