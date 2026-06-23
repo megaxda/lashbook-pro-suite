@@ -14,65 +14,25 @@ const steps: Step[] = [
       "Vou te mostrar rapidinho como usar o app. Você pode pular a qualquer momento e refazer este tour depois em Minha Conta.",
     disableBeacon: true,
   },
-  {
-    target: '[data-tour="nav-inicio"]',
-    title: "Início",
-    content: "Aqui você vê o resumo do dia: agenda, receita e atalhos rápidos.",
-  },
-  {
-    target: '[data-tour="nav-agendamentos"]',
-    title: "Agendamentos",
-    content:
-      "Crie, edite e bloqueie horários. Visualize por dia, semana ou mês.",
-  },
-  {
-    target: '[data-tour="nav-clientes"]',
-    title: "Clientes",
-    content:
-      "Cadastro completo, histórico de atendimentos e follow-ups por WhatsApp.",
-  },
-  {
-    target: '[data-tour="nav-financeiro"]',
-    title: "Financeiro",
-    content:
-      "Receitas, despesas, lucro e ticket médio. Os valores são gerados automaticamente quando um atendimento é concluído.",
-  },
-  {
-    target: '[data-tour="nav-estoque"]',
-    title: "Estoque",
-    content:
-      "Controle produtos, baixas automáticas por serviço e alertas de reposição.",
-  },
-  {
-    target: '[data-tour="nav-servicos"]',
-    title: "Serviços",
-    content:
-      "Cadastre seus serviços com preço e duração. Isso alimenta agenda, link da bio e financeiro.",
-  },
-  {
-    target: '[data-tour="nav-fichas"]',
-    title: "Fichas",
-    content:
-      "Crie fichas de anamnese personalizadas e registre fotos de antes/depois.",
-  },
-  {
-    target: '[data-tour="nav-conta"]',
-    title: "Minha Conta",
-    content:
-      "Personalize seu link da bio, configure cobrança de sinal por PIX e refaça este tour quando quiser.",
-  },
+  { target: '[data-tour="nav-inicio"]', title: "Início", content: "Resumo do dia: agenda, receita e atalhos rápidos.", disableBeacon: true },
+  { target: '[data-tour="nav-agendamentos"]', title: "Agendamentos", content: "Crie, edite e bloqueie horários. Visualize por dia, semana ou mês.", disableBeacon: true },
+  { target: '[data-tour="nav-clientes"]', title: "Clientes", content: "Cadastro completo, histórico de atendimentos e follow-ups por WhatsApp.", disableBeacon: true },
+  { target: '[data-tour="nav-financeiro"]', title: "Financeiro", content: "Receitas, despesas, lucro e ticket médio — calculados automaticamente.", disableBeacon: true },
+  { target: '[data-tour="nav-estoque"]', title: "Estoque", content: "Produtos, baixas automáticas e alertas de reposição.", disableBeacon: true },
+  { target: '[data-tour="nav-servicos"]', title: "Serviços", content: "Cadastre serviços com preço e duração — alimenta agenda, link da bio e financeiro.", disableBeacon: true },
+  { target: '[data-tour="nav-fichas"]', title: "Fichas", content: "Fichas de anamnese personalizadas e fotos de antes/depois.", disableBeacon: true },
+  { target: '[data-tour="nav-conta"]', title: "Minha Conta", content: "Personalize o link da bio, cobrança de sinal por PIX e refaça este tour quando quiser.", disableBeacon: true },
 ];
 
 export default function AppTour() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth() as any;
   const [run, setRun] = useState(false);
 
   useEffect(() => {
     if (!user || !profile) return;
     const localDone = localStorage.getItem(LS_KEY) === "1";
-    const remoteDone = (profile as any).onboarding_completed === true;
+    const remoteDone = profile?.onboarding_completed === true;
     if (localDone || remoteDone) return;
-    // pequeno atraso pra DOM montar
     const t = setTimeout(() => setRun(true), 800);
     return () => clearTimeout(t);
   }, [user, profile]);
@@ -81,30 +41,25 @@ export default function AppTour() {
     localStorage.setItem(LS_KEY, "1");
     if (user) {
       try {
-        await supabase
-          .from("profiles")
-          .update({ onboarding_completed: true } as any)
-          .eq("id", user.id);
+        await supabase.from("profiles").update({ onboarding_completed: true } as any).eq("id", user.id);
         await refreshProfile?.();
-      } catch {
-        /* noop */
-      }
+      } catch { /* noop */ }
     }
   };
 
   const handleCallback = (data: CallBackProps) => {
-    const { status } = data;
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+    const finished: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finished.includes(data.status)) {
       setRun(false);
       markDone();
     }
   };
 
-  // Listener pra refazer o tour pelo menu da conta
   useEffect(() => {
     const handler = () => {
       localStorage.removeItem(LS_KEY);
-      setRun(true);
+      setRun(false);
+      setTimeout(() => setRun(true), 100);
     };
     window.addEventListener("finbeauty:restart-tour", handler);
     return () => window.removeEventListener("finbeauty:restart-tour", handler);
@@ -117,16 +72,10 @@ export default function AppTour() {
       continuous
       showProgress
       showSkipButton
-      disableScrolling={false}
       scrollToFirstStep
+      disableScrollParentFix
       callback={handleCallback}
-      locale={{
-        back: "Voltar",
-        close: "Fechar",
-        last: "Concluir",
-        next: "Próximo",
-        skip: "Pular tour",
-      }}
+      locale={{ back: "Voltar", close: "Fechar", last: "Concluir", next: "Próximo", skip: "Pular tour" }}
       styles={{
         options: {
           primaryColor: "hsl(var(--primary))",
@@ -137,8 +86,6 @@ export default function AppTour() {
           overlayColor: "rgba(0,0,0,0.55)",
         },
         tooltipContainer: { textAlign: "left" },
-        buttonNext: { borderRadius: 8 },
-        buttonBack: { color: "hsl(var(--muted-foreground))" },
       }}
     />
   );
