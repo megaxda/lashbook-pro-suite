@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFinanceiro, useAgendamentos, useProfissionais, useInvalidate } from "@/hooks/queries";
+import { CurrencyInputBRL } from "@/components/ui/currency-input";
 import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Plus, Pencil, Trash2,
   Download, Search, ArrowUp, ArrowDown, Calendar as CalIcon, Receipt,
