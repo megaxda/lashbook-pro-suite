@@ -2,26 +2,108 @@ import { useEffect, useState } from "react";
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { TourTooltip, TourStepMeta } from "./TourTooltip";
+import {
+  Sparkles, Home, CalendarDays, Users, Wallet, Package, Scissors, ClipboardList, Settings,
+} from "lucide-react";
 
 const LS_KEY = "finbeauty.tour.completed";
 
-const steps: Step[] = [
+type TourStep = Step & { meta: TourStepMeta };
+
+const steps: TourStep[] = [
   {
     target: "body",
     placement: "center",
-    title: "Bem-vindo ao FinBeauty 💙",
-    content:
-      "Vou te mostrar rapidinho como usar o app. Você pode pular a qualquer momento e refazer este tour depois em Minha Conta.",
     disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Sparkles,
+      title: "Bem-vinda ao FinBeauty 💙",
+      body: "Em menos de 1 minuto eu te mostro o que dá para fazer aqui. Você pode pular quando quiser e refazer este tour depois em Minha Conta.",
+      hero: true,
+    },
   },
-  { target: '[data-tour="nav-inicio"]', title: "Início", content: "Resumo do dia: agenda, receita e atalhos rápidos.", disableBeacon: true },
-  { target: '[data-tour="nav-agendamentos"]', title: "Agendamentos", content: "Crie, edite e bloqueie horários. Visualize por dia, semana ou mês.", disableBeacon: true },
-  { target: '[data-tour="nav-clientes"]', title: "Clientes", content: "Cadastro completo, histórico de atendimentos e follow-ups por WhatsApp.", disableBeacon: true },
-  { target: '[data-tour="nav-financeiro"]', title: "Financeiro", content: "Receitas, despesas, lucro e ticket médio — calculados automaticamente.", disableBeacon: true },
-  { target: '[data-tour="nav-estoque"]', title: "Estoque", content: "Produtos, baixas automáticas e alertas de reposição.", disableBeacon: true },
-  { target: '[data-tour="nav-servicos"]', title: "Serviços", content: "Cadastre serviços com preço e duração — alimenta agenda, link da bio e financeiro.", disableBeacon: true },
-  { target: '[data-tour="nav-fichas"]', title: "Fichas", content: "Fichas de anamnese personalizadas e fotos de antes/depois.", disableBeacon: true },
-  { target: '[data-tour="nav-conta"]', title: "Minha Conta", content: "Personalize o link da bio, cobrança de sinal por PIX e refaça este tour quando quiser.", disableBeacon: true },
+  {
+    target: '[data-tour="nav-inicio"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Home,
+      title: "Início",
+      body: "Seu resumo do dia: próximos atendimentos, faturamento e atalhos rápidos.",
+    },
+  },
+  {
+    target: '[data-tour="nav-agendamentos"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: CalendarDays,
+      title: "Agendamentos",
+      body: "Crie, edite e bloqueie horários. Alterne entre visão diária, semanal e mensal — como na Agenda do Google.",
+    },
+  },
+  {
+    target: '[data-tour="nav-clientes"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Users,
+      title: "Clientes",
+      body: "Histórico completo, aniversariantes e quem está sem voltar há tempos. Tudo a um clique do WhatsApp.",
+    },
+  },
+  {
+    target: '[data-tour="nav-financeiro"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Wallet,
+      title: "Financeiro",
+      body: "Receitas e despesas com lucro calculado automaticamente. Atendimento concluído já vira receita sozinho.",
+    },
+  },
+  {
+    target: '[data-tour="nav-estoque"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Package,
+      title: "Estoque",
+      body: "Controle seus produtos com alertas de reposição e baixa automática quando usar nas fichas.",
+    },
+  },
+  {
+    target: '[data-tour="nav-servicos"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Scissors,
+      title: "Serviços",
+      body: "Defina nome, duração e preço. Esses dados alimentam a agenda, o link da bio e o financeiro.",
+    },
+  },
+  {
+    target: '[data-tour="nav-fichas"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: ClipboardList,
+      title: "Fichas",
+      body: "Anamneses personalizadas e fotos de antes/depois organizadas por cliente.",
+    },
+  },
+  {
+    target: '[data-tour="nav-conta"]',
+    disableBeacon: true,
+    content: "",
+    meta: {
+      icon: Settings,
+      title: "Minha Conta",
+      body: "Personalize seu link público, ative cobrança de sinal por PIX, gerencie equipe e refaça este tour quando quiser.",
+    },
+  },
 ];
 
 export default function AppTour() {
@@ -70,22 +152,20 @@ export default function AppTour() {
       steps={steps}
       run={run}
       continuous
-      showProgress
       showSkipButton
       scrollToFirstStep
       disableScrollParentFix
       callback={handleCallback}
-      locale={{ back: "Voltar", close: "Fechar", last: "Concluir", next: "Próximo", skip: "Pular tour" }}
+      tooltipComponent={TourTooltip}
+      floaterProps={{ disableAnimation: false }}
       styles={{
         options: {
           primaryColor: "hsl(var(--primary))",
           zIndex: 10000,
           arrowColor: "hsl(var(--card))",
-          backgroundColor: "hsl(var(--card))",
-          textColor: "hsl(var(--foreground))",
-          overlayColor: "rgba(0,0,0,0.55)",
+          overlayColor: "rgba(15, 23, 42, 0.65)",
         },
-        tooltipContainer: { textAlign: "left" },
+        spotlight: { borderRadius: 12 },
       }}
     />
   );

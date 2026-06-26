@@ -289,12 +289,13 @@ export default function AgendamentosTab() {
   const updateAppt = async () => {
     if (!selectedAppt) return;
     if (demoBlock()) { setSelectedAppt(null); return; }
+    if (!user) { toast.error("Sessão expirada"); return; }
     setSaving(true);
     const cleanPag = editPagamentos.filter(p => p.metodo && Number(p.valor) > 0);
     const formaResumo = cleanPag.length > 0
       ? cleanPag.map(p => `${p.metodo} R$ ${Number(p.valor).toFixed(2)}`).join(" + ")
       : (editPayment || null);
-    const { error } = await supabase.from("agendamentos").update({
+    const payload = {
       status: editStatus,
       forma_pagamento: formaResumo,
       notas: editNotes || null,
@@ -305,12 +306,27 @@ export default function AgendamentosTab() {
       gratuito: editGratuito,
       pagamentos_detalhe: cleanPag as any,
       profissional_id: editProfissionalId || null,
-    } as any).eq("id", selectedAppt.id);
+    };
+    const { data: updated, error } = await supabase
+      .from("agendamentos")
+      .update(payload as any)
+      .eq("id", selectedAppt.id)
+      .eq("user_id", user.id)
+      .select("id, status, forma_pagamento")
+      .maybeSingle();
     setSaving(false);
-    if (error) { toast.error("Erro ao atualizar"); return; }
+    if (error) {
+      console.error("[updateAppt] erro:", error);
+      toast.error(`Erro ao atualizar: ${error.message}`);
+      return;
+    }
+    if (!updated) {
+      toast.error("Não foi possível salvar — agendamento não encontrado ou sem permissão.");
+      return;
+    }
     toast.success("Agendamento atualizado!");
-    setSelectedAppt(null);
     fetchAll();
+    setSelectedAppt(null);
   };
 
   const saveBloqueio = async () => {
