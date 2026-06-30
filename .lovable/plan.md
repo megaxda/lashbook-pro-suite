@@ -1,34 +1,37 @@
-## Objetivo
-Permitir ajustar a duração de um agendamento específico (ex.: atendimento durou menos que o padrão do serviço), sem alterar o cadastro do serviço.
+## Problema
 
-## Mudanças
+No painel admin, "Estender prazo" e "Liberar para sempre" mostram toast de sucesso, mas o `access_expires_at` do usuário não muda. Causa raiz:
 
-### 1. Banco (migration)
-- Adicionar coluna `duracao_min INTEGER NULL` em `public.agendamentos`.
-- Quando preenchida, sobrepõe a duração padrão do serviço apenas naquele agendamento.
-- Sem alterações em RLS/policies (a policy existente já cobre updates do dono).
+- `useAdminUsers.updateUser` executa `supabase.from('profiles').update(...).eq('id', id)` **sem `.select()`**.
+- Se a RLS da tabela `profiles` não permite que um admin atualize o perfil de outro usuário, o Supabase retorna `error = null` e `0 linhas afetadas`. O hook trata como sucesso e mostra "Usuário atualizado", mas nada foi gravado.
+- Erros reais (RLS, constraint) ficam mascarados pelo handler genérico `Erro ao atualizar`.
 
-### 2. Edição no modal (`AgendamentosTab.tsx`)
-- No formulário de editar agendamento, adicionar campo "Duração (min)" com:
-  - Placeholder mostrando a duração padrão do serviço selecionado.
-  - Botão "Usar padrão do serviço" que limpa o override (volta a `null`).
-  - Validação: inteiro entre 5 e 480.
-- Persistir `duracao_min` no update do agendamento.
-- Invalidar cache de agendamentos após salvar (padrão já usado).
+## Correção
 
-### 3. Exibição na agenda (`AgendaGrid.tsx`)
-- Onde hoje calcula `a.servicos?.duracao || 60`, passar a usar `a.duracao_min ?? a.servicos?.duracao ?? 60`.
-- Aplicar em: cálculo de `endStr` no `ApptCard`, `computeHourRange`, posicionamento/altura no `WeeklyGrid` (top/height) e detecção de colisão.
-- Atualizar a interface `AgendaAppt` para incluir `duracao_min?: number | null`.
+### 1. Edge Function `admin-update-user` (service role, segura)
+Criar (ou estender, se já existir `admin-create-user`) uma function que:
+- Recebe `{ userId, updates }`.
+- Valida que o caller é admin via `has_role(auth.uid(), 'admin')` (security definer).
+- Faz o `UPDATE` em `public.profiles` com a service role, retornando a linha atualizada.
+- Restringe os campos permitidos (`plano`, `status_conta`, `access_expires_at`, `nome`, `email`, `telefone`) para evitar escalonamento (não permitir alterar `role`/`id`).
 
-### 4. Queries
-- Em `src/hooks/queries/index.ts` (ou onde os agendamentos são buscados), incluir `duracao_min` no `select`.
+### 2. `src/hooks/useAdminUsers.ts`
+- Trocar o `update` direto pela invocação `supabase.functions.invoke('admin-update-user', { body: { userId, updates } })`.
+- Retornar a linha atualizada; se vier vazia, lançar erro.
+- `onError` passa a mostrar a mensagem real (`error.message`) no toast.
 
-### 5. Financeiro
-- Sem mudanças. O trigger de receita usa `servicos.preco` / pagamentos detalhados — duração não impacta valor.
+### 3. `src/pages/AdminPage.tsx`
+- `handleExtendAccess` e `handleUnlockForever`: aguardar `mutateAsync` antes de fechar o diálogo / mostrar feedback, garantindo que a UI só confirma após a persistência real.
+- Pequena melhoria visual: mostrar a nova data de expiração no toast de sucesso (ex.: "Acesso liberado até 30/07/2026" / "Acesso liberado para sempre").
 
-## Critérios de aceitação
-- Editar um agendamento e definir duração = 30 min reduz o bloco visual na agenda imediatamente após salvar.
-- Botão "Usar padrão do serviço" restaura o comportamento original (bloco volta ao tamanho do serviço).
-- Mudar o serviço no cadastro não afeta agendamentos com `duracao_min` definido.
-- Cards continuam mostrando o horário fim correto (`HH:mm–HH:mm`).
+### 4. Validação RLS (defensiva)
+Verificar política de UPDATE de `public.profiles`. Caso falte um caminho para admin (`has_role(auth.uid(),'admin')`), a edge function com service role já contorna; nada de política nova exposta ao cliente.
+
+## Validação
+- Abrir painel admin → "Estender prazo" 30 dias em um usuário → recarregar → coluna "Acesso" mostra "Até [data]".
+- "Liberar para sempre" → coluna mostra "Ilimitado".
+- "Bloquear agora" → coluna mostra "Bloqueado".
+- Forçar erro (usuário inexistente) → toast exibe mensagem real, não o genérico.
+
+## Escopo
+Apenas o fluxo de acesso no admin. Sem mudanças em agenda, financeiro, clientes ou auth do app.
