@@ -77,7 +77,7 @@ function expandRecurrence(start: string, type: RecorrenciaTipo, until: string): 
 }
 
 interface ClienteOption { id: string; nome: string; telefone?: string | null; }
-interface ServicoOption { id: string; nome: string; preco: number | null; }
+interface ServicoOption { id: string; nome: string; preco: number | null; duracao?: number | null; }
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
 const allStatuses = ["confirmado", "pendente", "procedimento_a_confirmar", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
