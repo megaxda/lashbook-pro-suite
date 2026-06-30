@@ -298,6 +298,16 @@ export default function AgendamentosTab() {
     const formaResumo = cleanPag.length > 0
       ? cleanPag.map(p => `${p.metodo} R$ ${Number(p.valor).toFixed(2)}`).join(" + ")
       : (editPayment || null);
+    let duracaoMin: number | null = null;
+    if (editDuracao.trim() !== "") {
+      const n = parseInt(editDuracao, 10);
+      if (!Number.isFinite(n) || n < 5 || n > 480) {
+        setSaving(false);
+        toast.error("Duração deve estar entre 5 e 480 minutos.");
+        return;
+      }
+      duracaoMin = n;
+    }
     const payload = {
       status: editStatus,
       forma_pagamento: formaResumo,
@@ -309,6 +319,7 @@ export default function AgendamentosTab() {
       gratuito: editGratuito,
       pagamentos_detalhe: cleanPag as any,
       profissional_id: editProfissionalId || null,
+      duracao_min: duracaoMin,
     };
     const { data: updated, error } = await supabase
       .from("agendamentos")
