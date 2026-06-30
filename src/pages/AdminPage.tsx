@@ -63,38 +63,59 @@ export default function AdminPage() {
     if (mode === "magic-link") setMagicLink(`https://finbeauty.com.br/auth?token=${btoa(user.id).slice(0, 20)}`);
   };
 
-  const handleUpdatePlan = () => {
+  const handleUpdatePlan = async () => {
     if (!selectedUser) return;
-    updateUser.mutate({ id: selectedUser.id, updates: { plano: newPlan } });
-    setDialogMode(null);
+    try {
+      await updateUser.mutateAsync({ id: selectedUser.id, updates: { plano: newPlan } });
+      toast.success(`Plano alterado para ${newPlan}`);
+      setDialogMode(null);
+    } catch {}
   };
 
-  const handleToggleStatus = (user: UserRow) => {
+  const handleToggleStatus = async (user: UserRow) => {
     const currentStatus = user.status_conta || "ativo";
     const next = currentStatus === "ativo" ? "pausado" : "ativo";
-    updateUser.mutate({ id: user.id, updates: { status_conta: next } });
+    try {
+      await updateUser.mutateAsync({ id: user.id, updates: { status_conta: next } });
+      toast.success(next === "ativo" ? "Conta ativada" : "Conta pausada");
+    } catch {}
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (!selectedUser) return;
-    updateUser.mutate({ id: selectedUser.id, updates: editForm });
-    setDialogMode(null);
+    try {
+      await updateUser.mutateAsync({ id: selectedUser.id, updates: editForm });
+      toast.success("Dados atualizados");
+      setDialogMode(null);
+    } catch {}
   };
 
-  const handleExtendAccess = () => {
+  const handleExtendAccess = async () => {
     if (!selectedUser) return;
-    const newDate = new Date(Date.now() + extendDays * 24 * 60 * 60 * 1000).toISOString();
-    updateUser.mutate({ id: selectedUser.id, updates: { access_expires_at: newDate } });
-    setDialogMode(null);
+    const newDate = new Date(Date.now() + extendDays * 24 * 60 * 60 * 1000);
+    try {
+      await updateUser.mutateAsync({
+        id: selectedUser.id,
+        updates: { access_expires_at: newDate.toISOString() },
+      });
+      toast.success(`Acesso liberado até ${newDate.toLocaleDateString("pt-BR")}`);
+      setDialogMode(null);
+    } catch {}
   };
 
-  const handleUnlockForever = (user: UserRow) => {
-    updateUser.mutate({ id: user.id, updates: { access_expires_at: null } });
+  const handleUnlockForever = async (user: UserRow) => {
+    try {
+      await updateUser.mutateAsync({ id: user.id, updates: { access_expires_at: null } });
+      toast.success("Acesso liberado para sempre");
+    } catch {}
   };
 
-  const handleBlockNow = (user: UserRow) => {
+  const handleBlockNow = async (user: UserRow) => {
     const past = new Date(Date.now() - 60 * 1000).toISOString();
-    updateUser.mutate({ id: user.id, updates: { access_expires_at: past } });
+    try {
+      await updateUser.mutateAsync({ id: user.id, updates: { access_expires_at: past } });
+      toast.success("Usuário bloqueado");
+    } catch {}
   };
 
   const copyMagicLink = () => {
