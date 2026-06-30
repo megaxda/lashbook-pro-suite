@@ -717,6 +717,29 @@ export default function AgendamentosTab() {
                     <Label className="text-muted-foreground text-xs">Horário</Label>
                     <Input type="time" value={editHorario} onChange={e => setEditHorario(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
                   </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground text-xs">Duração (min)</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={5}
+                        max={480}
+                        value={editDuracao}
+                        onChange={e => setEditDuracao(e.target.value.replace(/\D/g, ""))}
+                        placeholder={`Padrão do serviço: ${servicos.find(s => s.id === editServicoId)?.duracao ?? 60} min`}
+                        className="bg-secondary border-border min-h-[44px] flex-1"
+                      />
+                      {editDuracao !== "" && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditDuracao("")} className="min-h-[44px]">
+                          Padrão
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Ajuste apenas este agendamento sem alterar o cadastro do serviço.
+                    </p>
+                  </div>
                 </div>
                 {profissionais.filter(p => p.ativo).length > 0 && (
                   <div>
