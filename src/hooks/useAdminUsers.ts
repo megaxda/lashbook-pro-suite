@@ -16,14 +16,22 @@ export function useAdminUsers() {
 
   const updateUser = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const { error } = await supabase.from('profiles').update(updates).eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('admin-update-user', {
+        body: { userId: id, updates },
+      });
+      if (error) {
+        // Try to extract server error message
+        const msg = (data as any)?.error || error.message || 'Erro ao atualizar';
+        throw new Error(msg);
+      }
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if (!(data as any)?.user) throw new Error('Nenhuma linha atualizada');
+      return (data as any).user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuário atualizado');
     },
-    onError: () => toast.error('Erro ao atualizar')
+    onError: (err: any) => toast.error(err?.message || 'Erro ao atualizar'),
   });
 
   return { users, isLoading, updateUser };
