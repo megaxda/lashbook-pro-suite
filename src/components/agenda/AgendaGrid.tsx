@@ -12,6 +12,7 @@ export interface AgendaAppt {
   status: string | null;
   forma_pagamento?: string | null;
   gratuito?: boolean | null;
+  duracao_min?: number | null;
   clientes?: { nome: string } | null;
   servicos?: { nome: string; preco?: number | null; duracao?: number | null } | null;
 }
