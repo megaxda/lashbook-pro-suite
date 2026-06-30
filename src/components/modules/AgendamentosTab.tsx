@@ -34,6 +34,7 @@ interface Agendamento {
   gratuito?: boolean | null;
   pagamentos_detalhe?: PagamentoItem[] | null;
   profissional_id?: string | null;
+  duracao_min?: number | null;
   clientes?: { nome: string } | null; servicos?: { nome: string; preco: number | null; duracao?: number | null } | null;
 }
 interface Bloqueio { id: string; data: string; dia_todo: boolean; hora_inicio: string | null; hora_fim: string | null; motivo: string | null; recorrencia_id?: string | null; }
@@ -76,7 +77,7 @@ function expandRecurrence(start: string, type: RecorrenciaTipo, until: string): 
 }
 
 interface ClienteOption { id: string; nome: string; telefone?: string | null; }
-interface ServicoOption { id: string; nome: string; preco: number | null; }
+interface ServicoOption { id: string; nome: string; preco: number | null; duracao?: number | null; }
 
 const views = ["Lista", "Diário", "Semanal", "Mensal"] as const;
 const allStatuses = ["confirmado", "pendente", "procedimento_a_confirmar", "em_atendimento", "concluido", "cancelado", "no_show", "bloqueio"];
@@ -142,6 +143,7 @@ export default function AgendamentosTab() {
   const [editGratuito, setEditGratuito] = useState(false);
   const [editProfissionalId, setEditProfissionalId] = useState("");
   const [editPagamentos, setEditPagamentos] = useState<PagamentoItem[]>([]);
+  const [editDuracao, setEditDuracao] = useState<string>("");
   const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
@@ -227,6 +229,7 @@ export default function AgendamentosTab() {
     setEditGratuito(!!a.gratuito);
     setEditProfissionalId(a.profissional_id || "");
     setEditPagamentos(Array.isArray(a.pagamentos_detalhe) ? (a.pagamentos_detalhe as PagamentoItem[]) : []);
+    setEditDuracao(a.duracao_min != null ? String(a.duracao_min) : "");
     setComprovanteUrl(null);
     if (a.comprovante_url && !isDemo) {
       const { data } = await supabase.storage.from("comprovantes").createSignedUrl(a.comprovante_url, 600);
@@ -295,6 +298,16 @@ export default function AgendamentosTab() {
     const formaResumo = cleanPag.length > 0
       ? cleanPag.map(p => `${p.metodo} R$ ${Number(p.valor).toFixed(2)}`).join(" + ")
       : (editPayment || null);
+    let duracaoMin: number | null = null;
+    if (editDuracao.trim() !== "") {
+      const n = parseInt(editDuracao, 10);
+      if (!Number.isFinite(n) || n < 5 || n > 480) {
+        setSaving(false);
+        toast.error("Duração deve estar entre 5 e 480 minutos.");
+        return;
+      }
+      duracaoMin = n;
+    }
     const payload = {
       status: editStatus,
       forma_pagamento: formaResumo,
@@ -306,6 +319,7 @@ export default function AgendamentosTab() {
       gratuito: editGratuito,
       pagamentos_detalhe: cleanPag as any,
       profissional_id: editProfissionalId || null,
+      duracao_min: duracaoMin,
     };
     const { data: updated, error } = await supabase
       .from("agendamentos")
@@ -702,6 +716,29 @@ export default function AgendamentosTab() {
                   <div>
                     <Label className="text-muted-foreground text-xs">Horário</Label>
                     <Input type="time" value={editHorario} onChange={e => setEditHorario(e.target.value)} className="bg-secondary border-border mt-1 min-h-[44px]" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground text-xs">Duração (min)</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={5}
+                        max={480}
+                        value={editDuracao}
+                        onChange={e => setEditDuracao(e.target.value.replace(/\D/g, ""))}
+                        placeholder={`Padrão do serviço: ${servicos.find(s => s.id === editServicoId)?.duracao ?? 60} min`}
+                        className="bg-secondary border-border min-h-[44px] flex-1"
+                      />
+                      {editDuracao !== "" && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditDuracao("")} className="min-h-[44px]">
+                          Padrão
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Ajuste apenas este agendamento sem alterar o cadastro do serviço.
+                    </p>
                   </div>
                 </div>
                 {profissionais.filter(p => p.ativo).length > 0 && (

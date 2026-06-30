@@ -20,6 +20,7 @@ export type Database = {
           comprovante_url: string | null
           created_at: string
           data: string
+          duracao_min: number | null
           forma_pagamento: string | null
           gratuito: boolean
           horario: string
@@ -41,6 +42,7 @@ export type Database = {
           comprovante_url?: string | null
           created_at?: string
           data: string
+          duracao_min?: number | null
           forma_pagamento?: string | null
           gratuito?: boolean
           horario: string
@@ -62,6 +64,7 @@ export type Database = {
           comprovante_url?: string | null
           created_at?: string
           data?: string
+          duracao_min?: number | null
           forma_pagamento?: string | null
           gratuito?: boolean
           horario?: string

@@ -116,6 +116,7 @@ export interface AgendamentoRow {
   origem?: string | null;
   profissional_id?: string | null;
   pagamentos_detalhe?: any;
+  duracao_min?: number | null;
   clientes?: { nome: string } | null;
   servicos?: { nome: string; preco: number | null; duracao: number | null } | null;
 }
@@ -130,7 +131,7 @@ export function useAgendamentos(range?: { start?: string; end?: string }) {
       let q = supabase
         .from("agendamentos")
         .select(
-          "id, data, horario, status, gratuito, forma_pagamento, cliente_id, servico_id, user_id, notas, comprovante_url, sinal_pago, origem, profissional_id, pagamentos_detalhe, clientes(nome), servicos(nome, preco, duracao)"
+          "id, data, horario, status, gratuito, forma_pagamento, cliente_id, servico_id, user_id, notas, comprovante_url, sinal_pago, origem, profissional_id, pagamentos_detalhe, duracao_min, clientes(nome), servicos(nome, preco, duracao)"
         )
         .eq("user_id", user!.id)
         .order("data")
