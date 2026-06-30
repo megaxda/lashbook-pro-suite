@@ -1,55 +1,34 @@
-## O que vamos corrigir
+## Objetivo
+Permitir ajustar a duração de um agendamento específico (ex.: atendimento durou menos que o padrão do serviço), sem alterar o cadastro do serviço.
 
-### 1) Bug: marcar "Concluído" + forma de pagamento não persiste
+## Mudanças
 
-**Sintoma confirmado**: ao salvar, o modal fecha mas o status volta para "pendente" na lista.
+### 1. Banco (migration)
+- Adicionar coluna `duracao_min INTEGER NULL` em `public.agendamentos`.
+- Quando preenchida, sobrepõe a duração padrão do serviço apenas naquele agendamento.
+- Sem alterações em RLS/policies (a policy existente já cobre updates do dono).
 
-**Investigação que vou fazer (com logs temporários e leitura direta no banco)**:
-- Logar o payload enviado em `updateAppt` (`AgendamentosTab.tsx` linha 289) e o retorno do `supabase.update(...).select()`.
-- Confirmar via `SELECT` se o status realmente gravou no banco para o agendamento editado. Isso separa dois cenários:
-  - **A)** O update está retornando 0 linhas afetadas (RLS de UPDATE faltando/quebrada, ou `id` errado). Correção: ajustar policy ou o filtro.
-  - **B)** Grava no banco, mas o cache do React Query mostra dado antigo. Correção: trocar `invalidate` por `qc.setQueryData` otimista + `refetchQueries` (await) antes de fechar o modal; e/ou usar `.select().single()` para validar.
-- Verificar se `pagamentos_detalhe` como array vazio não está disparando alguma validação. Vou enviar `null` quando vazio em vez de `[]`.
-- Garantir que o modal só fecha **depois** do refetch concluído (hoje fecha antes), evitando flash com dado stale.
+### 2. Edição no modal (`AgendamentosTab.tsx`)
+- No formulário de editar agendamento, adicionar campo "Duração (min)" com:
+  - Placeholder mostrando a duração padrão do serviço selecionado.
+  - Botão "Usar padrão do serviço" que limpa o override (volta a `null`).
+  - Validação: inteiro entre 5 e 480.
+- Persistir `duracao_min` no update do agendamento.
+- Invalidar cache de agendamentos após salvar (padrão já usado).
 
-**Correções aplicadas independentemente do diagnóstico**:
-- `updateAppt` passa a usar `.update(...).select("id, status, forma_pagamento").single()` e exibe erro real (`error.message`) em vez de toast genérico.
-- Aguardar `await qc.refetchQueries({ queryKey: ["agendamentos", uid] })` antes de `setSelectedAppt(null)`.
-- Normalizar `pagamentos_detalhe`: `cleanPag.length ? cleanPag : null`.
-- Mesmo tratamento aplicado em `createAppt` e `saveBloqueio` para evitar o mesmo bug em outros fluxos.
+### 3. Exibição na agenda (`AgendaGrid.tsx`)
+- Onde hoje calcula `a.servicos?.duracao || 60`, passar a usar `a.duracao_min ?? a.servicos?.duracao ?? 60`.
+- Aplicar em: cálculo de `endStr` no `ApptCard`, `computeHourRange`, posicionamento/altura no `WeeklyGrid` (top/height) e detecção de colisão.
+- Atualizar a interface `AgendaAppt` para incluir `duracao_min?: number | null`.
 
-### 2) Outros bugs que vou varrer no mesmo passe
+### 4. Queries
+- Em `src/hooks/queries/index.ts` (ou onde os agendamentos são buscados), incluir `duracao_min` no `select`.
 
-Vou abrir os módulos críticos e checar padrões similares (modal fecha antes do refetch, `update` sem `.select()`, swallow de erros). Escopo:
-- `AgendamentosTab` (criar, editar, excluir, bloqueio).
-- `FinanceiroTab` (criar/editar/excluir transação — já trocamos o input, mas confirmar persistência).
-- `ClientesTab`, `EstoqueTab`, `ServicosTab` (mesmo padrão de save).
-- `FichasTab` (salvar ficha + baixa de estoque).
+### 5. Financeiro
+- Sem mudanças. O trigger de receita usa `servicos.preco` / pagamentos detalhados — duração não impacta valor.
 
-Para cada bug encontrado: descrevo em uma linha + aplico a correção mínima. Se aparecer algo grande fora do escopo, paro e te aviso antes de mexer.
-
-### 3) Tour do app — redesign "cards bonitos"
-
-Trocar o visual padrão do `react-joyride` por tooltip customizado (`tooltipComponent`), 100% em pt-BR, com a identidade FinBeauty:
-
-- **Card**: fundo `bg-card`, borda azul `border-primary/20`, sombra forte, cantos `rounded-2xl`, largura 360px.
-- **Header**: ícone grande em círculo `bg-primary/10 text-primary` (ex.: `Calendar`, `Users`, `DollarSign` por etapa) + título `text-xl font-bold`.
-- **Ilustração mínima**: faixa decorativa no topo com gradiente `from-primary/15 to-primary/0` (sem imagens externas, mantém performance).
-- **Corpo**: texto curto (2 linhas máx), `text-muted-foreground`.
-- **Rodapé**: barra de progresso `1 de 9`, botão secundário "Pular tour", botão primário "Próximo" (último vira "Concluir"), link discreto "Não mostrar de novo".
-- **Boas-vindas (passo 0)**: card central maior com ilustração SVG inline (ícone do app + sparkles), CTA "Começar tour" / "Agora não".
-- **Textos revisados em pt-BR natural** (sem "Cadastre", "alimenta" etc. corporativo): linguagem direta e amigável, voltada para profissional de estética.
-- **Mobile**: tooltip vira bottom sheet (largura 100%, cantos só no topo), e os passos com `target` de sidebar passam a apontar para o `data-tour` da nav inferior automaticamente.
-- Mantém persistência atual (localStorage + `profiles.onboarding_completed`) e o botão "Refazer tour" em `AccountPage`.
-
-### Arquivos previstos
-
-- `src/components/onboarding/AppTour.tsx` — passa a usar `tooltipComponent` custom + textos reescritos.
-- `src/components/onboarding/TourTooltip.tsx` (novo) — card estilizado.
-- `src/components/modules/AgendamentosTab.tsx` — fix do save (validação + refetch await + erro real).
-- Outros tabs — só se a varredura encontrar o mesmo padrão.
-
-### Fora do escopo
-
-- Não vou refazer o financeiro nem a agenda visualmente. Só correção de bugs encontrados.
-- Não vou adicionar imagens externas no tour (mantém leve).
+## Critérios de aceitação
+- Editar um agendamento e definir duração = 30 min reduz o bloco visual na agenda imediatamente após salvar.
+- Botão "Usar padrão do serviço" restaura o comportamento original (bloco volta ao tamanho do serviço).
+- Mudar o serviço no cadastro não afeta agendamentos com `duracao_min` definido.
+- Cards continuam mostrando o horário fim correto (`HH:mm–HH:mm`).

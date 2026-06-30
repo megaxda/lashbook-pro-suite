@@ -1,0 +1,1 @@
+ALTER TABLE public.agendamentos ADD COLUMN IF NOT EXISTS duracao_min INTEGER NULL;
