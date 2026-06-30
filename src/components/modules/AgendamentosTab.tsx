@@ -229,6 +229,7 @@ export default function AgendamentosTab() {
     setEditGratuito(!!a.gratuito);
     setEditProfissionalId(a.profissional_id || "");
     setEditPagamentos(Array.isArray(a.pagamentos_detalhe) ? (a.pagamentos_detalhe as PagamentoItem[]) : []);
+    setEditDuracao(a.duracao_min != null ? String(a.duracao_min) : "");
     setComprovanteUrl(null);
     if (a.comprovante_url && !isDemo) {
       const { data } = await supabase.storage.from("comprovantes").createSignedUrl(a.comprovante_url, 600);
