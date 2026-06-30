@@ -106,7 +106,7 @@ function computeHourRange(
   appts.forEach((a) => {
     if (!setOfDates.has(a.data)) return;
     const s = toMin((a.horario || "").slice(0, 5));
-    const dur = a.servicos?.duracao || 60;
+    const dur = a.duracao_min ?? a.servicos?.duracao ?? 60;
     if (s < minM) minM = s;
     if (s + dur > maxM) maxM = s + dur;
   });
@@ -139,7 +139,7 @@ function ApptCard({
   const isDone = a.status === "concluido";
   const isCanceled = a.status === "cancelado" || a.status === "no_show";
   const startMin = toMin(a.horario);
-  const dur = a.servicos?.duracao || 60;
+  const dur = a.duracao_min ?? a.servicos?.duracao ?? 60;
   const endStr = fmtMin(startMin + dur);
   const cliente = a.clientes?.nome || "Sem cliente";
   const serv = a.servicos?.nome || "";
@@ -523,12 +523,12 @@ function WeeklyGrid({
                   const clusters: AgendaAppt[][] = [];
                   for (const a of sorted) {
                     const s = toMin(a.horario);
-                    const e = s + (a.servicos?.duracao || 60);
+                    const e = s + (a.duracao_min ?? a.servicos?.duracao ?? 60);
                     const last = clusters[clusters.length - 1];
                     if (last) {
                       const overlapsLast = last.some((x) => {
                         const xs = toMin(x.horario);
-                        const xe = xs + (x.servicos?.duracao || 60);
+                        const xe = xs + (x.duracao_min ?? x.servicos?.duracao ?? 60);
                         return s < xe && e > xs;
                       });
                       if (overlapsLast) { last.push(a); continue; }
@@ -541,7 +541,7 @@ function WeeklyGrid({
                     const assigned: { a: AgendaAppt; col: number }[] = [];
                     for (const a of cluster) {
                       const s = toMin(a.horario);
-                      const e = s + (a.servicos?.duracao || 60);
+                      const e = s + (a.duracao_min ?? a.servicos?.duracao ?? 60);
                       let placed = -1;
                       for (let i = 0; i < cols.length; i++) {
                         if (cols[i].end <= s) { cols[i] = { end: e }; placed = i; break; }
@@ -552,7 +552,7 @@ function WeeklyGrid({
                     const total = cols.length;
                     for (const { a, col } of assigned) {
                       const startMin = toMin(a.horario);
-                      const dur = a.servicos?.duracao || 60;
+                      const dur = a.duracao_min ?? a.servicos?.duracao ?? 60;
                       const top = ((startMin - startHour * 60) / 60) * hourHeight;
                       const height = Math.max(22, (dur / 60) * hourHeight - 2);
                       laid.push({ a, top, height, col, cols: total });
