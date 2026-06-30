@@ -143,6 +143,7 @@ export default function AgendamentosTab() {
   const [editGratuito, setEditGratuito] = useState(false);
   const [editProfissionalId, setEditProfissionalId] = useState("");
   const [editPagamentos, setEditPagamentos] = useState<PagamentoItem[]>([]);
+  const [editDuracao, setEditDuracao] = useState<string>("");
   const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
