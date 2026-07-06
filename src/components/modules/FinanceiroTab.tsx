@@ -87,6 +87,16 @@ export default function FinanceiroTab() {
   const { user, isDemo } = useAuth();
   const invalidate = useInvalidate();
 
+  const [mode, setMode] = useState<"negocio" | "pessoal">(() => {
+    if (typeof window === "undefined") return "negocio";
+    return (window.localStorage.getItem("fin_mode") as "negocio" | "pessoal") || "negocio";
+  });
+  const changeMode = (m: "negocio" | "pessoal") => {
+    setMode(m);
+    if (typeof window !== "undefined") window.localStorage.setItem("fin_mode", m);
+  };
+
+
   // Compartilhado via cache. Mesma queryKey usada pelo Dashboard.
   const { data: txRaw = [], isLoading: lT } = useFinanceiro();
   const { data: apptsRaw = [], isLoading: lA } = useAgendamentos();
