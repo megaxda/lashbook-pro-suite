@@ -144,11 +144,11 @@ export default function FinanceiroPessoalPanel() {
   useEffect(() => { setTablePage(1); }, [tableType, tableCat, tableSearch, tableSort, period, custom]);
 
   const openNew = (tipo: "receita" | "despesa") => {
-    setForm({ tipo, descricao: "", valor: "", data: localDateStr(), categoria: "", forma_pagamento: "", notas: "" });
+    setForm({ tipo, descricao: "", valor: 0, data: localDateStr(), categoria: "", forma_pagamento: "", notas: "" });
     setDialogOpen(true);
   };
   const openEdit = (t: TxPessoal) => {
-    setForm({ id: t.id, tipo: t.tipo, descricao: t.descricao || "", valor: String(t.valor), data: t.data, categoria: t.categoria || "", forma_pagamento: t.forma_pagamento || "", notas: t.notas || "" });
+    setForm({ id: t.id, tipo: t.tipo, descricao: t.descricao || "", valor: Number(t.valor), data: t.data, categoria: t.categoria || "", forma_pagamento: t.forma_pagamento || "", notas: t.notas || "" });
     setDialogOpen(true);
   };
 
