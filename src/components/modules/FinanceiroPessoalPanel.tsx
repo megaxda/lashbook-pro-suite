@@ -425,7 +425,7 @@ export default function FinanceiroPessoalPanel() {
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Valor</Label>
-              <CurrencyInputBRL value={form.valor} onChange={v => setForm({ ...form, valor: v })} className="bg-secondary border-border mt-1 min-h-[40px]" />
+              <CurrencyInputBRL value={form.valor} onValueChange={v => setForm({ ...form, valor: v })} className="mt-1" />
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Data</Label>
