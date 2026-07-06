@@ -337,6 +337,27 @@ export default function FinanceiroTab() {
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h2>
+        <div className="flex bg-secondary rounded-lg p-0.5">
+          <button
+            onClick={() => changeMode("negocio")}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              mode === "negocio" ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          >
+            <Briefcase className="w-3.5 h-3.5" /> Negócio
+          </button>
+          <button
+            onClick={() => changeMode("pessoal")}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              mode === "pessoal" ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          >
+            <Wallet className="w-3.5 h-3.5" /> Pessoal
+          </button>
+        </div>
+      </div>
+
+      {mode === "pessoal" ? <FinanceiroPessoalPanel /> : (
+      <>
+      <div className="flex items-center justify-end flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={exportCSV}>
             <Download className="w-3.5 h-3.5" /> CSV
@@ -346,6 +367,7 @@ export default function FinanceiroTab() {
           </Button>
         </div>
       </div>
+
 
       {/* Seletor de período */}
       <div className="flex items-center gap-2 flex-wrap">
