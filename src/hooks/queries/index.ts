@@ -189,6 +189,32 @@ export function useFinanceiro(range?: { start?: string; end?: string }) {
   });
 }
 
+export function useFinanceiroPessoal(range?: { start?: string; end?: string }) {
+  const { user, isDemo } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.financeiroPessoal(user?.id ?? "anon", range),
+    enabled: enabled(user),
+    queryFn: async () => {
+      if (isDemo) {
+        let list = demoFinanceiroPessoal as any[];
+        if (range?.start) list = list.filter((t) => t.data >= range.start!);
+        if (range?.end) list = list.filter((t) => t.data <= range.end!);
+        return list;
+      }
+      let q = supabase
+        .from("financeiro_pessoal" as any)
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("data", { ascending: false });
+      if (range?.start) q = q.gte("data", range.start);
+      if (range?.end) q = q.lte("data", range.end);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useFichas() {
   const { user, isDemo } = useAuth();
   return useQuery({
