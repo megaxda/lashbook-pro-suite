@@ -253,6 +253,7 @@ export function useInvalidate() {
         | "agendamentos"
         | "bloqueios"
         | "financeiro"
+        | "financeiroPessoal"
         | "fichas"
         | "followUps"
       >
