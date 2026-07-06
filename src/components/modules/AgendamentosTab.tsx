@@ -693,9 +693,10 @@ export default function AgendamentosTab() {
                   </SelectContent>
                 </Select>
                 {newForm.recorrencia !== "unica" && (
-                  <Input type="date" value={newForm.repetir_ate} min={newForm.data} onChange={e => setNewForm({ ...newForm, repetir_ate: e.target.value })} placeholder="Repetir até" className="bg-secondary border-border min-h-[40px]" />
+                  <Input type="date" value={newForm.repetir_ate} min={newForm.data} onChange={e => { setNewForm({ ...newForm, repetir_ate: e.target.value }); clearErr("repetir_ate"); }} placeholder="Repetir até" aria-invalid={!!newErrors.repetir_ate} className={cn("bg-secondary border-border min-h-[40px]", newErrors.repetir_ate && "border-destructive")} />
                 )}
               </div>
+              {newErrors.repetir_ate && <p role="alert" className="text-xs text-destructive mt-1">{newErrors.repetir_ate}</p>}
             </div>
             <div className="col-span-2"><Label className="text-muted-foreground text-xs">Observações</Label><Input value={newForm.notas} onChange={e => setNewForm({ ...newForm, notas: e.target.value })} placeholder="Observações..." className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
           </div>
