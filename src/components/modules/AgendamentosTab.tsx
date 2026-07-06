@@ -615,32 +615,47 @@ export default function AgendamentosTab() {
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="bg-card border-border w-full max-w-md max-h-[90vh] overflow-y-auto sm:rounded-lg sm:w-auto sm:max-h-[85vh] rounded-none h-screen sm:h-auto">
           <DialogHeader><DialogTitle className="text-foreground">Novo Agendamento</DialogTitle></DialogHeader>
+          {Object.keys(newErrors).length > 0 && (
+            <div role="alert" className="rounded-md bg-destructive/10 text-destructive p-3 text-xs border border-destructive/30">
+              Corrija os campos destacados abaixo antes de salvar.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 mt-2">
             <div className="col-span-2">
               <div className="flex items-center justify-between">
-                <Label className="text-muted-foreground text-xs">Cliente</Label>
+                <Label className="text-muted-foreground text-xs">Cliente *</Label>
                 <Button size="sm" variant="ghost" className="text-primary text-xs h-7 px-2" onClick={() => setNewClientOpen(true)}>
                   <Plus className="w-3 h-3 mr-0.5" /> Novo Cliente
                 </Button>
               </div>
-              <div className="mt-1">
-                <ClientCombobox clients={clients} value={newForm.cliente_id} onChange={v => setNewForm({ ...newForm, cliente_id: v })} />
+              <div className={cn("mt-1", newErrors.cliente_id && "ring-1 ring-destructive rounded-md")} aria-invalid={!!newErrors.cliente_id}>
+                <ClientCombobox clients={clients} value={newForm.cliente_id} onChange={v => { setNewForm({ ...newForm, cliente_id: v }); clearErr("cliente_id"); }} />
               </div>
+              {newErrors.cliente_id && <p role="alert" className="text-xs text-destructive mt-1">{newErrors.cliente_id}</p>}
             </div>
-            <div><Label className="text-muted-foreground text-xs">Data</Label><Input type="date" value={newForm.data} onChange={e => setNewForm({ ...newForm, data: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
-            <div><Label className="text-muted-foreground text-xs">Horário</Label><Input type="time" value={newForm.horario} onChange={e => setNewForm({ ...newForm, horario: e.target.value })} className="bg-secondary border-border mt-1 min-h-[44px]" /></div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Data *</Label>
+              <Input type="date" value={newForm.data} onChange={e => { setNewForm({ ...newForm, data: e.target.value }); clearErr("data"); }} aria-invalid={!!newErrors.data} className={cn("bg-secondary border-border mt-1 min-h-[44px]", newErrors.data && "border-destructive")} />
+              {newErrors.data && <p role="alert" className="text-xs text-destructive mt-1">{newErrors.data}</p>}
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Horário *</Label>
+              <Input type="time" value={newForm.horario} onChange={e => { setNewForm({ ...newForm, horario: e.target.value }); clearErr("horario"); }} aria-invalid={!!newErrors.horario} className={cn("bg-secondary border-border mt-1 min-h-[44px]", newErrors.horario && "border-destructive")} />
+              {newErrors.horario && <p role="alert" className="text-xs text-destructive mt-1">{newErrors.horario}</p>}
+            </div>
             <div className="col-span-2">
-              <Label className="text-muted-foreground text-xs">Serviço</Label>
-              <Select value={newForm.servico_id} onValueChange={v => setNewForm({ ...newForm, servico_id: v })} onOpenChange={open => { if (open) handleServiceClick(); }}>
-                <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+              <Label className="text-muted-foreground text-xs">Serviço *</Label>
+              <Select value={newForm.servico_id} onValueChange={v => { setNewForm({ ...newForm, servico_id: v }); clearErr("servico_id"); }} onOpenChange={open => { if (open) handleServiceClick(); }}>
+                <SelectTrigger aria-invalid={!!newErrors.servico_id} className={cn("bg-secondary border-border mt-1 min-h-[44px]", newErrors.servico_id && "border-destructive")}><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent className="bg-card border-border">{servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} - R$ {s.preco || 0}</SelectItem>)}</SelectContent>
               </Select>
+              {newErrors.servico_id && <p role="alert" className="text-xs text-destructive mt-1">{newErrors.servico_id}</p>}
             </div>
             {profissionais.filter(p => p.ativo).length > 0 && (
               <div className="col-span-2">
                 <Label className="text-muted-foreground text-xs">Profissional *</Label>
-                <Select value={newForm.profissional_id} onValueChange={v => setNewForm({ ...newForm, profissional_id: v })}>
-                  <SelectTrigger className="bg-secondary border-border mt-1 min-h-[44px]"><SelectValue placeholder="Selecione a profissional..." /></SelectTrigger>
+                <Select value={newForm.profissional_id} onValueChange={v => { setNewForm({ ...newForm, profissional_id: v }); clearErr("profissional_id"); }}>
+                  <SelectTrigger aria-invalid={!!newErrors.profissional_id} className={cn("bg-secondary border-border mt-1 min-h-[44px]", newErrors.profissional_id && "border-destructive")}><SelectValue placeholder="Selecione a profissional..." /></SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {profissionais.filter(p => p.ativo).map(p => (
                       <SelectItem key={p.id} value={p.id}>
@@ -652,6 +667,7 @@ export default function AgendamentosTab() {
                     ))}
                   </SelectContent>
                 </Select>
+                {newErrors.profissional_id && <p role="alert" className="text-xs text-destructive mt-1">{newErrors.profissional_id}</p>}
               </div>
             )}
             <div><Label className="text-muted-foreground text-xs">Pagamento</Label>
