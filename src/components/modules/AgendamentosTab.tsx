@@ -149,6 +149,8 @@ export default function AgendamentosTab() {
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica" as RecorrenciaTipo, repetir_ate: "" });
+  const [newErrors, setNewErrors] = useState<Record<string, string>>({});
+  const clearErr = (k: string) => setNewErrors(e => { if (!e[k]) return e; const n = { ...e }; delete n[k]; return n; });
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
