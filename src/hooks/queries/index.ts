@@ -21,6 +21,7 @@ import {
   demoEstoque,
   demoAgendamentos,
   demoFinanceiro,
+  demoFinanceiroPessoal,
 } from "@/data/demoData";
 
 const enabled = (user: { id: string } | null) => !!user;
