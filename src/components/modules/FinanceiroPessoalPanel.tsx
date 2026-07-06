@@ -82,8 +82,8 @@ export default function FinanceiroPessoalPanel() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<{ id?: string; tipo: "receita" | "despesa"; descricao: string; valor: string; data: string; categoria: string; forma_pagamento: string; notas: string }>(
-    { tipo: "despesa", descricao: "", valor: "", data: localDateStr(), categoria: "", forma_pagamento: "", notas: "" }
+  const [form, setForm] = useState<{ id?: string; tipo: "receita" | "despesa"; descricao: string; valor: number; data: string; categoria: string; forma_pagamento: string; notas: string }>(
+    { tipo: "despesa", descricao: "", valor: 0, data: localDateStr(), categoria: "", forma_pagamento: "", notas: "" }
   );
   const [deleting, setDeleting] = useState<TxPessoal | null>(null);
 
