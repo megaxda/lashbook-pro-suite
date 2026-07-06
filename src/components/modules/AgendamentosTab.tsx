@@ -612,7 +612,7 @@ export default function AgendamentosTab() {
       </button>
 
       {/* New appointment */}
-      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+      <Dialog open={newOpen} onOpenChange={(o) => { setNewOpen(o); if (!o) setNewErrors({}); }}>
         <DialogContent className="bg-card border-border w-full max-w-md max-h-[90vh] overflow-y-auto sm:rounded-lg sm:w-auto sm:max-h-[85vh] rounded-none h-screen sm:h-auto">
           <DialogHeader><DialogTitle className="text-foreground">Novo Agendamento</DialogTitle></DialogHeader>
           {Object.keys(newErrors).length > 0 && (
