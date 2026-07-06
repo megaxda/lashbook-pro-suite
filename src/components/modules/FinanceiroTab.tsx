@@ -665,6 +665,8 @@ export default function FinanceiroTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
+      )}
     </div>
   );
 }
