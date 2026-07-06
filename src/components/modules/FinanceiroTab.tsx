@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { localDateStr, parseDateStr, formatBR, addDays } from "@/lib/dateUtils";
 import { matchAllTokens } from "@/lib/searchUtils";
+import FinanceiroPessoalPanel from "./FinanceiroPessoalPanel";
+import { Wallet, Briefcase } from "lucide-react";
 
 interface Transacao {
   id: string;
@@ -84,6 +86,16 @@ const CHART_COLORS = ["hsl(142,71%,45%)", "hsl(0,76%,52%)", "hsl(217,91%,60%)", 
 export default function FinanceiroTab() {
   const { user, isDemo } = useAuth();
   const invalidate = useInvalidate();
+
+  const [mode, setMode] = useState<"negocio" | "pessoal">(() => {
+    if (typeof window === "undefined") return "negocio";
+    return (window.localStorage.getItem("fin_mode") as "negocio" | "pessoal") || "negocio";
+  });
+  const changeMode = (m: "negocio" | "pessoal") => {
+    setMode(m);
+    if (typeof window !== "undefined") window.localStorage.setItem("fin_mode", m);
+  };
+
 
   // Compartilhado via cache. Mesma queryKey usada pelo Dashboard.
   const { data: txRaw = [], isLoading: lT } = useFinanceiro();
@@ -325,6 +337,27 @@ export default function FinanceiroTab() {
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h2>
+        <div className="flex bg-secondary rounded-lg p-0.5">
+          <button
+            onClick={() => changeMode("negocio")}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              mode === "negocio" ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          >
+            <Briefcase className="w-3.5 h-3.5" /> Negócio
+          </button>
+          <button
+            onClick={() => changeMode("pessoal")}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              mode === "pessoal" ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+          >
+            <Wallet className="w-3.5 h-3.5" /> Pessoal
+          </button>
+        </div>
+      </div>
+
+      {mode === "pessoal" ? <FinanceiroPessoalPanel /> : (
+      <>
+      <div className="flex items-center justify-end flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={exportCSV}>
             <Download className="w-3.5 h-3.5" /> CSV
@@ -334,6 +367,7 @@ export default function FinanceiroTab() {
           </Button>
         </div>
       </div>
+
 
       {/* Seletor de período */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -631,6 +665,8 @@ export default function FinanceiroTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
+      )}
     </div>
   );
 }

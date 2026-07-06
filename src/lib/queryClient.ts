@@ -39,6 +39,8 @@ export const queryKeys = {
   bloqueios: (userId: string) => ["bloqueios", userId] as const,
   financeiro: (userId: string, range?: { start?: string; end?: string }) =>
     ["financeiro", userId, range ?? {}] as const,
+  financeiroPessoal: (userId: string, range?: { start?: string; end?: string }) =>
+    ["financeiroPessoal", userId, range ?? {}] as const,
   fichas: (userId: string) => ["fichas", userId] as const,
   followUps: (userId: string) => ["followUps", userId] as const,
 };
