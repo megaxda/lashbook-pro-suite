@@ -255,13 +255,22 @@ export default function AgendamentosTab() {
   const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
 
   const createAppt = async () => {
-    if (!newForm.data || !newForm.horario) { toast.error("Data e horário são obrigatórios"); return; }
+    // Validação com mensagens acessíveis por campo
+    const errs: Record<string, string> = {};
+    if (!newForm.cliente_id) errs.cliente_id = "Selecione uma cliente ou cadastre uma nova.";
+    if (!newForm.servico_id) errs.servico_id = "Selecione o serviço.";
+    if (!newForm.data) errs.data = "Informe a data.";
+    if (!newForm.horario) errs.horario = "Informe o horário.";
     const activeProfs = profissionais.filter(p => p.ativo);
     if (activeProfs.length > 0 && !newForm.profissional_id) {
-      toast.error("Selecione a profissional");
+      errs.profissional_id = "Selecione a profissional.";
+    }
+    if (newForm.recorrencia !== "unica" && !newForm.repetir_ate) errs.repetir_ate = "Informe até quando repetir.";
+    setNewErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      toast.error("Preencha os campos obrigatórios");
       return;
     }
-    if (newForm.recorrencia !== "unica" && !newForm.repetir_ate) { toast.error("Informe até quando repetir"); return; }
     if (isSlotBlocked(newForm.data, newForm.horario)) { toast.error("Este horário está bloqueado na sua agenda."); return; }
     if (demoBlock()) { setNewOpen(false); resetNewForm(); return; }
     if (!user) return;
