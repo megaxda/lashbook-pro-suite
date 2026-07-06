@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { localDateStr, parseDateStr, formatBR, addDays } from "@/lib/dateUtils";
 import { matchAllTokens } from "@/lib/searchUtils";
+import FinanceiroPessoalPanel from "./FinanceiroPessoalPanel";
+import { Wallet, Briefcase } from "lucide-react";
 
 interface Transacao {
   id: string;
