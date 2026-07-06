@@ -252,7 +252,7 @@ export default function AgendamentosTab() {
     });
   };
 
-  const resetNewForm = () => setNewForm({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" });
+  const resetNewForm = () => { setNewForm({ cliente_id: "", servico_id: "", profissional_id: "", data: "", horario: "", notas: "", forma_pagamento: "", gratuito: false, recorrencia: "unica", repetir_ate: "" }); setNewErrors({}); };
 
   const createAppt = async () => {
     // Validação com mensagens acessíveis por campo
