@@ -1,112 +1,60 @@
-# Plano — Finanças Pessoais + Validação Novo Agendamento
+# Plano — Documentação Completa do FinBeauty
 
-## Parte 1 — Sub-aba "Finanças Pessoais" dentro do Financeiro
+## Objetivo
+Criar um documento único, detalhado e navegável descrevendo tudo o que o app faz hoje: propósito, público, arquitetura, módulos, rotinas de uso, regras de negócio, padrão de design, segurança e operação. Serve como material de referência interna, onboarding de novos usuários/colaboradores e apresentação institucional.
 
-**Objetivo:** dar ao usuário um espaço para lançar receitas e despesas da vida pessoal (salário, mercado, aluguel, lazer) totalmente separadas do fluxo do negócio, sem poluir os relatórios do studio.
+## Entregáveis
 
-### 1.1 Banco de dados (nova tabela)
+1. `docs/FinBeauty-Documentacao-Completa.md` — versão markdown (fonte da verdade, fácil de manter e versionar).
+2. `docs/FinBeauty-Documentacao-Completa.docx` — versão formatada para leitura/impressão/compartilhamento, gerada a partir do markdown com a skill `docx` (capa, sumário, títulos hierárquicos, tabelas, tipografia legível).
+3. `docs/README.md` curto apontando para os dois arquivos acima.
 
-Nova tabela `public.financeiro_pessoal` — igual em estrutura à `financeiro`, mas sem `agendamento_id` / `profissional_id`, com categorias próprias.
+Ambos ficam dentro do repositório, na pasta `docs/`, sem afetar build ou runtime.
 
-Campos de negócio: `tipo` (`receita` | `despesa`), `descricao`, `valor`, `data`, `categoria`, `forma_pagamento` (opcional), `notas` (opcional).
+## Estrutura do documento
 
-RLS: usuário só vê/edita os próprios lançamentos (`user_id = auth.uid()`). GRANTs para `authenticated` e `service_role`.
+1. **Capa e identidade** — Nome, versão (6.0.0), tagline, data, público-alvo (estúdios de lash design / salões de beleza).
+2. **Visão geral do produto** — O que é, problema que resolve, diferenciais (gestão financeira + agenda + link de bio + fichas + estoque em um só lugar).
+3. **Personas e jornada** — Profissional autônoma, dona de estúdio, cliente final agendando via link público, admin da plataforma.
+4. **Rotina diária do usuário** — Passo a passo típico: abrir Início → conferir agenda do dia → concluir atendimentos (dispara receita) → responder novos agendamentos do link da bio → dar baixa em estoque → revisar Financeiro no fim do dia/semana.
+5. **Módulos e funcionalidades** (uma seção por módulo, com o que faz, campos, ações, regras):
+   - Autenticação e onboarding (cadastro, login, tour guiado, modo demo).
+   - Início / Dashboard (KPIs, mini-agenda, atalhos).
+   - Agendamentos (grid Google-like, views Dia/Semana/Mês, cores por status, blocos de indisponibilidade, recorrência, duração customizada por agendamento, colisão em colunas).
+   - Clientes (chips de filtro, busca multi-token, drawer com histórico e estatísticas, WhatsApp).
+   - Financeiro — modo Negócio (KPIs com trend, gráfico composto, tabela unificada, origem Agendamento/Manual, exportação CSV, comparativo 6 meses, sinal + comprovante PIX).
+   - Financeiro — modo Pessoal (aba separada, categorias próprias, CSV isolado).
+   - Estoque (alertas, reposição sugerida, baixa via ficha).
+   - Serviços (cadastro, duração, valor, ativos/inativos).
+   - Fichas / Anamnese (wizard, assinatura, fotos antes/depois, PDF, baixa de estoque).
+   - Equipe / Multi-profissional (cadastro, cor, filtro na agenda, vínculo em agendamento e receita).
+   - Link da Bio pública `/u/:slug` (fluxo em 4 etapas, upload de comprovante, validações).
+   - Conta / Configurações (perfil, PIX, horário de funcionamento, follow-up, refazer tour).
+   - Painel Admin (gestão de usuários, prazo/liberação, criação de usuários, push, analytics básico).
+   - Página de Confiança (`/trust`).
+   - Notificações Push (VAPID, service worker).
+6. **Regras de negócio-chave** — Trigger de conclusão → receita, RLS por `user_id`, bloqueio por `access_expires_at`, papéis via tabela `user_roles`, isolamento total Negócio × Pessoal, sinal + comprovante.
+7. **Padrão de design** — Tema claro fixo, cor primária `#bd1a1b` (vermelho), tokens semânticos em `index.css`, tipografia, componentes shadcn, layout responsivo (sidebar desktop / bottom nav mobile), estados de status coloridos (verde/azul/amarelo/vermelho/roxo/rosa), tour com cards estilizados, moeda pt-BR em inputs.
+8. **Arquitetura técnica (resumida, sem jargão desnecessário)** — React + Vite + TS + Tailwind + shadcn + React Query + Recharts + @dnd-kit; backend Lovable Cloud (Auth, Postgres com RLS, Storage, Edge Functions); caching com React Query + prefetch pós-login; validação com Zod; navegação por `?tab=`.
+9. **Segurança e privacidade** — RLS em todas as tabelas, GRANTs explícitos, funções `SECURITY DEFINER` para acesso público controlado (`get_public_profissionais_by_slug`, `get_public_profile_by_slug`), edge function `cleanup-comprovantes` protegida por header secreto, HIBP habilitado, geração segura de senha no admin, bloqueio a nível de banco por expiração de conta, ausência de admin hardcoded.
+10. **Operação e manutenção** — Modo demo, backups (via plataforma), como estender o prazo de um usuário, como reprocessar receita perdida, como refazer o tour.
+11. **Roadmap curto (opcional)** — Espaço para próximos passos combinados.
+12. **Glossário** — Sinal, comprovante, follow-up, recorrência, colisão, bloco de agenda, ficha, anamnese.
 
-### 1.2 Interface — toggle "Negócio | Pessoal"
+## Como será construído
 
-Na tela `FinanceiroTab`, adicionar um segmented control no topo (logo abaixo do título) com dois modos:
+- Fonte primária: os próprios arquivos do projeto (memórias em `.lovable/memory/*`, componentes em `src/components/modules/*`, hooks, edge functions, migrations recentes). Nada será inventado — cada seção descreve comportamento já existente no código.
+- Markdown escrito com títulos H1–H3, listas, tabelas para módulos × ações, blocos de código só onde agregam (ex.: exemplos de status, formato de CSV).
+- .docx gerado pela skill `docx` com:
+  - Capa (título grande, subtítulo, versão, data).
+  - Sumário automático (TOC baseado em Heading 1–3).
+  - Cabeçalhos e rodapés com número de página.
+  - Tabelas com bordas claras e sombreamento leve para cabeçalho.
+  - Fonte Arial 11pt, títulos em vermelho `#bd1a1b` para reforçar identidade.
+  - Validação obrigatória do .docx após geração.
 
-- **Negócio** (padrão): comportamento atual, intacto. Todos os gráficos, KPIs, tabela unificada e exportação continuam idênticos.
-- **Pessoal**: renderiza uma versão enxuta focada em controle pessoal.
+## Fora de escopo
 
-O modo escolhido fica em `useState` + `localStorage` (`fin_mode`) para persistir entre sessões.
-
-### 1.3 Modo Pessoal — o que aparece
-
-Layout simples e distinto do modo negócio para deixar claro que é outro contexto:
-
-- Seletor de período reutilizado (Hoje / 7 dias / Mês / Mês anterior / Personalizado).
-- 3 KPIs: **Entradas**, **Saídas**, **Saldo** do período.
-- Gráfico único: barras Entradas vs Saídas por dia.
-- Despesas por categoria (mesma PieChart, categorias pessoais).
-- Tabela de lançamentos com filtros (tipo, categoria, busca) e paginação 20/pág.
-- Botões **+ Nova entrada** e **+ Nova saída** abrem modal simples (descrição, valor, data, categoria, forma pagamento, notas).
-- Categorias pessoais padrão sugeridas no select: Salário, Investimentos, Outros (receita) · Alimentação, Moradia, Transporte, Saúde, Educação, Lazer, Compras, Outros (despesa). Usuário pode digitar categoria livre.
-- Exportação CSV do modo pessoal separada (arquivo `financas-pessoais-YYYY-MM-DD.csv`).
-
-### 1.4 Isolamento total
-
-- Consultas do modo Negócio **nunca** leem `financeiro_pessoal`.
-- Consultas do modo Pessoal **nunca** leem `financeiro`.
-- Nada de lançamento pessoal aparece em Dashboard, comparativo 6 meses ou relatórios do negócio.
-
-### 1.5 Modo Demo
-
-Adicionar dados demo pessoais em `src/data/demoData.ts` (5–8 lançamentos) para o modo Pessoal funcionar quando o Modo Demo está ativo.
-
----
-
-## Parte 2 — Bug #3: Validação visível no modal Novo Agendamento
-
-**Sintoma:** ao clicar em Salvar sem cliente/serviço/data válidos, o modal continua aberto sem nenhuma mensagem de erro visível nem semântica acessível.
-
-### O que corrigir em `AgendamentosTab.tsx` (modal de criação/edição de agendamento)
-
-1. Antes do `mutate`, rodar validação com **zod** dos campos obrigatórios: `cliente_id`, `servico_id`, `data`, `horario`.
-2. Guardar erros em `useState<Record<string,string>>({})` e limpar ao editar cada campo.
-3. Para cada campo com erro:
-   - Adicionar `aria-invalid="true"` no `Input`/`Select`/`ClientCombobox`.
-   - Renderizar `<p role="alert" className="text-sm text-destructive mt-1">{msg}</p>` logo abaixo.
-   - Aplicar borda vermelha (`border-destructive`) quando inválido.
-4. Se houver ao menos 1 erro, exibir também um bloco no topo do modal: `<div role="alert" className="rounded-md bg-destructive/10 text-destructive p-3 text-sm">Corrija os campos destacados antes de salvar.</div>`.
-5. Toast `toast.error("Preencha os campos obrigatórios")` mantido como reforço.
-6. `ClientCombobox`: quando a busca não retorna cliente, mostrar mensagem visível "Nenhuma cliente encontrada — cadastre uma nova" dentro do popover (verificar se já existe; se não, adicionar).
-
-### Nada mais é tocado
-
-- Lógica de mutation, `updateAppt`, criação recorrente, edição de duração — tudo permanece.
-- Fluxo de "Concluir" agendamento (bug já corrigido em turno anterior) intacto.
-
----
-
-## Itens do relatório NÃO incluídos (justificativa)
-
-Conforme sua resposta, são problemas de dados do ambiente de teste e não bugs reais do app — nenhuma mudança de código faria sentido:
-
-- **#1** `Lash Fill` inexistente: o serviço simplesmente não estava cadastrado nesse tenant.
-- **#2** Pedicure R$60 sem lançamento: o agendamento provavelmente não estava com status `concluido`; o trigger `auto_create_receita_on_concluido` só dispara na conclusão.
-- **#4** Empty state Agendamentos: o tenant tinha 5 agendamentos, então a tela correta a mostrar é o grid, não o empty state (que já existe no código para lista realmente vazia).
-- **#5** Empty state Clientes: idem — o tenant tinha 7 clientes.
-
----
-
-## Detalhes técnicos (para referência)
-
-**Migration SQL (resumo):**
-
-```text
-CREATE TABLE public.financeiro_pessoal (
-  id uuid PK, user_id uuid FK auth.users,
-  tipo text CHECK IN ('receita','despesa'),
-  descricao text, valor numeric NOT NULL,
-  data date NOT NULL, categoria text,
-  forma_pagamento text, notas text,
-  created_at, updated_at
-);
-GRANT SELECT,INSERT,UPDATE,DELETE ON financeiro_pessoal TO authenticated;
-GRANT ALL ON financeiro_pessoal TO service_role;
-ALTER TABLE ... ENABLE ROW LEVEL SECURITY;
-CREATE POLICY user_own ON financeiro_pessoal FOR ALL
-  USING (auth.uid()=user_id) WITH CHECK (auth.uid()=user_id);
-+ trigger update_updated_at.
-```
-
-**Arquivos afetados:**
-- `supabase/migrations/*` (nova migration)
-- `src/hooks/queries/index.ts` (novo hook `useFinanceiroPessoal` + queryKey)
-- `src/lib/queryClient.ts` (chave `financeiroPessoal`)
-- `src/components/modules/FinanceiroTab.tsx` (toggle + branch modo pessoal — pode extrair sub-componente `FinanceiroPessoalPanel.tsx` para manter arquivo legível)
-- Novo `src/components/modules/FinanceiroPessoalPanel.tsx`
-- `src/data/demoData.ts` (dados demo pessoais)
-- `src/components/modules/AgendamentosTab.tsx` (validação zod + mensagens acessíveis)
-- `src/integrations/supabase/types.ts` (regen automático após migration)
+- Nenhuma mudança em código do app, banco, migrations, RLS ou UI.
+- Não gera capturas de tela automáticas (podem ser adicionadas manualmente depois se quiser).
+- Não altera memórias existentes.
