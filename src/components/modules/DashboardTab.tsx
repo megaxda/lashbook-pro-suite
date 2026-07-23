@@ -279,44 +279,42 @@ export default function DashboardTab() {
           ? apptCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
           : apptCursor.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
 
+        const effectiveView: AgendaView = isMobile ? "Diário" : apptView;
         return (
-          <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Agendamentos</h3>
+          <div className="bg-card rounded-card p-4 sm:p-5 border border-border/70 shadow-ios-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h3 className="ios-headline text-foreground">Agendamentos</h3>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                <div className="ios-segmented hidden sm:inline-flex">
                   {apptViews.map(v => (
                     <button
                       key={v}
                       onClick={() => setView(v)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                        apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                      )}
+                      data-active={apptView === v}
                     >
                       {v}
                     </button>
                   ))}
                 </div>
-                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
+                <Button size="sm" variant="outline" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
                   Bloquear
                 </Button>
-                <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs min-h-[36px]" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Novo
+                <Button size="sm" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
+                  <Plus className="w-4 h-4" /> Novo
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-3">
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(-1)}><ChevronLeft className="w-4 h-4" /></Button>
-              <span className="text-xs sm:text-sm font-medium text-foreground capitalize text-center flex-1">{headerLabel}</span>
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
+            <div className="flex items-center justify-between mb-4">
+              <Button size="icon" variant="ghost" aria-label="Período anterior" onClick={() => navPeriod(-1)}><ChevronLeft className="w-5 h-5" /></Button>
+              <span className="ios-callout text-foreground capitalize text-center flex-1">{headerLabel}</span>
+              <Button size="icon" variant="ghost" aria-label="Próximo período" onClick={() => navPeriod(1)}><ChevronRight className="w-5 h-5" /></Button>
             </div>
 
             <div className="mb-3"><StatusLegend /></div>
 
             <AgendaGrid
-              view={apptView}
+              view={effectiveView}
               cursor={apptCursor}
               appointments={appointments}
               bloqueios={bloqueios}
