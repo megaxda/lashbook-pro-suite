@@ -2,10 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+/* ============================================================
+   FinBeauty — Design tokens
+   Cores: IMUTÁVEIS. Não editar HSL abaixo.
+   Ajustes visuais devem ocorrer via tipografia, espaçamento,
+   raios, sombras, hierarquia e layout.
+   ============================================================ */
 
 @layer base {
   :root {
+    /* --- Cores (não alterar) --- */
     --background: 0 0% 98%;
     --foreground: 0 0% 10%;
 
@@ -34,8 +40,6 @@
     --input: 0 0% 85%;
     --ring: 0 76% 42%;
 
-    --radius: 0.75rem;
-
     --sidebar-background: 0 0% 96%;
     --sidebar-foreground: 0 0% 35%;
     --sidebar-primary: 0 76% 42%;
@@ -56,7 +60,7 @@
     --info: 210 80% 55%;
     --info-foreground: 0 0% 100%;
 
-    /* Agenda status / blocks (Google Calendar inspired) */
+    /* Agenda status / blocks */
     --block: 270 55% 55%;
     --block-foreground: 0 0% 100%;
     --status-confirmed: 210 80% 55%;
@@ -65,6 +69,18 @@
     --status-done: 145 63% 42%;
     --status-canceled: 0 62% 50%;
     --status-confirmar: 330 75% 62%;
+
+    /* --- Raios (iOS) --- */
+    --radius: 0.75rem;              /* base — controles */
+    --radius-card: 1rem;            /* 16px — cards e modais */
+    --radius-control: 0.75rem;      /* 12px — inputs, botões */
+    --radius-pill: 999px;
+
+    /* --- Sombras discretas iOS-like --- */
+    --shadow-ios-1: 0 1px 2px hsl(0 0% 0% / 0.04), 0 1px 1px hsl(0 0% 0% / 0.03);
+    --shadow-ios-2: 0 4px 12px hsl(0 0% 0% / 0.06), 0 2px 4px hsl(0 0% 0% / 0.03);
+    --shadow-ios-nav: 0 -1px 0 hsl(0 0% 0% / 0.06);
+    --shadow-ios-pop: 0 8px 24px hsl(0 0% 0% / 0.08), 0 2px 6px hsl(0 0% 0% / 0.04);
   }
 }
 
@@ -72,19 +88,47 @@
   * {
     @apply border-border;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
-    @apply bg-background text-foreground font-sans;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    text-rendering: optimizeLegibility;
+  }
+  /* Números tabulares para horários, valores, contagens */
+  .tabular-nums, time, .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Foco iOS consistente */
+  :where(button, [role="button"], a, input, textarea, select):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.45);
+    border-radius: inherit;
   }
 }
 
 @layer utilities {
+  /* Safe areas */
   .pb-safe {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom));
   }
+  .pb-tabbar {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
   @media (min-width: 1024px) {
     .pb-safe { padding-bottom: 2rem; }
+    .pb-tabbar { padding-bottom: 2rem; }
   }
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+  /* Gradientes de marca (uso restrito ao logo e CTA principal) */
   .gradient-brand {
     background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 55%));
   }
@@ -92,9 +136,10 @@
     background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--background)));
   }
   .glass-card {
-    background: hsl(var(--card) / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card) / 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid hsl(var(--border) / 0.7);
   }
   .text-gradient-brand {
     background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 65%));
@@ -105,29 +150,94 @@
   .glow-brand {
     box-shadow: 0 0 20px hsl(0, 76%, 42%, 0.15), 0 0 40px hsl(0, 76%, 42%, 0.05);
   }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
-  }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
+
+  /* Sombras iOS */
+  .shadow-ios-1 { box-shadow: var(--shadow-ios-1); }
+  .shadow-ios-2 { box-shadow: var(--shadow-ios-2); }
+  .shadow-ios-nav { box-shadow: var(--shadow-ios-nav); }
+  .shadow-ios-pop { box-shadow: var(--shadow-ios-pop); }
+
+  /* Raios semânticos */
+  .rounded-card { border-radius: var(--radius-card); }
+  .rounded-control { border-radius: var(--radius-control); }
+  .rounded-pill { border-radius: var(--radius-pill); }
+
+  /* Scrollbar discreta */
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(0 0% 75%);
     border-radius: 999px;
   }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Snap para faixas horizontais (datas, chips) */
+  .snap-x-list { scroll-snap-type: x mandatory; scroll-padding-inline: 1rem; }
+  .snap-item { scroll-snap-align: start; }
+
+  /* Feedback tátil de pressão */
+  .press-scale { transition: transform 120ms ease; }
+  .press-scale:active { transform: scale(0.97); }
 }
 
 @layer components {
-  /* Tokens de tipografia mobile-first.
-     Diretriz: nunca abaixo de 12px. Botões 16px/600. Títulos de tela 26-28px. */
-  .t-screen-title { @apply text-[26px] sm:text-[28px] font-bold leading-tight tracking-tight; }
-  .t-section-title { @apply text-[20px] sm:text-[22px] font-semibold leading-tight; }
-  .t-card-title   { @apply text-[17px] sm:text-[18px] font-semibold leading-snug; }
-  .t-card-desc    { @apply text-[14px] sm:text-[15px] text-muted-foreground leading-snug; }
-  .t-body         { @apply text-base leading-normal; }
-  .t-button       { @apply text-base font-semibold; }
-  .t-aux          { @apply text-[13px] sm:text-sm text-muted-foreground; }
-  .t-meta         { @apply text-xs; }
+  /* -----------------------------------------------------
+     Escala tipográfica iOS (Apple HIG)
+     Uso: aplicar em elementos que não usem os primitivos
+     Card/Button/Input (esses já vêm calibrados).
+     Mínimo funcional: 13px. Não usar 9/10px em UI.
+     ----------------------------------------------------- */
+  .ios-caption   { @apply text-[11px] leading-[14px] font-normal tracking-[0.01em]; }
+  .ios-footnote  { @apply text-[13px] leading-[18px] font-normal; }
+  .ios-body      { @apply text-[15px] leading-[20px] font-normal; }
+  .ios-callout   { @apply text-[16px] leading-[21px] font-medium; }
+  .ios-headline  { @apply text-[17px] leading-[22px] font-semibold tracking-[-0.01em]; }
+  .ios-title3    { @apply text-[20px] leading-[25px] font-semibold tracking-[-0.015em]; }
+  .ios-title2    { @apply text-[22px] leading-[28px] font-bold tracking-[-0.02em]; }
+  .ios-title1    { @apply text-[26px] sm:text-[28px] leading-[32px] font-bold tracking-[-0.02em]; }
+  .ios-largetitle{ @apply text-[32px] sm:text-[34px] leading-[38px] font-bold tracking-[-0.025em] tabular-nums; }
+
+  /* Aliases legados mantidos para compatibilidade */
+  .t-screen-title  { @apply ios-title1; }
+  .t-section-title { @apply ios-title3; }
+  .t-card-title    { @apply ios-headline; }
+  .t-card-desc     { @apply ios-footnote text-muted-foreground; }
+  .t-body          { @apply ios-body; }
+  .t-button        { @apply ios-callout; }
+  .t-aux           { @apply ios-footnote text-muted-foreground; }
+  .t-meta          { @apply ios-caption text-muted-foreground; }
+
+  /* Segmented control estilo iOS */
+  .ios-segmented {
+    @apply inline-flex items-center gap-0.5 rounded-control bg-secondary/60 p-1;
+  }
+  .ios-segmented > button {
+    @apply px-3 h-9 rounded-[8px] ios-footnote font-medium text-muted-foreground
+           transition-all duration-150;
+  }
+  .ios-segmented > button[data-active="true"] {
+    @apply bg-card text-foreground shadow-ios-1 font-semibold;
+  }
+
+  /* Chip / pill */
+  .ios-chip {
+    @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-pill
+           ios-footnote font-medium bg-secondary/70 text-secondary-foreground
+           border border-transparent transition-colors;
+  }
+  .ios-chip[data-active="true"] {
+    @apply bg-primary/10 text-primary border-primary/20;
+  }
+
+  /* Lista iOS (rows) */
+  .ios-row {
+    @apply flex items-center gap-3 min-h-[56px] px-4 py-3
+           bg-card border-b border-border/60 last:border-b-0;
+  }
+  .ios-row-tap {
+    @apply active:bg-secondary/60 transition-colors;
+  }
 }
 
 #lovable-badge {
