@@ -606,14 +606,7 @@ export default function AgendamentosTab() {
         );
       })()}
 
-      {/* FAB - Mobile */}
-      <button
-        onClick={() => setNewOpen(true)}
-        className="sm:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full gradient-brand text-primary-foreground shadow-lg glow-brand flex items-center justify-center hover:scale-105 transition-transform"
-        aria-label="Novo agendamento"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* FAB removido — usar o botão "Novo" no header do módulo para não cobrir conteúdo. */}
 
       {/* New appointment */}
       <Dialog open={newOpen} onOpenChange={(o) => { setNewOpen(o); if (!o) setNewErrors({}); }}>
