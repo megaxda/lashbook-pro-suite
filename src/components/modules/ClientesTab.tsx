@@ -20,7 +20,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { matchAllTokens } from "@/lib/searchUtils";
 import { localDateStr, parseDateStr, formatBR } from "@/lib/dateUtils";
-import { PageHeader } from "@/components/ui/kpi-card";
 
 interface Cliente {
   id: string; nome: string; telefone: string | null; email: string | null;
@@ -373,24 +372,23 @@ export default function ClientesTab() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       <Tabs defaultValue="lista">
-        <PageHeader
-          title="Clientes"
-          subtitle={`${clients.length} cadastradas`}
-          actions={
-            <>
-              <TabsList className="bg-muted/70 h-9 rounded-full p-1">
-                <TabsTrigger value="lista" className="text-xs h-7 rounded-full px-3">Lista</TabsTrigger>
-                <TabsTrigger value="aniversarios" className="text-xs h-7 rounded-full px-3">Aniversários</TabsTrigger>
-              </TabsList>
-              <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs" onClick={() => setNewOpen(true)}>
-                <Plus className="w-3.5 h-3.5 mr-1" /> Novo
-              </Button>
-            </>
-          }
-        />
-
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Clientes</h2>
+            <p className="text-muted-foreground text-xs sm:text-sm">{clients.length} cadastrados</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <TabsList className="bg-secondary h-8">
+              <TabsTrigger value="lista" className="text-xs h-7">Lista</TabsTrigger>
+              <TabsTrigger value="aniversarios" className="text-xs h-7">Aniversários</TabsTrigger>
+            </TabsList>
+            <Button size="sm" className="gradient-brand text-primary-foreground h-8 text-xs" onClick={() => setNewOpen(true)}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Novo
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="lista" className="space-y-3 mt-3">
           {/* Busca + ordenação */}
@@ -400,7 +398,7 @@ export default function ClientesTab() {
               <Input placeholder="Buscar por nome, telefone ou email…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary border-border h-9 text-sm" />
             </div>
             <Select value={sort} onValueChange={v => setSort(v as SortKey)}>
-              <SelectTrigger className="w-full sm:w-44 bg-secondary border-border h-9 text-sm hidden sm:flex"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-44 bg-secondary border-border h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-card border-border">
                 <SelectItem value="az">A–Z</SelectItem>
                 <SelectItem value="recent">Mais recentes</SelectItem>
@@ -410,23 +408,22 @@ export default function ClientesTab() {
             </Select>
           </div>
 
-          {/* Chips de filtro — só os essenciais no mobile */}
+          {/* Chips de filtro */}
           <div className="flex flex-wrap gap-1.5">
             {([
-              ["todas", "Todas", counts.todas, false],
-              ["ativas", "Ativas", counts.ativas, false],
-              ["inativas", "Inativas", counts.inativas, true],
-              ["aniversariantes", "Aniversariantes do mês", counts.aniversariantes, false],
-              ["semRetorno", `Sem retorno ${followUpDays}d+`, counts.semRetorno, true],
-            ] as Array<[FilterKey, string, number, boolean]>).map(([k, label, n, hideMobile]) => (
+              ["todas", "Todas", counts.todas],
+              ["ativas", "Ativas", counts.ativas],
+              ["inativas", "Inativas", counts.inativas],
+              ["aniversariantes", "Aniversariantes do mês", counts.aniversariantes],
+              ["semRetorno", `Sem retorno ${followUpDays}d+`, counts.semRetorno],
+            ] as Array<[FilterKey, string, number]>).map(([k, label, n]) => (
               <Button key={k} size="sm" variant={filter === k ? "default" : "outline"}
                 onClick={() => setFilter(k)}
-                className={cn("h-7 text-xs gap-1.5", hideMobile && "hidden sm:inline-flex", filter === k && "gradient-brand text-primary-foreground")}>
+                className={cn("h-7 text-xs gap-1.5", filter === k && "gradient-brand text-primary-foreground")}>
                 {label} <span className={cn("text-[10px] px-1.5 rounded-full", filter === k ? "bg-primary-foreground/20" : "bg-secondary text-muted-foreground")}>{n}</span>
               </Button>
             ))}
           </div>
-
 
           {/* Lista */}
           <div className="space-y-2">

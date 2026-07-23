@@ -22,9 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { localDateStr, parseDateStr, formatBR, addDays } from "@/lib/dateUtils";
 import { matchAllTokens } from "@/lib/searchUtils";
-import FinanceiroPessoalPanel from "./FinanceiroPessoalPanel";
-import { Wallet, Briefcase } from "lucide-react";
-import { KpiCard, SectionCard, PageHeader } from "@/components/ui/kpi-card";
 
 interface Transacao {
   id: string;
@@ -87,16 +84,6 @@ const CHART_COLORS = ["hsl(142,71%,45%)", "hsl(0,76%,52%)", "hsl(217,91%,60%)", 
 export default function FinanceiroTab() {
   const { user, isDemo } = useAuth();
   const invalidate = useInvalidate();
-
-  const [mode, setMode] = useState<"negocio" | "pessoal">(() => {
-    if (typeof window === "undefined") return "negocio";
-    return (window.localStorage.getItem("fin_mode") as "negocio" | "pessoal") || "negocio";
-  });
-  const changeMode = (m: "negocio" | "pessoal") => {
-    setMode(m);
-    if (typeof window !== "undefined") window.localStorage.setItem("fin_mode", m);
-  };
-
 
   // Compartilhado via cache. Mesma queryKey usada pelo Dashboard.
   const { data: txRaw = [], isLoading: lT } = useFinanceiro();
@@ -334,62 +321,12 @@ export default function FinanceiroTab() {
     );
   };
 
-  const trendPct = (curr: number, prev: number) => {
-    if (!isFinite(pctTrend(curr, prev)) || (curr === 0 && prev === 0)) return undefined;
-    return pctTrend(curr, prev);
-  };
-
   return (
-    <div className="space-y-5 animate-fade-in">
-      <PageHeader
-        title="Financeiro"
-        subtitle="Fluxo de caixa, performance e lançamentos"
-        actions={
-          <>
-            <div className="segmented">
-              <button data-active={mode === "negocio"} onClick={() => changeMode("negocio")}>
-                <Briefcase className="w-3.5 h-3.5 inline mr-1" /> Negócio
-              </button>
-              <button data-active={mode === "pessoal"} onClick={() => changeMode("pessoal")}>
-                <Wallet className="w-3.5 h-3.5 inline mr-1" /> Pessoal
-              </button>
-            </div>
-          </>
-        }
-      />
-
-      {mode === "pessoal" ? <FinanceiroPessoalPanel /> : (
-      <>
-      {/* Barra de período + ações */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="segmented flex-wrap">
-          {([
-            ["hoje", "Hoje", false],
-            ["7d", "7 dias", false],
-            ["mes", "Mês", false],
-            ["mesAnterior", "Mês anterior", true],
-            ["custom", "Personalizado", true],
-          ] as Array<[PeriodKey, string, boolean]>).map(([k, label, hideMobile]) => (
-            <button
-              key={k}
-              data-active={period === k}
-              onClick={() => setPeriod(k)}
-              className={cn(hideMobile && "hidden sm:inline-flex")}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {period === "custom" && (
-            <div className="flex items-center gap-1.5">
-              <Input type="date" value={custom.start} onChange={e => setCustom({ ...custom, start: e.target.value })} className="h-8 text-xs w-36" />
-              <span className="t-aux">até</span>
-              <Input type="date" value={custom.end} onChange={e => setCustom({ ...custom, end: e.target.value })} className="h-8 text-xs w-36" />
-            </div>
-          )}
-          <span className="t-aux hidden md:inline">{formatBR(range.start)} → {formatBR(range.end)}</span>
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1 hidden sm:inline-flex" onClick={exportCSV}>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h2>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={exportCSV}>
             <Download className="w-3.5 h-3.5" /> CSV
           </Button>
           <Button size="sm" className="gradient-brand text-primary-foreground h-8 text-xs" onClick={() => setDialogOpen(true)}>
@@ -398,53 +335,91 @@ export default function FinanceiroTab() {
         </div>
       </div>
 
-      {/* KPIs bento — 3 essenciais no mobile, 6 no desktop */}
-      <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiCard
-          label="Receita"
-          value={`R$ ${totalReceita.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-          trend={trendPct(totalReceita, prevReceita)}
-        />
-        <KpiCard
-          label="Despesa"
-          value={`R$ ${totalDespesa.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-          trend={trendPct(totalDespesa, prevDespesa)}
-          invertTrend
-        />
-        <KpiCard
-          label="Lucro"
-          value={`R$ ${lucro.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-          trend={trendPct(lucro, prevLucro)}
-          highlight
-        />
-        <KpiCard
-          label="Ticket Médio"
-          value={`R$ ${ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          trend={trendPct(ticketMedio, prevTicket)}
-          className="hidden md:flex"
-        />
-        <KpiCard label="Lançamentos" value={receitasCount} hint="receita" className="hidden md:flex" />
-        <KpiCard label="Atendimentos" value={atendimentos} hint="concluídos" className="hidden md:flex" />
+      {/* Seletor de período */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {([
+          ["hoje", "Hoje"], ["7d", "7 dias"], ["mes", "Mês atual"],
+          ["mesAnterior", "Mês anterior"], ["custom", "Personalizado"],
+        ] as Array<[PeriodKey, string]>).map(([k, label]) => (
+          <Button key={k} size="sm" variant={period === k ? "default" : "outline"}
+            onClick={() => setPeriod(k)}
+            className={cn("h-7 text-xs", period === k && "gradient-brand text-primary-foreground")}>
+            <CalIcon className="w-3 h-3 mr-1" />{label}
+          </Button>
+        ))}
+        {period === "custom" && (
+          <div className="flex items-center gap-2">
+            <Input type="date" value={custom.start} onChange={e => setCustom({ ...custom, start: e.target.value })} className="bg-secondary border-border h-7 text-xs w-36" />
+            <span className="text-xs text-muted-foreground">até</span>
+            <Input type="date" value={custom.end} onChange={e => setCustom({ ...custom, end: e.target.value })} className="bg-secondary border-border h-7 text-xs w-36" />
+          </div>
+        )}
+        <span className="text-xs text-muted-foreground">{formatBR(range.start)} → {formatBR(range.end)}</span>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+        <div className="p-3 rounded-xl bg-card border border-border">
+          <div className="flex items-center justify-between">
+            <TrendingUp className="w-4 h-4 text-success" />
+            <TrendChip curr={totalReceita} prev={prevReceita} />
+          </div>
+          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">R$ {totalReceita.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          <p className="text-[10px] text-muted-foreground">Receita</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card border border-border">
+          <div className="flex items-center justify-between">
+            <TrendingDown className="w-4 h-4 text-destructive" />
+            <TrendChip curr={totalDespesa} prev={prevDespesa} invert />
+          </div>
+          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">R$ {totalDespesa.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          <p className="text-[10px] text-muted-foreground">Despesas</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card border border-border">
+          <div className="flex items-center justify-between">
+            <DollarSign className="w-4 h-4 text-primary" />
+            <TrendChip curr={lucro} prev={prevLucro} />
+          </div>
+          <p className={cn("text-sm sm:text-lg font-bold mt-1", lucro >= 0 ? "text-foreground" : "text-destructive")}>R$ {lucro.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          <p className="text-[10px] text-muted-foreground">Lucro</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card border border-border">
+          <div className="flex items-center justify-between">
+            <ArrowUpDown className="w-4 h-4 text-info" />
+            <TrendChip curr={ticketMedio} prev={prevTicket} />
+          </div>
+          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">R$ {ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-[10px] text-muted-foreground">Ticket médio</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card border border-border">
+          <Receipt className="w-4 h-4 text-primary" />
+          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">{receitasCount}</p>
+          <p className="text-[10px] text-muted-foreground">Lançamentos receita</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card border border-border">
+          <CalIcon className="w-4 h-4 text-success" />
+          <p className="text-sm sm:text-lg font-bold text-foreground mt-1">{atendimentos}</p>
+          <p className="text-[10px] text-muted-foreground">Atendimentos concluídos</p>
+        </div>
       </div>
 
       {/* Gráfico principal */}
-      <SectionCard title="Receita vs Despesa" description={<span className="hidden sm:inline">Evolução diária no período</span>}>
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Receita vs Despesa</h3>
         <ResponsiveContainer width="100%" height={240}>
           <ComposedChart data={dailySeries}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
             <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
               formatter={(v: any, n: any) => [`R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, n]} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-
             <Bar dataKey="receita" name="Receita" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
             <Bar dataKey="despesa" name="Despesa" fill="hsl(0,76%,52%)" radius={[4, 4, 0, 0]} />
             <Line dataKey="lucro" name="Lucro" stroke="hsl(217,91%,60%)" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
-      </SectionCard>
-
+      </div>
 
       {/* Despesas por categoria */}
       {despPorCategoria.length > 0 && (
@@ -564,8 +539,8 @@ export default function FinanceiroTab() {
         )}
       </div>
 
-      {/* Comparativo 6 meses — só desktop */}
-      <div className="bg-card rounded-xl p-3 sm:p-4 border border-border hidden lg:block">
+      {/* Comparativo 6 meses */}
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
         <h3 className="text-sm font-semibold text-foreground mb-3">Últimos 6 meses</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -590,7 +565,6 @@ export default function FinanceiroTab() {
           </table>
         </div>
       </div>
-
 
       {/* Dialogs */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -657,8 +631,6 @@ export default function FinanceiroTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </>
-      )}
     </div>
   );
 }

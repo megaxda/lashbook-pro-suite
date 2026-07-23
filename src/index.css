@@ -2,93 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    /* Neutros suaves (slate) para reduzir contraste e ruído */
-    --background: 210 20% 98%;
-    --foreground: 222 20% 14%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 20% 14%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 20% 14%;
+    --popover-foreground: 0 0% 10%;
 
     --primary: 0 76% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 15% 25%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 15% 47%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 210 20% 94%;
-    --accent-foreground: 222 20% 14%;
+    --accent: 0 60% 38%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Bordas quase invisíveis para look clean */
-    --border: 220 15% 92%;
-    --input: 220 15% 90%;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
     --ring: 0 76% 42%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 210 20% 98%;
-    --sidebar-foreground: 215 15% 40%;
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 0 0% 35%;
     --sidebar-primary: 0 76% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 94%;
-    --sidebar-accent-foreground: 222 20% 14%;
-    --sidebar-border: 220 15% 92%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 88%;
     --sidebar-ring: 0 76% 42%;
 
     --brand-glow: 0 76% 42%;
     --brand-soft: 0 60% 55%;
-    --brand-muted: 0 30% 92%;
+    --brand-muted: 0 30% 85%;
 
     --success: 145 63% 42%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 45 93% 47%;
     --warning-foreground: 0 0% 10%;
     --info: 210 80% 55%;
     --info-foreground: 0 0% 100%;
 
-    /* Agenda status / blocks */
+    /* Agenda status / blocks (Google Calendar inspired) */
     --block: 270 55% 55%;
     --block-foreground: 0 0% 100%;
     --status-confirmed: 210 80% 55%;
-    --status-pending: 38 92% 50%;
+    --status-pending: 36 95% 50%;
     --status-inprogress: 195 80% 45%;
     --status-done: 145 63% 42%;
     --status-canceled: 0 62% 50%;
     --status-confirmar: 330 75% 62%;
-
-    /* Elevação sutil */
-    --shadow-xs: 0 1px 2px 0 hsl(222 20% 14% / 0.04);
-    --shadow-sm: 0 1px 3px 0 hsl(222 20% 14% / 0.05), 0 1px 2px -1px hsl(222 20% 14% / 0.04);
-    --shadow-md: 0 4px 12px -2px hsl(222 20% 14% / 0.06), 0 2px 4px -2px hsl(222 20% 14% / 0.04);
   }
 }
 
 @layer base {
-  * { @apply border-border; }
+  * {
+    @apply border-border;
+  }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
-  h1, h2, h3, h4, h5, h6, .font-display {
-    font-family: 'Sora', 'Manrope', system-ui, sans-serif;
-    letter-spacing: -0.01em;
-  }
-  /* Números tabulares em métricas/valores */
-  .tabular-nums { font-variant-numeric: tabular-nums; }
 }
 
 @layer utilities {
@@ -99,85 +86,48 @@
     .pb-safe { padding-bottom: 2rem; }
   }
   .gradient-brand {
-    background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 52%));
+    background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 55%));
   }
   .gradient-card {
-    background: linear-gradient(180deg, hsl(var(--card)), hsl(210 20% 99%));
+    background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--background)));
   }
   .glass-card {
-    background: hsl(var(--card) / 0.7);
+    background: hsl(var(--card) / 0.8);
     backdrop-filter: blur(12px);
     border: 1px solid hsl(var(--border));
   }
   .text-gradient-brand {
-    background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 55%));
+    background: linear-gradient(135deg, hsl(0, 76%, 42%), hsl(0, 60%, 65%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .glow-brand {
-    box-shadow: 0 0 0 1px hsl(0, 76%, 42%, 0.1), 0 6px 16px -4px hsl(0, 76%, 42%, 0.18);
+    box-shadow: 0 0 20px hsl(0, 76%, 42%, 0.15), 0 0 40px hsl(0, 76%, 42%, 0.05);
   }
-  .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
-  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(220 10% 82%);
+    background: hsl(0 0% 75%);
     border-radius: 999px;
   }
 }
 
 @layer components {
-  /* Card unificado — usado como wrapper padrão de todas as seções.
-     Substitui bordas fortes + sombras por 1 nível sutil de elevação. */
-  .surface-card {
-    @apply bg-card rounded-2xl border border-border/60;
-    box-shadow: var(--shadow-xs);
-  }
-  .surface-card-hover {
-    @apply transition-shadow;
-  }
-  .surface-card-hover:hover {
-    box-shadow: var(--shadow-sm);
-  }
-  /* KPI compacto padronizado */
-  .kpi-label {
-    @apply text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.08em];
-  }
-  .kpi-value {
-    @apply text-xl sm:text-2xl font-semibold tabular-nums text-foreground;
-    font-family: 'Sora', system-ui, sans-serif;
-    letter-spacing: -0.02em;
-  }
-  .kpi-trend-up {
-    @apply text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5;
-  }
-  .kpi-trend-down {
-    @apply text-[11px] font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5;
-  }
-  .kpi-trend-flat {
-    @apply text-[11px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5;
-  }
-  /* Segmented control (toggle Negócio/Pessoal, view Dia/Semana/Mês) */
-  .segmented {
-    @apply bg-muted/70 p-1 rounded-full flex items-center gap-1;
-  }
-  .segmented > button {
-    @apply px-3 py-1.5 rounded-full text-xs font-semibold text-muted-foreground transition-all;
-  }
-  .segmented > button[data-active="true"],
-  .segmented > button.active {
-    @apply bg-card text-foreground shadow-sm;
-  }
-
-  /* Tipografia mobile-first */
-  .t-screen-title { @apply text-[22px] sm:text-2xl font-semibold leading-tight tracking-tight font-display; }
-  .t-section-title { @apply text-[17px] sm:text-lg font-semibold leading-tight font-display; }
-  .t-card-title   { @apply text-[15px] sm:text-base font-semibold leading-snug font-display; }
-  .t-card-desc    { @apply text-[13px] sm:text-sm text-muted-foreground leading-snug; }
-  .t-body         { @apply text-sm sm:text-base leading-normal; }
-  .t-button       { @apply text-sm sm:text-base font-semibold; }
-  .t-aux          { @apply text-[12px] sm:text-[13px] text-muted-foreground; }
-  .t-meta         { @apply text-[11px] text-muted-foreground uppercase tracking-wider font-semibold; }
+  /* Tokens de tipografia mobile-first.
+     Diretriz: nunca abaixo de 12px. Botões 16px/600. Títulos de tela 26-28px. */
+  .t-screen-title { @apply text-[26px] sm:text-[28px] font-bold leading-tight tracking-tight; }
+  .t-section-title { @apply text-[20px] sm:text-[22px] font-semibold leading-tight; }
+  .t-card-title   { @apply text-[17px] sm:text-[18px] font-semibold leading-snug; }
+  .t-card-desc    { @apply text-[14px] sm:text-[15px] text-muted-foreground leading-snug; }
+  .t-body         { @apply text-base leading-normal; }
+  .t-button       { @apply text-base font-semibold; }
+  .t-aux          { @apply text-[13px] sm:text-sm text-muted-foreground; }
+  .t-meta         { @apply text-xs; }
 }
 
 #lovable-badge {

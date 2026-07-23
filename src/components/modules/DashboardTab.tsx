@@ -24,7 +24,6 @@ import { ClientCombobox } from "@/components/ui/ClientCombobox";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import AgendaGrid, { StatusLegend, StatusBadge, type AgendaView, type AgendaAppt, type AgendaBloqueio } from "@/components/agenda/AgendaGrid";
-import { KpiCard, SectionCard, PageHeader } from "@/components/ui/kpi-card";
 
 function getDaysInMonth(date: Date) {
   const year = date.getFullYear(); const month = date.getMonth();
@@ -205,30 +204,47 @@ export default function DashboardTab() {
   if (loading && appointments.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      <PageHeader
-        title={`Bem-vinda${profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}`}
-        subtitle="Resumo do seu dia e agenda"
-      />
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Bem-vinda{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}! ✨</h2>
+        <p className="text-muted-foreground text-sm mt-0.5">Resumo do seu dia.</p>
+      </div>
 
-      {/* KPIs bento — 2 essenciais no mobile, 4 no desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button onClick={() => navigate("/home_profissional?tab=Agendamentos")} className="text-left">
-          <KpiCard label="Agenda hoje" value={todayAppts.length} icon={<Calendar className="w-4 h-4" />} className="cursor-pointer" />
+      {/* Cards: 2 cols mobile, 4 cols desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <button onClick={() => navigate("/home_profissional?tab=Agendamentos")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0"><Calendar className="w-4 h-4 text-primary" /></div>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{todayAppts.length}</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Agenda hoje</p>
+          </div>
         </button>
-        <button onClick={() => navigate("/home_profissional?tab=Financeiro")} className="text-left">
-          <KpiCard label="Receita do mês" value={`R$ ${monthRevenue.toLocaleString("pt-BR")}`} icon={<DollarSign className="w-4 h-4" />} className="cursor-pointer" />
+        <button onClick={() => navigate("/home_profissional?tab=Financeiro")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
+          <div className="p-2 rounded-lg bg-success/10 flex-shrink-0"><DollarSign className="w-4 h-4 text-success" /></div>
+          <div className="min-w-0">
+            <p className="text-base sm:text-2xl font-bold text-foreground truncate">R$ {monthRevenue.toLocaleString("pt-BR")}</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Receita do mês</p>
+          </div>
         </button>
-        <button onClick={() => navigate("/home_profissional?tab=Estoque")} className="text-left hidden sm:block">
-          <KpiCard label="Estoque baixo" value={lowStock.length} icon={<Package className="w-4 h-4" />} className="cursor-pointer" />
+        <button onClick={() => navigate("/home_profissional?tab=Estoque")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
+          <div className="p-2 rounded-lg bg-warning/10 flex-shrink-0"><Package className="w-4 h-4 text-warning" /></div>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{lowStock.length}</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Estoque baixo</p>
+          </div>
         </button>
-        <button onClick={() => navigate("/home_profissional?tab=Clientes")} className="text-left hidden sm:block">
-          <KpiCard label="Para retornar" value={followUpCount} icon={<UserCheck className="w-4 h-4" />} className="cursor-pointer" />
+        <button onClick={() => navigate("/home_profissional?tab=Clientes")} className="text-left flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition min-h-[72px]">
+          <div className="p-2 rounded-lg bg-info/10 flex-shrink-0"><UserCheck className="w-4 h-4 text-info" /></div>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{followUpCount}</p>
+            <p className="text-xs sm:text-xs text-muted-foreground">Para retornar</p>
+          </div>
         </button>
       </div>
 
-      {/* Chart 7 days — escondido no mobile (repetitivo com o card do mês) */}
-      <SectionCard title="Receita dos últimos 7 dias" className="hidden sm:block">
+      {/* Chart 7 days */}
+      <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Receita dos últimos 7 dias</h3>
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={chart7d}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -241,8 +257,7 @@ export default function DashboardTab() {
             <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      </SectionCard>
-
+      </div>
 
       {/* Appointments with period filter */}
       {(() => {
@@ -270,7 +285,6 @@ export default function DashboardTab() {
                       onClick={() => setView(v)}
                       className={cn(
                         "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                        v === "Mensal" && "hidden sm:inline-flex",
                         apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
@@ -278,7 +292,7 @@ export default function DashboardTab() {
                     </button>
                   ))}
                 </div>
-                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px] hidden sm:inline-flex" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
+                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
                   Bloquear
                 </Button>
                 <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs min-h-[36px]" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
@@ -293,12 +307,7 @@ export default function DashboardTab() {
               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
             </div>
 
-            <details className="mb-3 sm:hidden">
-              <summary className="text-[11px] text-muted-foreground cursor-pointer">Legenda de status</summary>
-              <div className="mt-2"><StatusLegend /></div>
-            </details>
-            <div className="mb-3 hidden sm:block"><StatusLegend /></div>
-
+            <div className="mb-3"><StatusLegend /></div>
 
             <AgendaGrid
               view={apptView}

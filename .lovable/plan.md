@@ -1,53 +1,37 @@
-# Limpeza mobile — esconder o que não faz diferença
+## Problema
 
-Objetivo: em telas <lg (mobile/tablet pequeno) mostrar só o essencial. Nada de tabelas largas, chips redundantes, subtítulos decorativos, ações secundárias. Todas as funcionalidades continuam disponíveis — só ficam escondidas atrás do FAB, do drawer "Mais" ou do card já existente.
+No painel admin, "Estender prazo" e "Liberar para sempre" mostram toast de sucesso, mas o `access_expires_at` do usuário não muda. Causa raiz:
 
-## Regra geral
-- Usar utilitários Tailwind `hidden lg:...` / `lg:hidden` — sem novo componente.
-- Nunca esconder ação principal (Novo/Salvar). Esconder apenas o que é redundante com bottom-nav, FAB ou o próprio card.
-- Manter todos os dados acessíveis: se esconder coluna, o card compacto mobile já mostra a info.
+- `useAdminUsers.updateUser` executa `supabase.from('profiles').update(...).eq('id', id)` **sem `.select()`**.
+- Se a RLS da tabela `profiles` não permite que um admin atualize o perfil de outro usuário, o Supabase retorna `error = null` e `0 linhas afetadas`. O hook trata como sucesso e mostra "Usuário atualizado", mas nada foi gravado.
+- Erros reais (RLS, constraint) ficam mascarados pelo handler genérico `Erro ao atualizar`.
 
-## Ajustes por tela
+## Correção
 
-### PageHeader (`src/components/ui/kpi-card.tsx`)
-- Subtítulo (`subtitle`) escondido no mobile (`hidden sm:block`).
-- Título reduzido no mobile: `text-xl sm:text-2xl` já ok, mas remover tracking/peso excessivo.
-- `actions` viram wrap compacto; botões com texto viram só ícone no mobile via `sm:inline`/`inline sm:hidden` nos labels.
+### 1. Edge Function `admin-update-user` (service role, segura)
+Criar (ou estender, se já existir `admin-create-user`) uma function que:
+- Recebe `{ userId, updates }`.
+- Valida que o caller é admin via `has_role(auth.uid(), 'admin')` (security definer).
+- Faz o `UPDATE` em `public.profiles` com a service role, retornando a linha atualizada.
+- Restringe os campos permitidos (`plano`, `status_conta`, `access_expires_at`, `nome`, `email`, `telefone`) para evitar escalonamento (não permitir alterar `role`/`id`).
 
-### Dashboard (`DashboardTab.tsx`)
-- KPIs: no mobile, grid 2 col já ok — esconder KPIs secundários "Estoque baixo" e "Para retornar" no mobile (`hidden sm:block`) porque aparecem depois nos cards de alerta/lista.
-- Card "Receita dos últimos 7 dias": esconder eixo Y e legendas repetidas; manter só barras + tooltip.
-- Segmented Diário/Semanal/Mensal dentro da SectionCard Agenda: no mobile deixar só Diário e Semanal (esconder Mensal — pouco útil em 393px).
-- Legenda de status: colapsar em `<details>` no mobile.
+### 2. `src/hooks/useAdminUsers.ts`
+- Trocar o `update` direto pela invocação `supabase.functions.invoke('admin-update-user', { body: { userId, updates } })`.
+- Retornar a linha atualizada; se vier vazia, lançar erro.
+- `onError` passa a mostrar a mensagem real (`error.message`) no toast.
 
-### Financeiro (`FinanceiroTab.tsx`)
-- Toggle "Negócio | Pessoal": manter (essencial).
-- Chips de período: esconder "Mês anterior" e "Personalizado" no mobile (drop dentro de um "Mais" menu ou popover) — deixar Hoje / 7 dias / Mês.
-- Intervalo de datas textual (`01/07/2026 → 31/07/2026`): `hidden sm:inline`.
-- Botão CSV: esconder no mobile (`hidden sm:inline-flex`) — export é ação desktop.
-- KPI grid: no mobile mostrar só Receita, Despesa, Lucro (esconder Ticket Médio, Lançamentos, Atendimentos com `hidden sm:block`).
-- Gráfico "Receita vs Despesa": manter; esconder subtítulo "Evolução diária no período" no mobile.
-- Tabela de lançamentos: no mobile virar lista de cards (já é o padrão em `renderRow`?) — se ainda é `<table>`, esconder colunas Profissional, Categoria, Origem via `hidden md:table-cell`.
-- "Últimos 6 meses": esconder no mobile inteiro (`hidden lg:block`) — comparativo é análise desktop.
+### 3. `src/pages/AdminPage.tsx`
+- `handleExtendAccess` e `handleUnlockForever`: aguardar `mutateAsync` antes de fechar o diálogo / mostrar feedback, garantindo que a UI só confirma após a persistência real.
+- Pequena melhoria visual: mostrar a nova data de expiração no toast de sucesso (ex.: "Acesso liberado até 30/07/2026" / "Acesso liberado para sempre").
 
-### Clientes (`ClientesTab.tsx`)
-- Subtítulo "8 cadastradas": manter (é curto).
-- Chips de filtro: no mobile manter só "Todas / Ativas / Aniversariantes" — esconder "Inativas" e "Sem retorno 30d+" atrás de um botão "Filtros" ou `hidden sm:inline-flex`.
-- Select de ordenação: `hidden sm:flex` no mobile (busca resolve).
-- Cards de cliente: esconder email no mobile (só nome + telefone + badge última visita). Ações secundárias (WhatsApp, menu) já são ícones — ok.
+### 4. Validação RLS (defensiva)
+Verificar política de UPDATE de `public.profiles`. Caso falte um caminho para admin (`has_role(auth.uid(),'admin')`), a edge function com service role já contorna; nada de política nova exposta ao cliente.
 
-### Agendamentos (`AgendamentosTab.tsx`)
-- Subtítulo "5 agendamentos": `hidden sm:block`.
-- Segmented Lista/Diário/Semanal/Mensal: no mobile deixar Diário + Semanal + Lista (esconder Mensal).
-- Botão "Bloquear": `hidden sm:inline-flex` no mobile — mover para dentro do FAB "+" como opção secundária, ou dentro do modal de novo.
-- Botão "Novo": já escondido no mobile (FAB assume).
-- Filtro por profissional: manter chips mas com scroll horizontal (`overflow-x-auto`) — ok.
-- Legenda de status colorida: no mobile colapsar em `<details>` "Legenda".
-- Header de data (`qui., 23 de jul. de 2026`): encurtar no mobile para `23 jul.` via toLocaleDateString responsivo.
+## Validação
+- Abrir painel admin → "Estender prazo" 30 dias em um usuário → recarregar → coluna "Acesso" mostra "Até [data]".
+- "Liberar para sempre" → coluna mostra "Ilimitado".
+- "Bloquear agora" → coluna mostra "Bloqueado".
+- Forçar erro (usuário inexistente) → toast exibe mensagem real, não o genérico.
 
-## Fora de escopo
-- Nenhuma mudança de lógica, dados, queries, RLS.
-- Sem novos componentes; só utilitários responsivos e pequenas variações de props.
-
-## Verificação
-Após aplicar, capturar as 4 telas em 393px via Playwright e comparar antes/depois; typecheck via tsgo.
+## Escopo
+Apenas o fluxo de acesso no admin. Sem mudanças em agenda, financeiro, clientes ou auth do app.

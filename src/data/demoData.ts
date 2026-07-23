@@ -80,13 +80,3 @@ export const demoEstoque = [
 ];
 
 export const demoFichas: any[] = [];
-
-export const demoFinanceiroPessoal = [
-  { id: "demo-fp1", user_id: DEMO_USER_ID, tipo: "receita", descricao: "Salário mensal", valor: 4500, data: dStr(-5), categoria: "Salário", forma_pagamento: "PIX", notas: null, created_at: dStr(-5) },
-  { id: "demo-fp2", user_id: DEMO_USER_ID, tipo: "despesa", descricao: "Aluguel apartamento", valor: 1500, data: dStr(-4), categoria: "Moradia", forma_pagamento: "PIX", notas: null, created_at: dStr(-4) },
-  { id: "demo-fp3", user_id: DEMO_USER_ID, tipo: "despesa", descricao: "Supermercado", valor: 620, data: dStr(-3), categoria: "Alimentação", forma_pagamento: "Cartão Débito", notas: null, created_at: dStr(-3) },
-  { id: "demo-fp4", user_id: DEMO_USER_ID, tipo: "despesa", descricao: "Combustível", valor: 280, data: dStr(-2), categoria: "Transporte", forma_pagamento: "Cartão Crédito", notas: null, created_at: dStr(-2) },
-  { id: "demo-fp5", user_id: DEMO_USER_ID, tipo: "despesa", descricao: "Academia", valor: 120, data: dStr(-1), categoria: "Saúde", forma_pagamento: "Cartão Crédito", notas: null, created_at: dStr(-1) },
-  { id: "demo-fp6", user_id: DEMO_USER_ID, tipo: "receita", descricao: "Freelance design", valor: 800, data: dStr(-8), categoria: "Outros", forma_pagamento: "PIX", notas: null, created_at: dStr(-8) },
-  { id: "demo-fp7", user_id: DEMO_USER_ID, tipo: "despesa", descricao: "Restaurante fim de semana", valor: 180, data: dStr(-6), categoria: "Lazer", forma_pagamento: "PIX", notas: null, created_at: dStr(-6) },
-];

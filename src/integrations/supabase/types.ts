@@ -332,48 +332,6 @@ export type Database = {
           },
         ]
       }
-      financeiro_pessoal: {
-        Row: {
-          categoria: string | null
-          created_at: string
-          data: string
-          descricao: string | null
-          forma_pagamento: string | null
-          id: string
-          notas: string | null
-          tipo: string
-          updated_at: string
-          user_id: string
-          valor: number
-        }
-        Insert: {
-          categoria?: string | null
-          created_at?: string
-          data: string
-          descricao?: string | null
-          forma_pagamento?: string | null
-          id?: string
-          notas?: string | null
-          tipo: string
-          updated_at?: string
-          user_id: string
-          valor?: number
-        }
-        Update: {
-          categoria?: string | null
-          created_at?: string
-          data?: string
-          descricao?: string | null
-          forma_pagamento?: string | null
-          id?: string
-          notas?: string | null
-          tipo?: string
-          updated_at?: string
-          user_id?: string
-          valor?: number
-        }
-        Relationships: []
-      }
       follow_ups: {
         Row: {
           cliente_id: string | null
