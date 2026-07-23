@@ -400,7 +400,7 @@ export default function ClientesTab() {
               <Input placeholder="Buscar por nome, telefone ou email…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary border-border h-9 text-sm" />
             </div>
             <Select value={sort} onValueChange={v => setSort(v as SortKey)}>
-              <SelectTrigger className="w-full sm:w-44 bg-secondary border-border h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-44 bg-secondary border-border h-9 text-sm hidden sm:flex"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-card border-border">
                 <SelectItem value="az">A–Z</SelectItem>
                 <SelectItem value="recent">Mais recentes</SelectItem>
@@ -410,22 +410,23 @@ export default function ClientesTab() {
             </Select>
           </div>
 
-          {/* Chips de filtro */}
+          {/* Chips de filtro — só os essenciais no mobile */}
           <div className="flex flex-wrap gap-1.5">
             {([
-              ["todas", "Todas", counts.todas],
-              ["ativas", "Ativas", counts.ativas],
-              ["inativas", "Inativas", counts.inativas],
-              ["aniversariantes", "Aniversariantes do mês", counts.aniversariantes],
-              ["semRetorno", `Sem retorno ${followUpDays}d+`, counts.semRetorno],
-            ] as Array<[FilterKey, string, number]>).map(([k, label, n]) => (
+              ["todas", "Todas", counts.todas, false],
+              ["ativas", "Ativas", counts.ativas, false],
+              ["inativas", "Inativas", counts.inativas, true],
+              ["aniversariantes", "Aniversariantes do mês", counts.aniversariantes, false],
+              ["semRetorno", `Sem retorno ${followUpDays}d+`, counts.semRetorno, true],
+            ] as Array<[FilterKey, string, number, boolean]>).map(([k, label, n, hideMobile]) => (
               <Button key={k} size="sm" variant={filter === k ? "default" : "outline"}
                 onClick={() => setFilter(k)}
-                className={cn("h-7 text-xs gap-1.5", filter === k && "gradient-brand text-primary-foreground")}>
+                className={cn("h-7 text-xs gap-1.5", hideMobile && "hidden sm:inline-flex", filter === k && "gradient-brand text-primary-foreground")}>
                 {label} <span className={cn("text-[10px] px-1.5 rounded-full", filter === k ? "bg-primary-foreground/20" : "bg-secondary text-muted-foreground")}>{n}</span>
               </Button>
             ))}
           </div>
+
 
           {/* Lista */}
           <div className="space-y-2">

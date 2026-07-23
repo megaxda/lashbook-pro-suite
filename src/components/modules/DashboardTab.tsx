@@ -211,7 +211,7 @@ export default function DashboardTab() {
         subtitle="Resumo do seu dia e agenda"
       />
 
-      {/* KPIs bento — 2 cols mobile, 4 cols desktop */}
+      {/* KPIs bento — 2 essenciais no mobile, 4 no desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <button onClick={() => navigate("/home_profissional?tab=Agendamentos")} className="text-left">
           <KpiCard label="Agenda hoje" value={todayAppts.length} icon={<Calendar className="w-4 h-4" />} className="cursor-pointer" />
@@ -219,16 +219,16 @@ export default function DashboardTab() {
         <button onClick={() => navigate("/home_profissional?tab=Financeiro")} className="text-left">
           <KpiCard label="Receita do mês" value={`R$ ${monthRevenue.toLocaleString("pt-BR")}`} icon={<DollarSign className="w-4 h-4" />} className="cursor-pointer" />
         </button>
-        <button onClick={() => navigate("/home_profissional?tab=Estoque")} className="text-left">
+        <button onClick={() => navigate("/home_profissional?tab=Estoque")} className="text-left hidden sm:block">
           <KpiCard label="Estoque baixo" value={lowStock.length} icon={<Package className="w-4 h-4" />} className="cursor-pointer" />
         </button>
-        <button onClick={() => navigate("/home_profissional?tab=Clientes")} className="text-left">
+        <button onClick={() => navigate("/home_profissional?tab=Clientes")} className="text-left hidden sm:block">
           <KpiCard label="Para retornar" value={followUpCount} icon={<UserCheck className="w-4 h-4" />} className="cursor-pointer" />
         </button>
       </div>
 
-      {/* Chart 7 days */}
-      <SectionCard title="Receita dos últimos 7 dias">
+      {/* Chart 7 days — escondido no mobile (repetitivo com o card do mês) */}
+      <SectionCard title="Receita dos últimos 7 dias" className="hidden sm:block">
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={chart7d}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -242,6 +242,7 @@ export default function DashboardTab() {
           </BarChart>
         </ResponsiveContainer>
       </SectionCard>
+
 
       {/* Appointments with period filter */}
       {(() => {
@@ -269,6 +270,7 @@ export default function DashboardTab() {
                       onClick={() => setView(v)}
                       className={cn(
                         "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                        v === "Mensal" && "hidden sm:inline-flex",
                         apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
@@ -276,7 +278,7 @@ export default function DashboardTab() {
                     </button>
                   ))}
                 </div>
-                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
+                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px] hidden sm:inline-flex" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
                   Bloquear
                 </Button>
                 <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs min-h-[36px]" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
@@ -291,7 +293,12 @@ export default function DashboardTab() {
               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
             </div>
 
-            <div className="mb-3"><StatusLegend /></div>
+            <details className="mb-3 sm:hidden">
+              <summary className="text-[11px] text-muted-foreground cursor-pointer">Legenda de status</summary>
+              <div className="mt-2"><StatusLegend /></div>
+            </details>
+            <div className="mb-3 hidden sm:block"><StatusLegend /></div>
+
 
             <AgendaGrid
               view={apptView}

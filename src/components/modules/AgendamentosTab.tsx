@@ -525,10 +525,17 @@ export default function AgendamentosTab() {
           <>
             <div className="segmented overflow-x-auto">
               {views.map(v => (
-                <button key={v} data-active={view === v} onClick={() => persistView(v)}>{v}</button>
+                <button
+                  key={v}
+                  data-active={view === v}
+                  onClick={() => persistView(v)}
+                  className={cn(v === "Mensal" && "hidden sm:inline-flex")}
+                >
+                  {v}
+                </button>
               ))}
             </div>
-            <Button size="sm" variant="outline" className="h-9 text-xs" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
+            <Button size="sm" variant="outline" className="h-9 text-xs hidden sm:inline-flex" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
             <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
           </>
         }
@@ -537,11 +544,21 @@ export default function AgendamentosTab() {
 
       <div className="flex items-center gap-2">
         <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4" /></Button>
-        <span className="text-xs sm:text-sm font-semibold text-foreground flex-1 text-center sm:text-left">
-          {view === "Mensal" ? currentDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : currentDate.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+        <span className="text-xs sm:text-sm font-semibold text-foreground flex-1 text-center sm:text-left capitalize">
+          <span className="sm:hidden">
+            {view === "Mensal"
+              ? currentDate.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
+              : currentDate.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
+          </span>
+          <span className="hidden sm:inline">
+            {view === "Mensal"
+              ? currentDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+              : currentDate.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+          </span>
         </span>
         <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(1)}><ChevronRight className="w-4 h-4" /></Button>
       </div>
+
 
       {/* Filtro por profissional */}
       {profissionais.length > 0 && (
@@ -569,8 +586,13 @@ export default function AgendamentosTab() {
         </div>
       )}
 
-      {/* Legend */}
-      <StatusLegend />
+      {/* Legend — colapsada no mobile */}
+      <details className="sm:hidden">
+        <summary className="text-[11px] text-muted-foreground cursor-pointer select-none">Legenda de status</summary>
+        <div className="mt-2"><StatusLegend /></div>
+      </details>
+      <div className="hidden sm:block"><StatusLegend /></div>
+
 
       {(() => {
         const filteredAppts = profFilter === "todas" ? appointments : appointments.filter(a => a.profissional_id === profFilter);
