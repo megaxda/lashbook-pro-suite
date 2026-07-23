@@ -228,7 +228,7 @@ export default function AccountPage() {
             <div className="min-w-0"><Label className="text-muted-foreground text-xs">Nome do Estúdio</Label><Input value={studioName} onChange={e => setStudioName(e.target.value)} className="bg-secondary border-border mt-1" /></div>
           </div>
           <div className="bg-card rounded-xl p-4 sm:p-6 border border-border space-y-3">
-            <h3 className="font-semibold text-foreground text-sm">Follow-up</h3>
+            <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">⚡ Follow-up</h3>
             <div className="min-w-0"><Label className="text-muted-foreground text-xs">Dias sem retorno para alerta</Label><Input type="number" value={followUpDays} onChange={e => setFollowUpDays(Number(e.target.value))} className="bg-secondary border-border mt-1 w-24 h-9" /></div>
           </div>
           <Button onClick={saveStudio} disabled={saving} className="gradient-brand text-primary-foreground w-full sm:w-auto">{saving ? "Salvando..." : "Salvar Configurações"}</Button>

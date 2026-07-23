@@ -12,17 +12,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: [
-          "-apple-system",
-          "BlinkMacSystemFont",
-          '"SF Pro Display"',
-          '"SF Pro Text"',
-          '"Helvetica Neue"',
-          '"Segoe UI"',
-          "Roboto",
-          "Arial",
-          "sans-serif",
-        ],
+        sans: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -90,15 +80,6 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        card: "var(--radius-card)",
-        control: "var(--radius-control)",
-        pill: "var(--radius-pill)",
-      },
-      boxShadow: {
-        "ios-1": "var(--shadow-ios-1)",
-        "ios-2": "var(--shadow-ios-2)",
-        "ios-nav": "var(--shadow-ios-nav)",
-        "ios-pop": "var(--shadow-ios-pop)",
       },
       keyframes: {
         "accordion-down": {

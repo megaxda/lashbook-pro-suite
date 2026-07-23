@@ -122,14 +122,10 @@ export default function AgendamentosTab() {
     setProfFilter(v);
     if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.profFilter", v);
   };
-  const isMobileVP = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const [view, setView] = useState<typeof views[number]>(() => {
     if (typeof window === "undefined") return "Semanal";
     const saved = window.localStorage.getItem("finbeauty.agenda.view");
-    const parsed = (saved === "Lista" || saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : null;
-    // Mobile default = Lista (grade semanal ilegível em telas estreitas)
-    if (isMobileVP) return parsed === "Diário" || parsed === "Lista" ? parsed : "Lista";
-    return parsed ?? "Semanal";
+    return (saved === "Lista" || saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : "Semanal";
   });
   const persistView = (v: typeof views[number]) => {
     setView(v);
@@ -606,7 +602,14 @@ export default function AgendamentosTab() {
         );
       })()}
 
-      {/* FAB removido — usar o botão "Novo" no header do módulo para não cobrir conteúdo. */}
+      {/* FAB - Mobile */}
+      <button
+        onClick={() => setNewOpen(true)}
+        className="sm:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full gradient-brand text-primary-foreground shadow-lg glow-brand flex items-center justify-center hover:scale-105 transition-transform"
+        aria-label="Novo agendamento"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
 
       {/* New appointment */}
       <Dialog open={newOpen} onOpenChange={(o) => { setNewOpen(o); if (!o) setNewErrors({}); }}>

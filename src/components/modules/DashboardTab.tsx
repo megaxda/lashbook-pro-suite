@@ -10,10 +10,9 @@ import {
   useFinanceiro,
   useInvalidate,
 } from "@/hooks/queries";
-import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight, UserCheck, Package, Ban } from "lucide-react";
+import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight, UserCheck, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { localDateStr, monthBounds, getLast7Days, parseDateStr, addDays } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +48,6 @@ export default function DashboardTab() {
   const { user, profile, isDemo } = useAuth();
   const navigate = useNavigate();
   const invalidate = useInvalidate();
-  const isMobile = useIsMobile();
 
   const todayDateStr = localDateStr();
   const { start, end } = useMemo(() => monthBounds(), []);
@@ -206,15 +204,11 @@ export default function DashboardTab() {
   if (loading && appointments.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
 
   return (
-    <div className="space-y-5 sm:space-y-6 animate-fade-in">
-      <header>
-        <h1 className="ios-title1 text-foreground">
-          Olá{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}
-        </h1>
-        <p className="ios-footnote text-muted-foreground mt-1 first-letter:uppercase">
-          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
-        </p>
-      </header>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Bem-vinda{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}! ✨</h2>
+        <p className="text-muted-foreground text-sm mt-0.5">Resumo do seu dia.</p>
+      </div>
 
       {/* Cards: 2 cols mobile, 4 cols desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
@@ -279,42 +273,44 @@ export default function DashboardTab() {
           ? apptCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
           : apptCursor.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
 
-        const effectiveView: AgendaView = isMobile ? "Diário" : apptView;
         return (
-          <div className="bg-card rounded-card p-4 sm:p-5 border border-border/70 shadow-ios-1">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h3 className="ios-headline text-foreground">Agendamentos</h3>
+          <div className="bg-card rounded-xl p-3 sm:p-5 border border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Agendamentos</h3>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="ios-segmented hidden sm:inline-flex">
+                <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
                   {apptViews.map(v => (
                     <button
                       key={v}
                       onClick={() => setView(v)}
-                      data-active={apptView === v}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                        apptView === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      )}
                     >
                       {v}
                     </button>
                   ))}
                 </div>
-                <Button size="sm" variant="outline" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
+                <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => navigate(`/home_profissional?tab=Agendamentos&bloquear=${cursorStr}`)}>
                   Bloquear
                 </Button>
-                <Button size="sm" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
-                  <Plus className="w-4 h-4" /> Novo
+                <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs min-h-[36px]" onClick={() => { setNewForm(f => ({ ...f, data: cursorStr })); setNewOpen(true); }}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Novo
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-4">
-              <Button size="icon" variant="ghost" aria-label="Período anterior" onClick={() => navPeriod(-1)}><ChevronLeft className="w-5 h-5" /></Button>
-              <span className="ios-callout text-foreground capitalize text-center flex-1">{headerLabel}</span>
-              <Button size="icon" variant="ghost" aria-label="Próximo período" onClick={() => navPeriod(1)}><ChevronRight className="w-5 h-5" /></Button>
+            <div className="flex items-center justify-between mb-3">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(-1)}><ChevronLeft className="w-4 h-4" /></Button>
+              <span className="text-xs sm:text-sm font-medium text-foreground capitalize text-center flex-1">{headerLabel}</span>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navPeriod(1)}><ChevronRight className="w-4 h-4" /></Button>
             </div>
 
             <div className="mb-3"><StatusLegend /></div>
 
             <AgendaGrid
-              view={effectiveView}
+              view={apptView}
               cursor={apptCursor}
               appointments={appointments}
               bloqueios={bloqueios}
@@ -352,8 +348,8 @@ export default function DashboardTab() {
           </DialogHeader>
           <div className="space-y-2 mt-2">
             {bloqueios.filter(b => b.data === selectedDayStr).map(b => (
-              <div key={b.id} className="flex items-center gap-2 p-3 rounded-control bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
-                <Ban className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+              <div key={b.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                <span className="text-sm">🚫</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{b.motivo || "Bloqueio"}</p>
                   <p className="text-xs text-muted-foreground">{b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
