@@ -372,23 +372,24 @@ export default function ClientesTab() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <Tabs defaultValue="lista">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Clientes</h2>
-            <p className="text-muted-foreground text-xs sm:text-sm">{clients.length} cadastrados</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <TabsList className="bg-secondary h-8">
-              <TabsTrigger value="lista" className="text-xs h-7">Lista</TabsTrigger>
-              <TabsTrigger value="aniversarios" className="text-xs h-7">Aniversários</TabsTrigger>
-            </TabsList>
-            <Button size="sm" className="gradient-brand text-primary-foreground h-8 text-xs" onClick={() => setNewOpen(true)}>
-              <Plus className="w-3.5 h-3.5 mr-1" /> Novo
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title="Clientes"
+          subtitle={`${clients.length} cadastradas`}
+          actions={
+            <>
+              <TabsList className="bg-muted/70 h-9 rounded-full p-1">
+                <TabsTrigger value="lista" className="text-xs h-7 rounded-full px-3">Lista</TabsTrigger>
+                <TabsTrigger value="aniversarios" className="text-xs h-7 rounded-full px-3">Aniversários</TabsTrigger>
+              </TabsList>
+              <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs" onClick={() => setNewOpen(true)}>
+                <Plus className="w-3.5 h-3.5 mr-1" /> Novo
+              </Button>
+            </>
+          }
+        />
+
 
         <TabsContent value="lista" className="space-y-3 mt-3">
           {/* Busca + ordenação */}
