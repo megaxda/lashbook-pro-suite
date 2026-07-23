@@ -204,11 +204,15 @@ export default function DashboardTab() {
   if (loading && appointments.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Bem-vinda{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}! ✨</h2>
-        <p className="text-muted-foreground text-sm mt-0.5">Resumo do seu dia.</p>
-      </div>
+    <div className="space-y-5 sm:space-y-6 animate-fade-in px-4 sm:px-6 pt-3 pb-6">
+      <header>
+        <h1 className="ios-title1 text-foreground">
+          Olá{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}
+        </h1>
+        <p className="ios-footnote text-muted-foreground mt-1">
+          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+        </p>
+      </header>
 
       {/* Cards: 2 cols mobile, 4 cols desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
