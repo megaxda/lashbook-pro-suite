@@ -24,6 +24,7 @@ import { localDateStr, parseDateStr, formatBR, addDays } from "@/lib/dateUtils";
 import { matchAllTokens } from "@/lib/searchUtils";
 import FinanceiroPessoalPanel from "./FinanceiroPessoalPanel";
 import { Wallet, Briefcase } from "lucide-react";
+import { KpiCard, SectionCard, PageHeader } from "@/components/ui/kpi-card";
 
 interface Transacao {
   id: string;
