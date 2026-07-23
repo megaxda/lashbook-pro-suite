@@ -1,60 +1,47 @@
-# Plano — Documentação Completa do FinBeauty
+ns# Redesign clean — Financeiro, Dashboard, Clientes, Agenda
 
-## Objetivo
-Criar um documento único, detalhado e navegável descrevendo tudo o que o app faz hoje: propósito, público, arquitetura, módulos, rotinas de uso, regras de negócio, padrão de design, segurança e operação. Serve como material de referência interna, onboarding de novos usuários/colaboradores e apresentação institucional.
+Objetivo: reduzir poluição visual, economizar espaço e elevar a hierarquia — mantendo 100% das funcionalidades atuais.
 
-## Entregáveis
+## Abordagem
 
-1. `docs/FinBeauty-Documentacao-Completa.md` — versão markdown (fonte da verdade, fácil de manter e versionar).
-2. `docs/FinBeauty-Documentacao-Completa.docx` — versão formatada para leitura/impressão/compartilhamento, gerada a partir do markdown com a skill `docx` (capa, sumário, títulos hierárquicos, tabelas, tipografia legível).
-3. `docs/README.md` curto apontando para os dois arquivos acima.
+Vou seguir um ritual de redesign em 2 atos por módulo, começando pelo **Financeiro** (tela em que você está agora) e replicando o padrão vencedor nos demais.
 
-Ambos ficam dentro do repositório, na pasta `docs/`, sem afetar build ou runtime.
+### Ato 1 — Fixar o gosto (1 rodada de perguntas)
+Antes de gerar direções, confirmo 2 escolhas visuais rápidas com previews reais:
+- **Tipografia**: par de fontes (mantendo Plus Jakarta ou trocando por algo mais editorial/clean).
+- **Layout base**: densidade dos cards/KPIs (compacto tipo Linear, arejado tipo Notion, ou bento tipo Apple).
 
-## Estrutura do documento
+A paleta fica travada na marca (#bd1a1b + neutros) — sem retrabalho de brand.
 
-1. **Capa e identidade** — Nome, versão (6.0.0), tagline, data, público-alvo (estúdios de lash design / salões de beleza).
-2. **Visão geral do produto** — O que é, problema que resolve, diferenciais (gestão financeira + agenda + link de bio + fichas + estoque em um só lugar).
-3. **Personas e jornada** — Profissional autônoma, dona de estúdio, cliente final agendando via link público, admin da plataforma.
-4. **Rotina diária do usuário** — Passo a passo típico: abrir Início → conferir agenda do dia → concluir atendimentos (dispara receita) → responder novos agendamentos do link da bio → dar baixa em estoque → revisar Financeiro no fim do dia/semana.
-5. **Módulos e funcionalidades** (uma seção por módulo, com o que faz, campos, ações, regras):
-   - Autenticação e onboarding (cadastro, login, tour guiado, modo demo).
-   - Início / Dashboard (KPIs, mini-agenda, atalhos).
-   - Agendamentos (grid Google-like, views Dia/Semana/Mês, cores por status, blocos de indisponibilidade, recorrência, duração customizada por agendamento, colisão em colunas).
-   - Clientes (chips de filtro, busca multi-token, drawer com histórico e estatísticas, WhatsApp).
-   - Financeiro — modo Negócio (KPIs com trend, gráfico composto, tabela unificada, origem Agendamento/Manual, exportação CSV, comparativo 6 meses, sinal + comprovante PIX).
-   - Financeiro — modo Pessoal (aba separada, categorias próprias, CSV isolado).
-   - Estoque (alertas, reposição sugerida, baixa via ficha).
-   - Serviços (cadastro, duração, valor, ativos/inativos).
-   - Fichas / Anamnese (wizard, assinatura, fotos antes/depois, PDF, baixa de estoque).
-   - Equipe / Multi-profissional (cadastro, cor, filtro na agenda, vínculo em agendamento e receita).
-   - Link da Bio pública `/u/:slug` (fluxo em 4 etapas, upload de comprovante, validações).
-   - Conta / Configurações (perfil, PIX, horário de funcionamento, follow-up, refazer tour).
-   - Painel Admin (gestão de usuários, prazo/liberação, criação de usuários, push, analytics básico).
-   - Página de Confiança (`/trust`).
-   - Notificações Push (VAPID, service worker).
-6. **Regras de negócio-chave** — Trigger de conclusão → receita, RLS por `user_id`, bloqueio por `access_expires_at`, papéis via tabela `user_roles`, isolamento total Negócio × Pessoal, sinal + comprovante.
-7. **Padrão de design** — Tema claro fixo, cor primária `#bd1a1b` (vermelho), tokens semânticos em `index.css`, tipografia, componentes shadcn, layout responsivo (sidebar desktop / bottom nav mobile), estados de status coloridos (verde/azul/amarelo/vermelho/roxo/rosa), tour com cards estilizados, moeda pt-BR em inputs.
-8. **Arquitetura técnica (resumida, sem jargão desnecessário)** — React + Vite + TS + Tailwind + shadcn + React Query + Recharts + @dnd-kit; backend Lovable Cloud (Auth, Postgres com RLS, Storage, Edge Functions); caching com React Query + prefetch pós-login; validação com Zod; navegação por `?tab=`.
-9. **Segurança e privacidade** — RLS em todas as tabelas, GRANTs explícitos, funções `SECURITY DEFINER` para acesso público controlado (`get_public_profissionais_by_slug`, `get_public_profile_by_slug`), edge function `cleanup-comprovantes` protegida por header secreto, HIBP habilitado, geração segura de senha no admin, bloqueio a nível de banco por expiração de conta, ausência de admin hardcoded.
-10. **Operação e manutenção** — Modo demo, backups (via plataforma), como estender o prazo de um usuário, como reprocessar receita perdida, como refazer o tour.
-11. **Roadmap curto (opcional)** — Espaço para próximos passos combinados.
-12. **Glossário** — Sinal, comprovante, follow-up, recorrência, colisão, bloco de agenda, ficha, anamnese.
+### Ato 2 — 3 direções renderizadas
+Capturo screenshot da tela atual do Financeiro e gero 3 protótipos HTML lado a lado, cada um com uma personalidade distinta (ex: "planilha executiva", "painel bancário", "relatório editorial"). Você escolhe 1 e eu implemento.
 
-## Como será construído
+## Ordem de execução
 
-- Fonte primária: os próprios arquivos do projeto (memórias em `.lovable/memory/*`, componentes em `src/components/modules/*`, hooks, edge functions, migrations recentes). Nada será inventado — cada seção descreve comportamento já existente no código.
-- Markdown escrito com títulos H1–H3, listas, tabelas para módulos × ações, blocos de código só onde agregam (ex.: exemplos de status, formato de CSV).
-- .docx gerado pela skill `docx` com:
-  - Capa (título grande, subtítulo, versão, data).
-  - Sumário automático (TOC baseado em Heading 1–3).
-  - Cabeçalhos e rodapés com número de página.
-  - Tabelas com bordas claras e sombreamento leve para cabeçalho.
-  - Fonte Arial 11pt, títulos em vermelho `#bd1a1b` para reforçar identidade.
-  - Validação obrigatória do .docx após geração.
+1. **Financeiro** (tela atual — mais densa, prioridade) → pin taste → 3 direções → implementar
+2. **Dashboard/Início** → aplicar tokens vencedores + 3 direções específicas de cards de resumo
+3. **Clientes** → aplicar padrão + 3 direções para lista + drawer
+4. **Agenda** → aplicar padrão + 3 direções para grid semanal/diário
 
-## Fora de escopo
+Cada módulo vira uma rodada curta: 1 pergunta de escolha + 3 previews + implementação.
 
-- Nenhuma mudança em código do app, banco, migrations, RLS ou UI.
-- Não gera capturas de tela automáticas (podem ser adicionadas manualmente depois se quiser).
-- Não altera memórias existentes.
+## Princípios de limpeza (aplicados em todos)
+
+- Remover bordas/sombras redundantes; usar 1 nível de elevação por contexto.
+- Consolidar chips de filtro em barra única com "Mais filtros" para secundários.
+- KPIs: reduzir de 6 para 3 primários + 3 em linha secundária colapsável.
+- Tabelas: zebra sutil, sem bordas verticais, tipografia tabular.
+- Espaçamento: escala 4/8/16/24 (elimina valores intermediários).
+- Ícones: apenas onde agregam significado (não decorativos).
+- Cor: só para status e ações primárias; cinzas para o resto.
+
+## Escopo técnico (só frontend)
+
+- Editar `src/index.css` (tokens de espaçamento/tipografia/sombras).
+- Editar componentes de `src/components/modules/` (Financeiro, Dashboard, Clientes, Agendamentos).
+- Editar `src/components/agenda/AgendaGrid.tsx`.
+- Nenhuma mudança em banco, RLS, edge functions ou lógica de negócio.
+
+## Próximo passo se aprovado
+
+Capturo o Financeiro atual e disparo a rodada 1 (pin taste + 3 direções). Confirma?
