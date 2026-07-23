@@ -91,12 +91,13 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, actions, className }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col md:flex-row md:items-start justify-between gap-3 mb-5", className)}>
+    <div className={cn("flex flex-col md:flex-row md:items-start justify-between gap-3 mb-4 sm:mb-5", className)}>
       <div className="min-w-0">
         <h1 className="t-screen-title">{title}</h1>
-        {subtitle && <p className="t-aux mt-1">{subtitle}</p>}
+        {subtitle && <p className="t-aux mt-1 hidden sm:block">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap shrink-0">{actions}</div>}
     </div>
   );
 }
+
