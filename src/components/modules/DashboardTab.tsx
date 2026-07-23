@@ -10,7 +10,7 @@ import {
   useFinanceiro,
   useInvalidate,
 } from "@/hooks/queries";
-import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight, UserCheck, Package } from "lucide-react";
+import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight, UserCheck, Package, Ban } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { localDateStr, monthBounds, getLast7Days, parseDateStr, addDays } from "@/lib/dateUtils";
