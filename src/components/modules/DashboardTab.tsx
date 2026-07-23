@@ -204,12 +204,12 @@ export default function DashboardTab() {
   if (loading && appointments.length === 0) return <div className="flex items-center justify-center py-12"><p className="text-muted-foreground">Carregando dashboard...</p></div>;
 
   return (
-    <div className="space-y-5 sm:space-y-6 animate-fade-in px-4 sm:px-6 pt-3 pb-6">
+    <div className="space-y-5 sm:space-y-6 animate-fade-in">
       <header>
         <h1 className="ios-title1 text-foreground">
           Olá{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}
         </h1>
-        <p className="ios-footnote text-muted-foreground mt-1">
+        <p className="ios-footnote text-muted-foreground mt-1 capitalize">
           {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
         </p>
       </header>
@@ -352,8 +352,8 @@ export default function DashboardTab() {
           </DialogHeader>
           <div className="space-y-2 mt-2">
             {bloqueios.filter(b => b.data === selectedDayStr).map(b => (
-              <div key={b.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
-                <span className="text-sm">🚫</span>
+              <div key={b.id} className="flex items-center gap-2 p-3 rounded-control bg-muted/40 border border-border min-h-[56px]" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground)/0.07) 6px 12px)" }}>
+                <Ban className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{b.motivo || "Bloqueio"}</p>
                   <p className="text-xs text-muted-foreground">{b.dia_todo ? "Dia inteiro" : `${b.hora_inicio?.slice(0,5)} – ${b.hora_fim?.slice(0,5)}`}</p>
