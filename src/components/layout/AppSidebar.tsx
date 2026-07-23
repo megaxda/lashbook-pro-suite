@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   Home, Users, Calendar, DollarSign, Package, Scissors,
-  FileText, HelpCircle, User, Shield, LogOut, ChevronLeft, ChevronRight, Menu, X, MoreHorizontal
+  FileText, HelpCircle, User, Shield, LogOut, ChevronLeft, ChevronRight, MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +21,7 @@ const navItems = [
   { label: "Minha Conta", icon: User, path: "/account", tour: "nav-conta" },
 ];
 
-// Bottom nav: 4 principais + "Mais" abre sheet com o restante
+// 5 destinos fixos no mobile: Início, Clientes, Agenda, Financeiro, Mais
 const mobileBottomNav = [
   { label: "Início", icon: Home, path: "/home_profissional", tab: undefined, tour: "nav-inicio" },
   { label: "Clientes", icon: Users, path: "/home_profissional", tab: "Clientes", tour: "nav-clientes" },
@@ -58,7 +59,6 @@ export default function AppSidebar() {
   };
 
   const isMoreActive = () => allMoreItems.some(i => isActive(i));
-
   const getLink = (item: { path: string; tab?: string }) =>
     item.tab ? `${item.path}?tab=${item.tab}` : item.path;
 
@@ -66,65 +66,72 @@ export default function AppSidebar() {
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className={cn("flex items-center gap-3 px-4 pt-5 pb-3", collapsed && "justify-center px-2")}>
-        <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center flex-shrink-0">
-          <DollarSign className="w-4 h-4 text-primary-foreground" />
+      <div className={cn("flex items-center gap-3 px-4 pt-6 pb-4", collapsed && "justify-center px-2")}>
+        <div className="w-10 h-10 rounded-card gradient-brand flex items-center justify-center flex-shrink-0 shadow-ios-1">
+          <DollarSign className="w-5 h-5 text-primary-foreground" />
         </div>
         {!collapsed && (
-          <div>
-            <h1 className="text-base font-bold text-foreground tracking-tight">FinBeauty</h1>
-            <p className="text-[9px] text-muted-foreground tracking-widest uppercase">v6.0.0</p>
+          <div className="min-w-0">
+            <h1 className="ios-headline text-foreground">FinBeauty</h1>
+            <p className="ios-caption text-muted-foreground uppercase tracking-widest">v6.0.0</p>
           </div>
         )}
       </div>
 
-      <div className={cn("mx-3 mb-3 p-2.5 rounded-xl bg-secondary/50", collapsed && "mx-1 p-2")}>
-        <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
-          <div className="w-8 h-8 rounded-full gradient-brand flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary-foreground">
+      <div className={cn("mx-3 mb-4 p-3 rounded-card bg-secondary/60", collapsed && "mx-2 p-2")}>
+        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+          <div className="w-9 h-9 rounded-pill gradient-brand flex items-center justify-center flex-shrink-0 ios-footnote font-bold text-primary-foreground">
             {initials}
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{profile?.nome || "Profissional"}</p>
-              <p className="text-xs text-muted-foreground truncate">Profissional</p>
+              <p className="ios-callout text-foreground truncate">{profile?.nome || "Profissional"}</p>
+              <p className="ios-footnote text-muted-foreground truncate">Profissional</p>
             </div>
           )}
         </div>
       </div>
 
-      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto scrollbar-thin">
-        {allNavItems.map((item: any) => (
-          <NavLink
-            key={item.label}
-            to={getLink(item)}
-            data-tour={item.tour}
-            className={cn(
-              "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-              collapsed && "justify-center px-2",
-              isActive(item)
-                ? "gradient-brand text-primary-foreground shadow-lg glow-brand"
-                : "text-sidebar-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
-            {!collapsed && <span className="text-sm">{item.label}</span>}
-          </NavLink>
-        ))}
+      <nav className="flex-1 px-2 space-y-1 overflow-y-auto scrollbar-thin">
+        {allNavItems.map((item: any) => {
+          const active = isActive(item);
+          return (
+            <NavLink
+              key={item.label}
+              to={getLink(item)}
+              data-tour={item.tour}
+              className={cn(
+                "flex items-center gap-3 px-3 h-11 rounded-control ios-callout transition-colors",
+                collapsed && "justify-center px-2",
+                active
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-sidebar-foreground hover:bg-secondary/70 hover:text-foreground",
+              )}
+            >
+              <item.icon className="w-[20px] h-[20px] flex-shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </NavLink>
+          );
+        })}
       </nav>
 
-      <div className="p-2 space-y-0.5">
-        <button onClick={() => signOut()} className={cn(
-          "flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors",
-          collapsed && "justify-center px-2"
-        )}>
-          <LogOut className="w-[18px] h-[18px]" />
+      <div className="p-2 pt-4">
+        <button
+          onClick={() => signOut()}
+          className={cn(
+            "flex items-center gap-3 w-full px-3 h-11 rounded-control ios-callout text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors",
+            collapsed && "justify-center px-2",
+          )}
+        >
+          <LogOut className="w-[20px] h-[20px]" />
           {!collapsed && <span>Sair</span>}
         </button>
       </div>
 
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="hidden lg:flex items-center justify-center p-2 mx-3 mb-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+        aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+        className="hidden lg:flex items-center justify-center h-9 w-9 mx-auto mb-3 rounded-pill text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
@@ -133,70 +140,88 @@ export default function AppSidebar() {
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <aside className={cn(
-        "hidden lg:flex flex-col h-screen sticky top-0 bg-sidebar border-r border-sidebar-border transition-all duration-300",
-        collapsed ? "w-[68px]" : "w-60"
-      )}>
+      {/* Sidebar desktop */}
+      <aside
+        className={cn(
+          "hidden lg:flex flex-col h-dvh sticky top-0 bg-sidebar border-r border-sidebar-border transition-[width] duration-300",
+          collapsed ? "w-[68px]" : "w-64",
+        )}
+      >
         {sidebarContent}
       </aside>
 
-      {/* Mobile bottom nav (5 items: 4 principais + Mais) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around items-stretch px-1 pb-[env(safe-area-inset-bottom)]">
-        {mobileBottomNav.map((item: any) => (
-          <NavLink
-            key={item.label}
-            to={getLink(item)}
-            data-tour={item.tour}
-            className={cn(
-              "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition-colors",
-              isActive(item) ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            {item.label}
-          </NavLink>
-        ))}
+      {/* Bottom Tab Bar mobile — 5 destinos, safe area, mínimo 44×44 */}
+      <nav
+        aria-label="Navegação principal"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/60 shadow-ios-nav flex justify-around items-stretch px-1 pb-[env(safe-area-inset-bottom)]"
+      >
+        {mobileBottomNav.map((item: any) => {
+          const active = isActive(item);
+          return (
+            <NavLink
+              key={item.label}
+              to={getLink(item)}
+              data-tour={item.tour}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex-1 flex flex-col items-center justify-center gap-1 py-2 min-h-[56px] min-w-[44px]",
+                "text-[11px] leading-none font-medium transition-colors press-scale",
+                active ? "text-primary font-semibold" : "text-muted-foreground",
+              )}
+            >
+              <item.icon className={cn("w-[22px] h-[22px]", active && "text-primary")} />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
         <button
           onClick={() => setMoreOpen(true)}
+          aria-label="Mais opções"
           className={cn(
-            "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition-colors",
-            isMoreActive() ? "text-primary" : "text-muted-foreground"
+            "flex-1 flex flex-col items-center justify-center gap-1 py-2 min-h-[56px] min-w-[44px]",
+            "text-[11px] leading-none font-medium transition-colors press-scale",
+            isMoreActive() ? "text-primary font-semibold" : "text-muted-foreground",
           )}
         >
-          <MoreHorizontal className="w-5 h-5" />
-          Mais
+          <MoreHorizontal className="w-[22px] h-[22px]" />
+          <span>Mais</span>
         </button>
       </nav>
 
-      {/* Mobile "Mais" sheet */}
+      {/* Sheet "Mais" */}
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="lg:hidden bg-card border-border rounded-t-2xl pb-[env(safe-area-inset-bottom)]">
+        <SheetContent
+          side="bottom"
+          className="lg:hidden bg-card border-border rounded-t-card pb-[env(safe-area-inset-bottom)]"
+        >
           <SheetHeader>
-            <SheetTitle className="text-foreground text-left">Mais opções</SheetTitle>
+            <SheetTitle className="ios-headline text-foreground text-left">Mais opções</SheetTitle>
           </SheetHeader>
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            {allMoreItems.map(item => (
-              <NavLink
-                key={item.label}
-                to={getLink(item)}
-                onClick={() => setMoreOpen(false)}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border min-h-[80px] text-xs font-medium transition-all",
-                  isActive(item)
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border bg-secondary/40 text-foreground hover:bg-secondary"
-                )}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="text-center leading-tight">{item.label}</span>
-              </NavLink>
-            ))}
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            {allMoreItems.map(item => {
+              const active = isActive(item);
+              return (
+                <NavLink
+                  key={item.label}
+                  to={getLink(item)}
+                  onClick={() => setMoreOpen(false)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-2 p-3 rounded-card border min-h-[88px] ios-footnote font-medium transition-all press-scale",
+                    active
+                      ? "border-primary/30 bg-primary/10 text-primary"
+                      : "border-border/70 bg-secondary/40 text-foreground hover:bg-secondary",
+                  )}
+                >
+                  <item.icon className="w-6 h-6" />
+                  <span className="text-center leading-tight">{item.label}</span>
+                </NavLink>
+              );
+            })}
             <button
               onClick={() => { setMoreOpen(false); signOut(); }}
-              className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive min-h-[80px] text-xs font-medium hover:bg-destructive/10 transition-all"
+              className="flex flex-col items-center justify-center gap-2 p-3 rounded-card border border-destructive/30 bg-destructive/5 text-destructive min-h-[88px] ios-footnote font-medium hover:bg-destructive/10 transition-all press-scale"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-6 h-6" />
               <span>Sair</span>
             </button>
           </div>
