@@ -13,6 +13,7 @@ import {
 import { Calendar, DollarSign, AlertTriangle, Plus, ChevronLeft, ChevronRight, UserCheck, Package, Ban } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { localDateStr, monthBounds, getLast7Days, parseDateStr, addDays } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export default function DashboardTab() {
   const { user, profile, isDemo } = useAuth();
   const navigate = useNavigate();
   const invalidate = useInvalidate();
+  const isMobile = useIsMobile();
 
   const todayDateStr = localDateStr();
   const { start, end } = useMemo(() => monthBounds(), []);
