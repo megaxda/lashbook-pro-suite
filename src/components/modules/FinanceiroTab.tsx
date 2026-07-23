@@ -364,10 +364,20 @@ export default function FinanceiroTab() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="segmented flex-wrap">
           {([
-            ["hoje", "Hoje"], ["7d", "7 dias"], ["mes", "Mês"],
-            ["mesAnterior", "Mês anterior"], ["custom", "Personalizado"],
-          ] as Array<[PeriodKey, string]>).map(([k, label]) => (
-            <button key={k} data-active={period === k} onClick={() => setPeriod(k)}>{label}</button>
+            ["hoje", "Hoje", false],
+            ["7d", "7 dias", false],
+            ["mes", "Mês", false],
+            ["mesAnterior", "Mês anterior", true],
+            ["custom", "Personalizado", true],
+          ] as Array<[PeriodKey, string, boolean]>).map(([k, label, hideMobile]) => (
+            <button
+              key={k}
+              data-active={period === k}
+              onClick={() => setPeriod(k)}
+              className={cn(hideMobile && "hidden sm:inline-flex")}
+            >
+              {label}
+            </button>
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -379,7 +389,7 @@ export default function FinanceiroTab() {
             </div>
           )}
           <span className="t-aux hidden md:inline">{formatBR(range.start)} → {formatBR(range.end)}</span>
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={exportCSV}>
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1 hidden sm:inline-flex" onClick={exportCSV}>
             <Download className="w-3.5 h-3.5" /> CSV
           </Button>
           <Button size="sm" className="gradient-brand text-primary-foreground h-8 text-xs" onClick={() => setDialogOpen(true)}>
@@ -388,8 +398,8 @@ export default function FinanceiroTab() {
         </div>
       </div>
 
-      {/* KPIs bento */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* KPIs bento — 3 essenciais no mobile, 6 no desktop */}
+      <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiCard
           label="Receita"
           value={`R$ ${totalReceita.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
@@ -411,13 +421,14 @@ export default function FinanceiroTab() {
           label="Ticket Médio"
           value={`R$ ${ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           trend={trendPct(ticketMedio, prevTicket)}
+          className="hidden md:flex"
         />
-        <KpiCard label="Lançamentos" value={receitasCount} hint="receita" />
-        <KpiCard label="Atendimentos" value={atendimentos} hint="concluídos" />
+        <KpiCard label="Lançamentos" value={receitasCount} hint="receita" className="hidden md:flex" />
+        <KpiCard label="Atendimentos" value={atendimentos} hint="concluídos" className="hidden md:flex" />
       </div>
 
       {/* Gráfico principal */}
-      <SectionCard title="Receita vs Despesa" description="Evolução diária no período">
+      <SectionCard title="Receita vs Despesa" description={<span className="hidden sm:inline">Evolução diária no período</span>}>
         <ResponsiveContainer width="100%" height={240}>
           <ComposedChart data={dailySeries}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
@@ -433,6 +444,7 @@ export default function FinanceiroTab() {
           </ComposedChart>
         </ResponsiveContainer>
       </SectionCard>
+
 
       {/* Despesas por categoria */}
       {despPorCategoria.length > 0 && (
@@ -552,8 +564,8 @@ export default function FinanceiroTab() {
         )}
       </div>
 
-      {/* Comparativo 6 meses */}
-      <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
+      {/* Comparativo 6 meses — só desktop */}
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-border hidden lg:block">
         <h3 className="text-sm font-semibold text-foreground mb-3">Últimos 6 meses</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -578,6 +590,7 @@ export default function FinanceiroTab() {
           </table>
         </div>
       </div>
+
 
       {/* Dialogs */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
