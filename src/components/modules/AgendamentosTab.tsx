@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AgendaGrid, { StatusLegend, StatusBadge, type AgendaView } from "@/components/agenda/AgendaGrid";
+import { PageHeader } from "@/components/ui/kpi-card";
 
 interface PagamentoItem { metodo: string; valor: number; }
 interface Agendamento {
@@ -516,21 +517,23 @@ export default function AgendamentosTab() {
 
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-24 lg:pb-0">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Agendamentos</h2>
-          <p className="text-muted-foreground text-xs sm:text-sm">{appointments.length} agendamentos</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex bg-secondary rounded-lg p-0.5 overflow-x-auto">
-            {views.map(v => <button key={v} onClick={() => persistView(v)} className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px]", view === v ? "gradient-brand text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{v}</button>)}
-          </div>
-          <Button size="sm" variant="outline" className="border-border h-9 text-xs min-h-[36px]" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
-          {/* Hide desktop "Novo" — mobile uses FAB */}
-          <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex min-h-[36px]" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
-        </div>
-      </div>
+    <div className="space-y-5 animate-fade-in pb-24 lg:pb-0">
+      <PageHeader
+        title="Agendamentos"
+        subtitle={`${appointments.length} agendamentos`}
+        actions={
+          <>
+            <div className="segmented overflow-x-auto">
+              {views.map(v => (
+                <button key={v} data-active={view === v} onClick={() => persistView(v)}>{v}</button>
+              ))}
+            </div>
+            <Button size="sm" variant="outline" className="h-9 text-xs" onClick={() => setBloqOpen(true)}><Ban className="w-3.5 h-3.5 mr-1" /> Bloquear</Button>
+            <Button size="sm" className="gradient-brand text-primary-foreground h-9 text-xs hidden sm:inline-flex" onClick={() => setNewOpen(true)}><Plus className="w-3.5 h-3.5 mr-1" /> Novo</Button>
+          </>
+        }
+      />
+
 
       <div className="flex items-center gap-2">
         <Button size="icon" variant="outline" className="border-border text-muted-foreground h-9 w-9 min-w-[36px]" onClick={() => navigate(-1)}><ChevronLeft className="w-4 h-4" /></Button>

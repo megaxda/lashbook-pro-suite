@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { matchAllTokens } from "@/lib/searchUtils";
 import { localDateStr, parseDateStr, formatBR } from "@/lib/dateUtils";
+import { PageHeader } from "@/components/ui/kpi-card";
 
 interface Cliente {
   id: string; nome: string; telefone: string | null; email: string | null;
