@@ -211,7 +211,7 @@ export default function DashboardTab() {
         <h1 className="ios-title1 text-foreground">
           Olá{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}
         </h1>
-        <p className="ios-footnote text-muted-foreground mt-1 capitalize">
+        <p className="ios-footnote text-muted-foreground mt-1 first-letter:uppercase">
           {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
         </p>
       </header>
