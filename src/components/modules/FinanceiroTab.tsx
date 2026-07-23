@@ -431,7 +431,7 @@ export default function FinanceiroTab() {
             <Line dataKey="lucro" name="Lucro" stroke="hsl(217,91%,60%)" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
-      </div>
+      </SectionCard>
 
       {/* Despesas por categoria */}
       {despPorCategoria.length > 0 && (
