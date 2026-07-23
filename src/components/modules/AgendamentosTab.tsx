@@ -122,10 +122,14 @@ export default function AgendamentosTab() {
     setProfFilter(v);
     if (typeof window !== "undefined") window.localStorage.setItem("finbeauty.agenda.profFilter", v);
   };
+  const isMobileVP = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const [view, setView] = useState<typeof views[number]>(() => {
     if (typeof window === "undefined") return "Semanal";
     const saved = window.localStorage.getItem("finbeauty.agenda.view");
-    return (saved === "Lista" || saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : "Semanal";
+    const parsed = (saved === "Lista" || saved === "Diário" || saved === "Semanal" || saved === "Mensal") ? saved : null;
+    // Mobile default = Lista (grade semanal ilegível em telas estreitas)
+    if (isMobileVP) return parsed === "Diário" || parsed === "Lista" ? parsed : "Lista";
+    return parsed ?? "Semanal";
   });
   const persistView = (v: typeof views[number]) => {
     setView(v);
