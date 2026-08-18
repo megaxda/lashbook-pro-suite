@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import EquipeManager from "@/components/equipe/EquipeManager";
 import { triggerRestartTour } from "@/components/onboarding/AppTour";
+import ExportarDados from "@/components/conta/ExportarDados";
 
 function sanitizeSlug(input: string) {
   return input
@@ -180,6 +181,7 @@ export default function AccountPage() {
           <TabsTrigger value="conta" className="text-xs">Minha Conta</TabsTrigger>
           <TabsTrigger value="studio" className="text-xs">Meu Studio</TabsTrigger>
           <TabsTrigger value="linkbio" className="text-xs">Link Bio</TabsTrigger>
+          <TabsTrigger value="dados" className="text-xs">Meus dados</TabsTrigger>
         </TabsList>
 
         <TabsContent value="conta" className="mt-4 sm:mt-6">
@@ -353,6 +355,10 @@ export default function AccountPage() {
           >
             {saving ? "Salvando..." : "Salvar Link Bio"}
           </Button>
+        </TabsContent>
+
+        <TabsContent value="dados" className="mt-4 sm:mt-6 space-y-4">
+          <ExportarDados />
         </TabsContent>
       </Tabs>
       <PushNotificationsCard />
