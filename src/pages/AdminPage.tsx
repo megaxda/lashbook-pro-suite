@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send, Clock, Infinity as InfinityIcon, Ban } from "lucide-react";
+import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send, Clock, Infinity as InfinityIcon, Ban, Download } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
