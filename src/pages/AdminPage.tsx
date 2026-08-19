@@ -245,6 +245,7 @@ export default function AdminPage() {
                             <DropdownMenuItem onClick={() => openDialog("edit", u)} className="gap-2"><Pencil className="w-4 h-4" /> Editar Dados</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("details", u)} className="gap-2"><Eye className="w-4 h-4" /> Ver Detalhes</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("magic-link", u)} className="gap-2"><Link2 className="w-4 h-4" /> Gerar Link Mágico</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openDialog("export", u)} className="gap-2"><Download className="w-4 h-4" /> Exportar dados</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
