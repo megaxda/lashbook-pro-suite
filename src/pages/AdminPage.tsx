@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send, Clock, Infinity as InfinityIcon, Ban } from "lucide-react";
+import { Shield, Users, CreditCard, BarChart3, Activity, MoreHorizontal, Eye, Pencil, PauseCircle, PlayCircle, ArrowUpDown, Link2, Copy, UserPlus, RefreshCw, CheckCircle2, Bell, Send, Clock, Infinity as InfinityIcon, Ban, Download } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -16,8 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import ExportarDadosUsuario from "@/components/admin/ExportarDadosUsuario";
 
-type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | null;
+type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | "export" | null;
 
 interface UserRow {
   id: string;
@@ -245,6 +246,7 @@ export default function AdminPage() {
                             <DropdownMenuItem onClick={() => openDialog("edit", u)} className="gap-2"><Pencil className="w-4 h-4" /> Editar Dados</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("details", u)} className="gap-2"><Eye className="w-4 h-4" /> Ver Detalhes</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDialog("magic-link", u)} className="gap-2"><Link2 className="w-4 h-4" /> Gerar Link Mágico</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openDialog("export", u)} className="gap-2"><Download className="w-4 h-4" /> Exportar dados</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -269,6 +271,18 @@ export default function AdminPage() {
             <SelectContent className="bg-popover border-border"><SelectItem value="basico">Básico</SelectItem><SelectItem value="pro">Pro</SelectItem><SelectItem value="enterprise">Enterprise</SelectItem></SelectContent>
           </Select>
           <DialogFooter><Button variant="outline" onClick={() => setDialogMode(null)}>Cancelar</Button><Button onClick={handleUpdatePlan}>Salvar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogMode === "export"} onOpenChange={open => !open && setDialogMode(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Exportar dados do usuário</DialogTitle>
+            <DialogDescription>Baixe os dados de {selectedUser?.nome || selectedUser?.email}</DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <ExportarDadosUsuario userId={selectedUser.id} userLabel={selectedUser.email || selectedUser.nome || selectedUser.id} />
+          )}
         </DialogContent>
       </Dialog>
 
