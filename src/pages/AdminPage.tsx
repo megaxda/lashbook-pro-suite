@@ -273,6 +273,18 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={dialogMode === "export"} onOpenChange={open => !open && setDialogMode(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Exportar dados do usuário</DialogTitle>
+            <DialogDescription>Baixe os dados de {selectedUser?.nome || selectedUser?.email}</DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <ExportarDadosUsuario userId={selectedUser.id} userLabel={selectedUser.email || selectedUser.nome || selectedUser.id} />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={dialogMode === "edit"} onOpenChange={open => !open && setDialogMode(null)}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>Editar Dados</DialogTitle><DialogDescription>Atualize as informações de {selectedUser?.nome || selectedUser?.email}</DialogDescription></DialogHeader>
