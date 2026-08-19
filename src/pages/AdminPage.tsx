@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | null;
+type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | "export" | null;
 
 interface UserRow {
   id: string;
