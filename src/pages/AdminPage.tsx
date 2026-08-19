@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import ExportarDadosUsuario from "@/components/admin/ExportarDadosUsuario";
 
 type DialogMode = "plan" | "edit" | "details" | "magic-link" | "extend" | "export" | null;
 
